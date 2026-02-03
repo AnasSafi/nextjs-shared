@@ -1,6 +1,6 @@
 {
-  "name": "@nextjs-shared",
-  "version": "0.2.2",
+  "name": "@nextjs-shared/shared",
+  "version": "0.2.3",
   "private": false,
   "type": "module",
   "main": "./dist/index.js",
