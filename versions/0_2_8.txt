@@ -90,3 +90,21 @@ export const languages: LanguageConfig[] = [
 
 export const defaultLng: string = "...";
 export const fallbackLng: string = "...";
+
+Additional note for v0.2.8 migration:
+
+- Delete this file from the project:
+  src/models/core/localizationModels.ts
+
+- Replace all imports that reference it, so they come from the shared package instead.
+  Example:
+  BEFORE:
+    import { LanguageConfig } from "@/models/core/localizationModels";
+  AFTER:
+    import type { LanguageConfig } from "@nextjs-shared/shared";
+
+- The project’s src/config/localizationConfig.ts should still keep only the values:
+  - languages
+  - defaultLng
+  - fallbackLng
+  but it must import the LanguageConfig type from "@nextjs-shared/shared".
