@@ -74,6 +74,8 @@ The CI publishes only on tags.
 ```bash
 git tag v0.2.4
 git push origin v0.2.4
+or
+git push --tags  
 ```
 
 ---

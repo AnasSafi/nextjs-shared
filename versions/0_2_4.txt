@@ -1,0 +1,33 @@
+Task: Migrate MultiLangValue imports to @nextjs-shared/shared
+
+Goal:
+Across the entire project, stop importing `MultiLangValue` from `@/models/core/formModels` and import it from `@nextjs-shared/shared` instead.
+
+What to change:
+1) Find any import that includes `MultiLangValue` from:
+   "@/models/core/formModels"
+
+Example BEFORE:
+import {
+  type FormPropsModel,
+  type ServerSuccessModel,
+  type UseFormHandlerProps,
+  type SelectOptionModel, MultiLangValue,
+} from "@/models/core/formModels";
+
+Example AFTER:
+import {
+  type FormPropsModel,
+  type ServerSuccessModel,
+  type UseFormHandlerProps,
+  type SelectOptionModel,
+} from "@/models/core/formModels";
+import type { MultiLangValue } from "@nextjs-shared/shared";
+
+Rules:
+- Only move `MultiLangValue`. Keep all other imports from `@/models/core/formModels` as-is.
+- Always import it as a type: `import type { MultiLangValue } from "@nextjs-shared/shared";`
+- Remove `MultiLangValue` from the original import list (including any `type` grouping or mixed imports).
+- Ensure formatting is clean (trailing commas, line breaks).
+- Apply to every file in the repo where this pattern exists.
+- Run TypeScript checks mentally: no value imports should remain for MultiLangValue.
