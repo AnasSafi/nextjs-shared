@@ -5,3 +5,5 @@ export * from "./i18n/localeMaps";
 export * from "./i18n/settings";
 export * from "./i18n/serverTranslations";
 export * from "./i18n/clientTranslation";
+export * from "./i18n/languageConfigUtils";
+export * from "./i18n/languageConfigUtils";

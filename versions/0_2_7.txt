@@ -1,0 +1,70 @@
+replace all import from `@/utils/appLocaleSingleton` to "@nextjs-shared/shared"
+
+انشئ ملف
+
+
+بدل جميع استدعائات
+import {getAppLocaleSingleton} from "@/utils/appLocaleSingleton";
+ب
+import {getAppLocale} from "@/utils/appLocale";
+
+بدل استدعائات
+import {convertToTwoCharLocale, setAppLocaleSingleton} from "@nextjs-shared/shared";
+
+ب
+import {setAppLocale} from "@/utils/appLocale";
+
+
+انشئ ملف
+src/utils/appLocale.ts:
+import {getAppLocaleSingleton, setAppLocaleSingleton} from "@nextjs-shared/shared";
+import {defaultLng} from "@/config/localizationConfig";
+
+export const getAppLocale = (): string => getAppLocaleSingleton(defaultLng);
+export const setAppLocale = (lng: string): void => setAppLocaleSingleton(lng);
+
+create file:
+src/app/i18n/server_translation.ts:
+import rawTranslations from "@/app/i18n/locales/app.json";
+import {defaultLng, fallbackLng} from "@/config/localizationConfig";
+import {getCookies} from "@/actions/cookiesActions";
+import {COOKIE_LOCALE_KEY} from "@/constants";
+import {getServerTranslations} from "@nextjs-shared/shared";
+import {getAppLocale} from "@/utils/appLocale";
+
+export async function getTranslations(lng?: string | null) {
+    return getServerTranslations(lng, {
+        rawTranslations,
+        defaultLng,
+        getFallbackLng: () => fallbackLng,
+        getLocaleFromApp: () => getAppLocale(),
+        getLocaleFromCookies: () => getCookies(COOKIE_LOCALE_KEY),
+    });
+}
+
+create file:
+src/app/i18n/client_translation.ts:
+"use client";
+import {getI18nOptions, initClientI18n, createUseClientTranslation} from "@nextjs-shared/shared";
+import {fallbackLng, getLanguagesArray} from "@/config/localizationConfig";
+import {getAppLocale} from "@/utils/appLocale";
+
+initClientI18n({
+    initOptions: getI18nOptions({
+        fallbackLng,
+        supportedLngs: getLanguagesArray(),
+    }),
+    getCurrentLng: () => getAppLocale(),
+    resourcesImporter: () => import("@/app/i18n/locales/app.json"),
+});
+
+export const useTranslation = createUseClientTranslation({
+    getCurrentLng: () => getAppLocale(),
+});
+
+
+احذف ملف
+src/utils/appLocaleSingleton.ts
+
+احذف ملف
+src/app/i18n/settings.ts
