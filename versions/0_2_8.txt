@@ -1,0 +1,92 @@
+UPGRADE GUIDE — Shared Package v0.2.8
+
+Goal:
+Move language helper functions from the project localization config into "@nextjs-shared/shared" and update call sites to the new signatures.
+
+A) Update language prefix regex usage
+Replace:
+
+BEFORE:
+import { getInterfaceLanguages, languages, buildLanguagePrefixRegex } from "@/config/localizationConfig";
+
+// Shared language data derived from localization config
+const interfaceLanguages: string[] = getInterfaceLanguages();
+const langPrefixRegex: RegExp = buildLanguagePrefixRegex(interfaceLanguages);
+
+AFTER:
+import { buildLanguagePrefixRegex, getInterfaceLanguages } from "@nextjs-shared/shared";
+import { languages } from "@/config/localizationConfig";
+
+// Shared language data derived from localization config
+const interfaceLanguages: string[] = getInterfaceLanguages(languages);
+const langPrefixRegex: RegExp = buildLanguagePrefixRegex({ languages, codes: interfaceLanguages });
+
+B) Update client i18n wrapper to new getLanguagesArray signature
+Update file:
+src/app/i18n/client_translation.ts
+
+Content:
+"use client";
+
+import {
+  createUseClientTranslation,
+  getI18nOptions,
+  getLanguagesArray,
+  initClientI18n,
+} from "@nextjs-shared/shared";
+import { defaultLng, fallbackLng, languages } from "@/config/localizationConfig";
+import { getAppLocale } from "@/utils/appLocale";
+
+initClientI18n({
+  initOptions: getI18nOptions({
+    fallbackLng,
+    supportedLngs: getLanguagesArray({ languages, defaultLng, fallbackLng }),
+  }),
+  getCurrentLng: () => getAppLocale(),
+  resourcesImporter: () => import("@/app/i18n/locales/app.json"),
+});
+
+export const useTranslation = createUseClientTranslation({
+  getCurrentLng: () => getAppLocale(),
+});
+
+C) Replace imports of isLanguageRTL
+Replace:
+import { isLanguageRTL } from "@/config/localizationConfig";
+with:
+import { isLanguageRTL } from "@nextjs-shared/shared";
+
+D) Migrate language helper functions to shared (repository-wide)
+
+Part 1 — Replace imports:
+Replace imports from "@/config/localizationConfig" for these functions:
+- getInputLanguages
+- getRequiredInputLanguages
+- getInterfaceLanguages
+- isLanguageRTL
+so they come from:
+- "@nextjs-shared/shared"
+
+Part 2 — Update call sites (signature change):
+Replace:
+- getInputLanguages() -> getInputLanguages(languages)
+- getRequiredInputLanguages() -> getRequiredInputLanguages(languages)
+- getInterfaceLanguages() -> getInterfaceLanguages(languages)
+- isLanguageRTL(localeCode) -> isLanguageRTL(languages, localeCode)
+
+Notes:
+- Keep importing "languages" from "@/config/localizationConfig" where needed.
+- Do not move "languages/defaultLng/fallbackLng" into shared; only the helper functions move.
+
+E) Final shape of src/config/localizationConfig.ts
+After migrating helper functions out, the final file should only contain the configuration values:
+
+import { LanguageConfig } from "@/models/core/localizationModels";
+
+export const languages: LanguageConfig[] = [
+  // ...
+  // Add more languages as needed...
+];
+
+export const defaultLng: string = "...";
+export const fallbackLng: string = "...";

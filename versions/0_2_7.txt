@@ -1,70 +1,86 @@
-replace all import from `@/utils/appLocaleSingleton` to "@nextjs-shared/shared"
+UPGRADE GUIDE — Shared Package v0.2.7
 
-انشئ ملف
+Goal:
+Move locale singleton usage to the shared package and standardize a single project wrapper (getAppLocale / setAppLocale). Also migrate i18n server/client helpers to use the shared APIs.
 
+A) Replace old singleton imports
+1) Replace all imports from:
+   "@/utils/appLocaleSingleton"
+   to:
+   "@nextjs-shared/shared"
 
-بدل جميع استدعائات
-import {getAppLocaleSingleton} from "@/utils/appLocaleSingleton";
-ب
-import {getAppLocale} from "@/utils/appLocale";
+2) Replace all usages of:
+   import { getAppLocaleSingleton } from "@/utils/appLocaleSingleton";
+   with:
+   import { getAppLocale } from "@/utils/appLocale";
 
-بدل استدعائات
-import {convertToTwoCharLocale, setAppLocaleSingleton} from "@nextjs-shared/shared";
+3) Replace imports like:
+   import { convertToTwoCharLocale, setAppLocaleSingleton } from "@nextjs-shared/shared";
+   with:
+   import { setAppLocale } from "@/utils/appLocale";
 
-ب
-import {setAppLocale} from "@/utils/appLocale";
+   Note:
+   - Keep convertToTwoCharLocale only if it is still used in the file.
+   - If convertToTwoCharLocale is needed, import it separately from "@nextjs-shared/shared".
 
+B) Create a project wrapper for locale access
+Create file:
+src/utils/appLocale.ts
 
-انشئ ملف
-src/utils/appLocale.ts:
-import {getAppLocaleSingleton, setAppLocaleSingleton} from "@nextjs-shared/shared";
-import {defaultLng} from "@/config/localizationConfig";
+Content:
+import { getAppLocaleSingleton, setAppLocaleSingleton } from "@nextjs-shared/shared";
+import { defaultLng } from "@/config/localizationConfig";
 
 export const getAppLocale = (): string => getAppLocaleSingleton(defaultLng);
 export const setAppLocale = (lng: string): void => setAppLocaleSingleton(lng);
 
-create file:
-src/app/i18n/server_translation.ts:
+C) Add server i18n wrapper
+Create file:
+src/app/i18n/server_translation.ts
+
+Content:
 import rawTranslations from "@/app/i18n/locales/app.json";
-import {defaultLng, fallbackLng} from "@/config/localizationConfig";
-import {getCookies} from "@/actions/cookiesActions";
-import {COOKIE_LOCALE_KEY} from "@/constants";
-import {getServerTranslations} from "@nextjs-shared/shared";
-import {getAppLocale} from "@/utils/appLocale";
+import { defaultLng, fallbackLng } from "@/config/localizationConfig";
+import { getCookies } from "@/actions/cookiesActions";
+import { COOKIE_LOCALE_KEY } from "@/constants";
+import { getServerTranslations } from "@nextjs-shared/shared";
+import { getAppLocale } from "@/utils/appLocale";
 
 export async function getTranslations(lng?: string | null) {
-    return getServerTranslations(lng, {
-        rawTranslations,
-        defaultLng,
-        getFallbackLng: () => fallbackLng,
-        getLocaleFromApp: () => getAppLocale(),
-        getLocaleFromCookies: () => getCookies(COOKIE_LOCALE_KEY),
-    });
+  return getServerTranslations(lng, {
+    rawTranslations,
+    defaultLng,
+    getFallbackLng: () => fallbackLng,
+    getLocaleFromApp: () => getAppLocale(),
+    getLocaleFromCookies: () => getCookies(COOKIE_LOCALE_KEY),
+  });
 }
 
-create file:
-src/app/i18n/client_translation.ts:
+D) Add client i18n wrapper
+Create file:
+src/app/i18n/client_translation.ts
+
+Content:
 "use client";
-import {getI18nOptions, initClientI18n, createUseClientTranslation} from "@nextjs-shared/shared";
-import {fallbackLng, getLanguagesArray} from "@/config/localizationConfig";
-import {getAppLocale} from "@/utils/appLocale";
+
+import { getI18nOptions, initClientI18n, createUseClientTranslation } from "@nextjs-shared/shared";
+import { fallbackLng, getLanguagesArray } from "@/config/localizationConfig";
+import { getAppLocale } from "@/utils/appLocale";
 
 initClientI18n({
-    initOptions: getI18nOptions({
-        fallbackLng,
-        supportedLngs: getLanguagesArray(),
-    }),
-    getCurrentLng: () => getAppLocale(),
-    resourcesImporter: () => import("@/app/i18n/locales/app.json"),
+  initOptions: getI18nOptions({
+    fallbackLng,
+    supportedLngs: getLanguagesArray(),
+  }),
+  getCurrentLng: () => getAppLocale(),
+  resourcesImporter: () => import("@/app/i18n/locales/app.json"),
 });
 
 export const useTranslation = createUseClientTranslation({
-    getCurrentLng: () => getAppLocale(),
+  getCurrentLng: () => getAppLocale(),
 });
 
-
-احذف ملف
-src/utils/appLocaleSingleton.ts
-
-احذف ملف
-src/app/i18n/settings.ts
+E) Delete obsolete local files
+Delete:
+- src/utils/appLocaleSingleton.ts
+- src/app/i18n/settings.ts
