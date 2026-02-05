@@ -10,7 +10,8 @@ export type ErrorAlertProps = {
     className?: string;
 };
 
-export default function ErrorAlert(props: ErrorAlertProps): React.ReactElement {
+export function ErrorAlert(props: ErrorAlertProps): React.ReactElement {
+
     const {titleKey, messageKey, t, className} = props;
 
     return (
