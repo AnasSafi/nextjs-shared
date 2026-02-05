@@ -9,11 +9,8 @@ A) Update dependency
 
 Consumer project: package.json
 
-OLD (delete):
-"@nextjs-shared/shared": "^0.2.8"
-
-NEW (add):
-"@nextjs-shared/shared": "^0.2.9"
+NEW (add or modify):
+"@nextjs-shared/shared": "^0.2.11"
 
 Run:
 npm install
