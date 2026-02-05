@@ -1,0 +1,60 @@
+﻿UPGRADE GUIDE — Shared Package v0.2.14
+
+Goal:
+Introduce the shared Error403 component and remove project-specific implementations.
+
+--------------------------------------------------------------------
+1) Update dependency
+
+Consumer project package.json
+
+OLD:
+"@nextjs-shared/shared": "^0.2.13"
+
+NEW:
+"@nextjs-shared/shared": "^0.2.14"
+
+Run:
+npm install
+
+--------------------------------------------------------------------
+2) Delete local files (if they exist)
+
+Delete from consumer projects:
+src/components/Auth/Error403.tsx
+
+Do NOT delete the project LockIcon file unless it is truly unused after migration.
+
+--------------------------------------------------------------------
+3) Update imports
+
+OLD:
+import Error403 from "@/components/Auth/Error403";
+
+NEW:
+import {Error403} from "@nextjs-shared/shared";
+
+--------------------------------------------------------------------
+4) Usage example (t must be passed)
+
+import {Error403} from "@nextjs-shared/shared";
+import {useTranslation} from "@/app/i18n/client_translation";
+
+export default function Page() {
+    const {t} = useTranslation();
+    return <Error403 t={t} />;
+}
+
+Notes:
+- Default translation keys are "403Forbidden" and "youAreNotAuthorizedMessage"
+- Keys can be overridden via props if needed:
+  <Error403 t={t} titleKey="..." messageKey="..." />
+
+====================================================================
+C) Final checks
+====================================================================
+
+- No "@/..." imports inside shared code
+- Error403 is exported from index.ts
+- package.json version is 0.2.14
+- versions/0_2_14.txt exists and is committed
