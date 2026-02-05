@@ -1,6 +1,6 @@
 {
   "name": "@nextjs-shared/shared",
-  "version": "0.2.14",
+  "version": "0.2.15",
   "private": false,
   "type": "module",
   "files": ["dist"],
@@ -23,11 +23,15 @@
   "peerDependencies": {
     "react": ">=18",
     "react-dom": ">=18",
-    "@heroicons/react": ">=2"
+    "@heroicons/react": ">=2",
+    "react-hook-form": ">=7",
+    "yup": ">=1"
   },
   "devDependencies": {
     "typescript": "^5.9.3",
     "@types/react": "^18.3.0",
-    "@types/react-dom": "^18.3.0"
+    "@types/react-dom": "^18.3.0",
+    "react-hook-form": "^7.71.1",
+    "yup": "^1.7.1"
   }
 }

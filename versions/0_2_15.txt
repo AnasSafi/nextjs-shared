@@ -1,0 +1,56 @@
+﻿UPGRADE GUIDE — Shared Package v0.2.15
+
+Goal:
+Core models were moved into "@nextjs-shared/shared" to reduce duplication across projects:
+- models/core/formModels
+- models/core/authenticationModels
+- models/core/systemModels
+- models/core/dbModels (minimal pagination request model)
+
+--------------------------------------------------------------------
+1) Update dependency
+
+Consumer project package.json
+
+OLD:
+"@nextjs-shared/shared": "^0.2.14"
+
+NEW:
+"@nextjs-shared/shared": "^0.2.15"
+
+Run:
+npm install
+
+--------------------------------------------------------------------
+2) Update imports in consumer projects
+
+Replace these imports:
+
+OLD:
+import {...} from "@/models/core/formModels";
+import {...} from "@/models/core/authenticationModels";
+import {...} from "@/models/core/systemModels";
+import {...} from "@/models/core/dbModels";
+
+NEW:
+import {...} from "@nextjs-shared/shared";
+
+--------------------------------------------------------------------
+3) Important note about Prisma JsonValue helpers
+
+The old project file had:
+parseToMultiLangValue(value: Prisma.JsonValue | null | undefined): MultiLangValue
+
+This helper was NOT moved to shared (because shared must not import Prisma).
+If a project still needs this helper, keep it project-side or implement it locally using `unknown` and a cast.
+
+====================================================================
+
+--------------------------------------------------------------------
+C) Final checks
+====================================================================
+
+- No "@/..." imports inside shared new files
+- No Prisma imports in shared
+- package.json version is 0.2.15
+- versions/0_2_15.txt exists and is committed
