@@ -1,8 +1,10 @@
 {
   "compilerOptions": {
-    "target": "ES2023",
+    "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "lib": ["DOM", "ES2023"],
+    "jsx": "react-jsx",
     "declaration": true,
     "emitDeclarationOnly": false,
     "outDir": "dist",

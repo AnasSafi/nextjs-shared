@@ -22,7 +22,8 @@
   },
   "peerDependencies": {
     "react": ">=18",
-    "react-dom": ">=18"
+    "react-dom": ">=18",
+    "@heroicons/react": ">=2"
   },
   "devDependencies": {
     "typescript": "^5.9.3",
