@@ -1,0 +1,60 @@
+﻿UPGRADE GUIDE — Shared Package v0.2.13
+
+Goal:
+Introduce the shared Error401 component and remove project-specific implementations.
+
+--------------------------------------------------------------------
+1) Update dependency
+
+Consumer project package.json
+
+OLD:
+"@nextjs-shared/shared": "^0.2.12"
+
+NEW:
+"@nextjs-shared/shared": "^0.2.13"
+
+Run:
+npm install
+
+--------------------------------------------------------------------
+2) Delete local files (if they exist)
+
+Delete from consumer projects:
+src/components/Auth/Error401.tsx
+
+Delete old project icon if it was only used for Error401:
+src/components/Icons/LockIcon.tsx
+
+--------------------------------------------------------------------
+3) Update imports
+
+OLD:
+import Error401 from "@/components/Auth/Error401";
+
+NEW:
+import {Error401} from "@nextjs-shared/shared";
+
+--------------------------------------------------------------------
+4) Usage example (t must be passed)
+
+import {Error401} from "@nextjs-shared/shared";
+import {useTranslation} from "@/app/i18n/client_translation";
+
+export default function Page() {
+    const {t} = useTranslation();
+    return <Error401 t={t} />;
+}
+
+Notes:
+- Default translation keys are "401Unauthorized" and "youAreNotAuthorized"
+- Keys can be overridden via props if needed
+
+====================================================================
+C) Final checks
+====================================================================
+
+- No "@/..." imports inside shared code
+- Error401 and ShieldErrorIcon are exported from index.ts
+- package.json version is 0.2.13
+- versions/0_2_13.txt exists and is committed
