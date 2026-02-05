@@ -3,6 +3,7 @@ export * from "./utils/phoneUtils";
 export * from "./models/core/localeModels";
 
 export * from "./components/Alert/ErrorAlert";
+export * from "./components/Alert/InfoAlert";
 
 export * from "./i18n/localeSingleton";
 export * from "./i18n/localeMaps";

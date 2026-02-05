@@ -1,0 +1,51 @@
+1) Update dependency version
+
+MODIFY FILE:
+package.json
+
+OLD:
+"@nextjs-shared/shared": "^0.2.10"
+
+NEW:
+"@nextjs-shared/shared": "^0.2.11"
+
+Run:
+npm install
+
+--------------------------------------------------------------------
+2) Delete local InfoAlert file (mandatory)
+
+DELETE FILE FROM CONSUMER PROJECT:
+src/components/Alert/InfoAlert.tsx
+
+--------------------------------------------------------------------
+3) Update imports across the project
+
+REPLACE ALL IMPORTS:
+
+OLD:
+import InfoAlert from "@/components/Alert/InfoAlert";
+
+NEW:
+import {InfoAlert} from "@nextjs-shared/shared";
+
+--------------------------------------------------------------------
+4) Always pass `t` when using InfoAlert
+
+REQUIRED USAGE PATTERN:
+
+import {InfoAlert} from "@nextjs-shared/shared";
+import {useTranslation} from "@/app/i18n/client_translation";
+
+const {t} = useTranslation();
+
+<InfoAlert
+    t={t}
+    titleKey="info.title"
+    messageKey="info.message"
+/>
+
+RULES:
+- No local InfoAlert wrapper is allowed
+- `t` must always be passed explicitly
+- After migration, there must be NO references to "@/components/Alert/InfoAlert"
