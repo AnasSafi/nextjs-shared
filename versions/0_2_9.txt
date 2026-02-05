@@ -1,47 +1,13 @@
 UPGRADE GUIDE — Shared Package v0.2.9
 
 Goal:
-Move ErrorAlert into "@nextjs-shared/shared" as a generic component that receives the translation function `t` via props (no project-specific i18n imports inside shared).
+Remove the local ErrorAlert component from consumer projects and use the shared ErrorAlert component directly.
+The shared ErrorAlert requires passing the translation function `t` from the project.
 
 --------------------------------------------------------------------
-A) Shared package changes (@nextjs-shared/shared)
+A) Update dependency
 
-1) Add the new shared component:
-File: src/components/Alert/ErrorAlert.tsx
-(use the exact code from the shared repo commit)
-
-2) Export it from the public entry:
-File: src/index.ts
-
-Add:
-export {default as ErrorAlert} from "./components/Alert/ErrorAlert";
-export type {ErrorAlertProps} from "./components/Alert/ErrorAlert";
-
-3) Enable JSX in the shared tsconfig:
-File: tsconfig.json
-
-Add these compilerOptions:
-- "jsx": "react-jsx"
-- "lib": ["DOM", "ES2023"]
-
-4) Add heroicons as a peer dependency (and dev dependency for local build):
-File: package.json
-
-In peerDependencies add:
-"@heroicons/react": ">=2"
-
-In devDependencies add:
-"@heroicons/react": "^2.2.0"
-
-Then:
-- bump version to 0.2.9
-- build and publish
-
---------------------------------------------------------------------
-B) Consumer projects changes
-
-1) Update dependency:
-File: package.json
+Consumer project: package.json
 
 OLD (delete):
 "@nextjs-shared/shared": "^0.2.8"
@@ -53,69 +19,50 @@ Run:
 npm install
 
 --------------------------------------------------------------------
-C) Migrate ErrorAlert usage in consumer projects
+B) Delete the local component file (must be removed)
 
-You have two options:
-
-Option 1 (recommended): Replace the local component implementation with a wrapper that injects `t`
-
-File to modify:
+Delete this file from the consumer project:
 src/components/Alert/ErrorAlert.tsx
 
-OLD CODE TO DELETE (delete the entire file content):
-"use client";
-import React from "react";
-import {useTranslation} from "@/app/i18n/client_translation";
-import {ExclamationCircleIcon} from "@heroicons/react/24/outline";
+--------------------------------------------------------------------
+C) Replace all imports and usages across the project
 
-export default function ErrorAlert ({titleKey, messageKey}: {titleKey?: string, messageKey?: string}): React.ReactElement {
+1) Replace imports
 
-    const {t} = useTranslation();
-
-    return (
-        <div className="min-h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900 rounded-lg">
-            <div className="p-8 m-4 rounded-sm shadow-lg max-w-md bg-gray-100 dark:bg-gray-800">
-                <div className="flex justify-center items-center">
-                    <ExclamationCircleIcon className="h-10 w-10 text-red-500" aria-hidden="true" />
-                </div>
-                {titleKey && (
-                    <h1 className="text-2xl font-bold text-red-500 mb-4">{t(titleKey)}</h1>
-                )}
-                {messageKey && (
-                    <p className="text-gray-700 dark:text-gray-100">{t(messageKey)}</p>
-                )}
-            </div>
-        </div>
-    );
-}
-
-NEW CODE TO ADD (paste the entire content):
-"use client";
-
-import React from "react";
-import {ErrorAlert as SharedErrorAlert, ErrorAlertProps} from "@nextjs-shared/shared";
-import {useTranslation} from "@/app/i18n/client_translation";
-
-type Props = Omit<ErrorAlertProps, "t">;
-
-export default function ErrorAlert(props: Props): React.ReactElement {
-    const {t} = useTranslation();
-    return <SharedErrorAlert {...props} t={t} />;
-}
-
-This keeps all existing imports unchanged across the project:
+OLD CODE TO DELETE:
 import ErrorAlert from "@/components/Alert/ErrorAlert";
 
-Option 2: Import directly from shared in all call sites (more refactor)
-Replace:
-import ErrorAlert from "@/components/Alert/ErrorAlert";
-with:
+NEW CODE TO ADD:
 import {ErrorAlert} from "@nextjs-shared/shared";
-Then pass `t`:
+
+2) Ensure `t` is always passed
+
+Example replacement pattern:
+
+OLD CODE TO DELETE:
+<ErrorAlert titleKey="SOME_KEY" messageKey="SOME_KEY" />
+
+NEW CODE TO ADD:
 const {t} = useTranslation();
-<ErrorAlert t={t} titleKey="..." messageKey="..." />
+<ErrorAlert t={t} titleKey="SOME_KEY" messageKey="SOME_KEY" />
+
+If the file does not already have the translation hook, add it:
+
+OLD CODE TO DELETE (if missing):
+// no useTranslation import
+
+NEW CODE TO ADD:
+import {useTranslation} from "@/app/i18n/client_translation";
+
+Then inside the component:
+const {t} = useTranslation();
+
+Finally pass t:
+<ErrorAlert t={t} ... />
 
 --------------------------------------------------------------------
-Notes:
-- The shared ErrorAlert must not import from any project path (no "@/..." usage).
-- Consumers must already have "@heroicons/react" installed (or install it). The shared package declares it as a peer dependency.
+D) Notes / Rules
+
+- The shared ErrorAlert must remain generic and must NOT import from any project path (no "@/..." imports).
+- Consumers are responsible for providing `t` (translation function) from their own i18n setup.
+- After migration, there must be no remaining references to "@/components/Alert/ErrorAlert".
