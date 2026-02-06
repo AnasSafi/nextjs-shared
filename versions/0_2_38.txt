@@ -1,26 +1,144 @@
-UPGRADE GUIDE - Shared Package v0.2.38
+REFACTOR TASK - Consumer Projects (v0.2.38) - Remove local sanitizerUtils and update ALL imports
+
+Audience:
+This task is for the AI working on CONSUMER projects (e.g. club_next_js, zeedatscapital-nextjs, etc.).
+Goal is to fully switch to shared sanitizer utils and DELETE the local file:
+src/utils/sanitizerUtils.ts
 
 Goal:
-Move sanitizer core into @nextjs-shared/shared with dependency injection.
+- Update ALL project files that import sanitize/Filters from "@/utils/sanitizerUtils"
+  to import them from "@nextjs-shared/shared"
+- Then delete src/utils/sanitizerUtils.ts completely
+- No “easy wrapper” solution is allowed (no keeping local file, no re-export file).
+- Keep usage syntax clean and consistent across the whole codebase.
 
-1) Update dependency
-OLD: "@nextjs-shared/shared": "^0.2.37"
-NEW: "@nextjs-shared/shared": "^0.2.38"
+Important:
+- Do NOT inject uuidValidator in every call.
+- Do NOT import isValidUUID in route handlers just for sanitize.
+- Do NOT try to "default export sanitize" from the package root.
+  (In ESM, `export *` does NOT re-export default. Always import sanitize as named.)
 
-2) New shared API
+====================================================================
+A) Upgrade dependency
+====================================================================
 
-import { sanitize } from "@nextjs-shared/shared";
+MODIFY FILE:
+package.json
 
-UUID validation must be injected:
+OLD:
+"@nextjs-shared/shared": "^0.2.37"
 
-sanitize(data, filters, {
-  uuidValidator: isValidUUID
-});
+NEW:
+"@nextjs-shared/shared": "^0.2.38"
 
-3) Consumer responsibility
-- Provide uuidValidator from project utils
-- No project paths are used inside shared
+Run:
+npm install
 
-Final checks:
-- Shared build passes
-- No "@/..." imports inside sanitizerUtils
+====================================================================
+B) Update ALL imports across the consumer project
+====================================================================
+
+1) Global search & replace for sanitizer imports
+
+FIND (old code to delete / replace):
+import sanitize, {Filters} from "@/utils/sanitizerUtils";
+
+REPLACE WITH (new code to add):
+import {sanitize, type Filters} from "@nextjs-shared/shared";
+
+------------------------------------------------------------
+
+FIND (old code to delete / replace):
+import sanitize, { type Filters } from "@/utils/sanitizerUtils";
+
+REPLACE WITH:
+import {sanitize, type Filters} from "@nextjs-shared/shared";
+
+------------------------------------------------------------
+
+FIND (old code to delete / replace):
+import {Filters} from "@/utils/sanitizerUtils";
+
+REPLACE WITH:
+import {type Filters} from "@nextjs-shared/shared";
+
+------------------------------------------------------------
+
+FIND (old code to delete / replace):
+import sanitize from "@/utils/sanitizerUtils";
+
+REPLACE WITH:
+import {sanitize} from "@nextjs-shared/shared";
+
+------------------------------------------------------------
+
+If any file imports Filter too:
+
+FIND:
+import sanitize, {Filters, Filter} from "@/utils/sanitizerUtils";
+
+REPLACE WITH:
+import {sanitize, type Filters, type Filter} from "@nextjs-shared/shared";
+
+Notes:
+- sanitize must always be imported as a named export.
+- Types must be imported with `type`.
+- Keep the sanitize() call exactly the same:
+  sanitize(body, filters)
+  (NO third argument, NO uuidValidator)
+
+====================================================================
+C) Ensure the route code stays clean (example)
+====================================================================
+
+Your old correct style:
+
+import sanitize, {Filters} from "@/utils/sanitizerUtils";
+
+Becomes:
+
+import {sanitize, type Filters} from "@nextjs-shared/shared";
+
+And this line stays exactly the same:
+
+const sanitizedData = sanitize<Partial<OpenMarkdownImageModel>>(body, filters);
+
+Do NOT do this:
+sanitize(body, filters, {uuidValidator: isValidUUID});
+
+Do NOT add this:
+import {isValidUUID} from "@/utils/uuidUtils";
+
+====================================================================
+D) Delete the local file (mandatory)
+====================================================================
+
+DELETE FILE:
+src/utils/sanitizerUtils.ts
+
+OLD CODE TO DELETE:
+(delete the entire file content and remove the file from repo)
+
+====================================================================
+E) Verification checklist
+====================================================================
+
+1) Ensure there are ZERO references left to local sanitizer file:
+Search for:
+"@/utils/sanitizerUtils"
+Result must be: 0
+
+2) Ensure sanitize is never imported as default from shared root:
+Search for:
+'import sanitize'
+from "@nextjs-shared/shared"
+Result must be: 0
+(should always be: import {sanitize ...} from "@nextjs-shared/shared")
+
+3) Build:
+npm run build
+
+Expected outcome:
+- All sanitize/Filters imports come from "@nextjs-shared/shared"
+- src/utils/sanitizerUtils.ts is deleted
+- No route handlers were polluted with uuidValidator injections
