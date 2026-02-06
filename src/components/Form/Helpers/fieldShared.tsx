@@ -1,5 +1,5 @@
 import React from "react";
-import TooltipIcon from "../TooltipIcon";
+import { TooltipIcon } from "../TooltipIcon";
 import {RequiredAsterisk} from "../RequiredAsterisk";
 
 export const baseInputClasses = (extra?: string) =>

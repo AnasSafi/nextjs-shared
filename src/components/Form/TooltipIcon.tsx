@@ -8,7 +8,8 @@ interface TooltipIconProps {
     icon?: string;
 }
 
-export default function TooltipIcon({tipText, icon}: TooltipIconProps): JSX.Element {
+export function TooltipIcon({tipText, icon}: TooltipIconProps): JSX.Element {
+
     const [isVisible, setIsVisible] = useState(false);
     const [tooltipX, setTooltipX] = useState(0);
     const [tooltipY, setTooltipY] = useState(0);

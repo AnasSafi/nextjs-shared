@@ -12,6 +12,11 @@ export * from "./components/Icons/ShieldErrorIcon";
 export * from "./components/Auth/Error401";
 export * from "./components/Auth/Error403";
 export * from "./components/Form/CButton";
+export * from "./components/Form/CDateInput";
+export * from "./components/Form/TooltipIcon";
+export * from "./components/Form/RequiredAsterisk";
+export * from "./components/Form/Helpers/FormError";
+export * from "./components/Form/Helpers/fieldShared";
 
 export * from "./i18n/localeSingleton";
 export * from "./i18n/localeMaps";
