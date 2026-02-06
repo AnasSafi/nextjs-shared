@@ -1,0 +1,35 @@
+UPGRADE GUIDE - Shared Package v0.2.21
+
+Goal:
+Move CDateTimeInput into @nextjs-shared/shared.
+
+1) Update dependency
+OLD: "@nextjs-shared/shared": "^0.2.20"
+NEW: "@nextjs-shared/shared": "^0.2.21"
+Run: npm install
+
+2) Replace imports
+OLD:
+import CDateTimeInput from "@/components/Form/CDateTimeInput";
+
+NEW:
+import {CDateTimeInput} from "@nextjs-shared/shared";
+
+3) Pass t when you need the required tooltip
+Example:
+import {CDateTimeInput} from "@nextjs-shared/shared";
+import {useTranslation} from "@/app/i18n/client_translation";
+
+const {t} = useTranslation();
+
+<CDateTimeInput
+  t={t}
+  name="..."
+  initValue={...}
+  label="..."
+  onChange={...}
+/>
+
+4) Optional cleanup
+Delete local file if unused:
+src/components/Form/CDateTimeInput.tsx

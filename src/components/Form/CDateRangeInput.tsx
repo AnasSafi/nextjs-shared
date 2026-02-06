@@ -2,13 +2,9 @@
 
 import React, {useEffect, useState, JSX} from "react";
 import type {FieldError, DeepMap} from "react-hook-form";
-import {
-    FieldHeader,
-    baseInputClasses,
-    FormError,
-    formatISO,
-    RequiredAsterisk,
-} from "@nextjs-shared/shared";
+import {FormError} from "./Helpers/FormError";
+import {FieldHeader, baseInputClasses, formatISO} from "./Helpers/fieldShared";
+import {RequiredAsterisk} from "./RequiredAsterisk";
 
 export interface DateRangeInputProps {
     nameStart: string;
