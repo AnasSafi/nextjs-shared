@@ -1,0 +1,39 @@
+UPGRADE GUIDE - Shared Package v0.2.31
+
+Goal:
+Move reusable URL utilities into @nextjs-shared/shared.
+Consumer projects keep a small wrapper to inject:
+- interfaceLanguages derived from localizationConfig.languages
+- BASE_URL for getBaseUrl/makeAbsolute
+
+1) Update dependency
+OLD: "@nextjs-shared/shared": "^0.2.30"
+NEW: "@nextjs-shared/shared": "^0.2.31"
+Run: npm install
+
+2) Shared exports
+You can import from shared:
+- buildUrl
+- resolveAbsoluteOrigin
+- buildAbsoluteUrl (generic)
+- pathBaseWithInterfaceLanguages
+- pathBaseWithoutQueryParametersWithInterfaceLanguages
+- isUrlStartWith (generic)
+- HeaderLike
+
+3) Consumer wrapper (NEW FILE, do NOT modify existing utils)
+Create a new wrapper file under:
+src/custom_utils/urlUtils.ts
+
+This wrapper should:
+- compute interfaceLanguages using getInterfaceLanguages(languages)
+- call the shared URL helper functions
+- keep BASE_URL logic locally
+
+Existing src/utils/urlUtils.ts must remain unchanged.
+New code should import from src/custom_utils/urlUtils.ts instead.
+
+Final checks:
+- Shared build passes
+- Consumer build passes
+- No "@/..." imports inside shared urlUtils
