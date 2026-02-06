@@ -20,6 +20,7 @@ export * from "./components/Form/CDateRangeInput";
 export * from "./components/Form/CDateTimeInput";
 export * from "./components/Form/CDateTimeRangeInput";
 export * from "./components/Form/Checkbox";
+export * from "./components/Form/XCheckbox";
 export * from "./components/Form/CNumberInput";
 export * from "./components/Form/CNumberRangeInput";
 export * from "./components/Form/CTextArea";
