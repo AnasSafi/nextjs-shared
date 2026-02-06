@@ -9,16 +9,16 @@ import React, {
     useState,
 } from "react";
 import {EyeIcon, EyeSlashIcon} from "@heroicons/react/20/solid";
-import type {LanguageConfig} from "@/i18n/languageConfigUtils";
-import {getInputLanguages, getRequiredInputLanguages, isLanguageRTL} from "@/i18n/languageConfigUtils";
-import {convertToThreeCharLocale, convertToTwoCharLocale} from "@/i18n/localeMaps";
-import type {RHFFieldError} from "@/models/core/formModels";
+import type {LanguageConfig} from "../../i18n/languageConfigUtils";
+import {getInputLanguages, getRequiredInputLanguages, isLanguageRTL} from "../../i18n/languageConfigUtils";
+import {convertToThreeCharLocale, convertToTwoCharLocale} from "../../i18n/localeMaps";
+import type {RHFFieldError} from "../../models/core/formModels";
 import {FormError} from "./Helpers/FormError";
 import {RequiredAsterisk} from "./RequiredAsterisk";
 import {TooltipIcon} from "./TooltipIcon";
-import {isLocaleObject} from "@/utils/clientSideUtils";
-import {toGoodPhone} from "@/utils/phoneUtils";
-import type {SanitizePhoneOptions} from "@/utils/phoneUtils";
+import {isLocaleObject} from "../../utils/clientSideUtils";
+import {toGoodPhone} from "../../utils/phoneUtils";
+import type {SanitizePhoneOptions} from "../../utils/phoneUtils";
 
 /* ---------------- helpers: normalize codes & read values ---------------- */
 

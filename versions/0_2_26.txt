@@ -1,0 +1,83 @@
+UPGRADE GUIDE - Shared Package v0.2.26
+
+Goal:
+- isLocaleObject moved to shared.
+- CInput moved to shared.
+- Multi-language usage is now handled via a dedicated project wrapper (recommended), while normal inputs use CInput directly.
+
+How to decide: normal vs multi-language
+Use CInput directly (normal input) when ALL of these are true:
+- You do NOT pass formLocale
+- You do NOT pass toggleLocale
+- initValue is a plain string/number (NOT a locale object like { ara: "...", eng: "..." })
+- You are NOT using stackedLocaleView
+
+Use the multi-language wrapper when ANY of these is true:
+- You pass formLocale or toggleLocale (you previously used these to switch language)
+- initValue is a locale object (per-language values)
+- You use stackedLocaleView / stackedLocales / localeFieldLabels / placeholdersByLocale
+- You need RTL detection per locale and required tooltip per locale
+
+1) Update dependency
+OLD: "@nextjs-shared/shared": "^0.2.24"
+NEW: "@nextjs-shared/shared": "^0.2.26"
+Run: npm install
+
+2) Normal input (recommended)
+import {CInput} from "@nextjs-shared/shared";
+
+<CInput
+  name="..."
+  label="..."
+  placeholder="..."
+/>
+
+No t or languages are required for normal usage.
+
+3) Multi-language input (recommended wrapper)
+For multi-language fields, create a local wrapper that injects t and languages.
+
+CREATE NEW FILE (consumer project):
+src/custom_components/Form/CMultiLangInput.tsx
+
+CONTENT:
+
+"use client";
+
+import React from "react";
+import {CInput} from "@nextjs-shared/shared";
+import {useTranslation} from "@/app/i18n/client_translation";
+import {languages} from "@/config/localizationConfig";
+
+type Props = Omit<React.ComponentProps<typeof CInput>, "t" | "languages">;
+
+export default function CMultiLangInput(props: Props) {
+  const {t} = useTranslation();
+  return <CInput {...props} t={t} languages={languages} />;
+}
+
+Multi-language usage example:
+import CMultiLangInput from "@/custom_components/Form/CMultiLangInput";
+
+<CMultiLangInput
+  name="..."
+  label="..."
+  formLocale={formLocale}
+  toggleLocale={toggle}
+  initValue={...}
+/>
+
+Notes:
+- The wrapper exists only to provide t + languages for multi-language behavior (RTL + required tooltip + locale switching/stacked view).
+- Keep old call sites that used formLocale/toggleLocale by switching them from CInput -> CMultiLangInput.
+
+4) isLocaleObject usage
+If any project imports:
+import {isLocaleObject} from "@/utils/clientSideUtils";
+Replace with:
+import {isLocaleObject} from "@nextjs-shared/shared";
+
+Final checks:
+- Shared build passes
+- Consumer build passes
+- Shared CInput contains no "@/..." imports
