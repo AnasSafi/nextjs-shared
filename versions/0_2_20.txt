@@ -1,11 +1,11 @@
-UPGRADE GUIDE - Shared Package v0.2.19
+UPGRADE GUIDE - Shared Package v0.2.20
 
 Goal:
 Move CDateRangeInput into @nextjs-shared/shared.
 
 1) Update dependency
 OLD: "@nextjs-shared/shared": "^0.2.18"
-NEW: "@nextjs-shared/shared": "^0.2.19"
+NEW: "@nextjs-shared/shared": "^0.2.20"
 Run: npm install
 
 2) Replace imports
