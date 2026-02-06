@@ -1,0 +1,38 @@
+UPGRADE GUIDE - Shared Package v0.2.41
+
+Goal:
+Move time utilities into @nextjs-shared/shared.
+
+1) Update dependency
+OLD: "@nextjs-shared/shared": "^0.2.40"
+NEW: "@nextjs-shared/shared": "^0.2.41"
+Run: npm install
+
+2) New shared exports
+
+Import from shared:
+- delay(ms): Promise<void>
+- calculateTimeUntil(targetDate): TimeDiff
+- TimeDiff (type)
+
+Example:
+import {
+  delay,
+  calculateTimeUntil,
+  type TimeDiff
+} from "@nextjs-shared/shared";
+
+3) Consumer cleanup
+Delete local file (if exists):
+- src/utils/timeUtils.ts
+
+Replace imports:
+OLD:
+import { delay, calculateTimeUntil } from "@/utils/timeUtils";
+NEW:
+import { delay, calculateTimeUntil } from "@nextjs-shared/shared";
+
+4) Final checks
+- Shared build passes
+- Consumer build passes
+- No "@/utils/timeUtils" imports remain
