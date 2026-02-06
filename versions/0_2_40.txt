@@ -1,0 +1,72 @@
+Goal:
+- Replace ALL imports of isValidUUID from "@/utils/uuidUtils"
+  with imports from "@nextjs-shared/shared"
+- Delete the local file src/utils/uuidUtils.ts at the end
+- Do NOT change any logic or function behavior
+
+Important rules:
+- Do NOT modify shared package
+- Do NOT re-export uuid utils locally
+- Do NOT introduce wrappers
+- Keep imports clean and consistent
+- After this task, "@/utils/uuidUtils" must not exist
+
+====================================================================
+A) Update imports across the consumer project
+====================================================================
+
+1) Global search & replace
+
+FIND:
+import { isValidUUID } from "@/utils/uuidUtils";
+
+REPLACE WITH:
+import { isValidUUID } from "@nextjs-shared/shared";
+
+------------------------------------------------------------
+
+If there are type-only imports (rare but possible):
+
+FIND:
+import type { isValidUUID } from "@/utils/uuidUtils";
+
+REPLACE WITH:
+(import should be value import, not type)
+import { isValidUUID } from "@nextjs-shared/shared";
+
+--------------------------------------------------------------------
+2) Ensure no mixed imports remain
+--------------------------------------------------------------------
+
+After replacement:
+- There must be ZERO references to "@/utils/uuidUtils" anywhere
+- No file should import uuid utils from a local path
+
+====================================================================
+B) Delete local file
+====================================================================
+
+DELETE FILE:
+src/utils/uuidUtils.ts
+
+OLD CODE TO DELETE:
+(delete the entire file and remove it from the repository)
+
+====================================================================
+C) Verification checklist
+====================================================================
+
+1) Search the codebase for:
+"@/utils/uuidUtils"
+Result must be: 0
+
+2) Ensure isValidUUID is always imported from shared:
+"@nextjs-shared/shared"
+
+3) Build the project:
+npm run build
+
+Expected outcome:
+- All UUID validation uses shared implementation
+- Local uuidUtils file is removed
+- No runtime or type errors introduced
