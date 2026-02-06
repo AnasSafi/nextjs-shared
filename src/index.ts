@@ -8,6 +8,7 @@ export { default } from "./utils/consoleUtils";
 export * from "./utils/dateUtils";
 export * from "./utils/numberUtils";
 export * from "./utils/paramsUtils";
+export * from "./utils/sanitizerUtils";
 
 export * from "./models/core/localeModels";
 export * from "./models/core/dbModels";

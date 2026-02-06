@@ -1,0 +1,26 @@
+UPGRADE GUIDE - Shared Package v0.2.38
+
+Goal:
+Move sanitizer core into @nextjs-shared/shared with dependency injection.
+
+1) Update dependency
+OLD: "@nextjs-shared/shared": "^0.2.37"
+NEW: "@nextjs-shared/shared": "^0.2.38"
+
+2) New shared API
+
+import { sanitize } from "@nextjs-shared/shared";
+
+UUID validation must be injected:
+
+sanitize(data, filters, {
+  uuidValidator: isValidUUID
+});
+
+3) Consumer responsibility
+- Provide uuidValidator from project utils
+- No project paths are used inside shared
+
+Final checks:
+- Shared build passes
+- No "@/..." imports inside sanitizerUtils
