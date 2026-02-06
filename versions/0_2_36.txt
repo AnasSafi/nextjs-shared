@@ -1,0 +1,59 @@
+UPGRADE GUIDE - Shared Package v0.2.36
+
+Goal:
+Move console + date utilities into @nextjs-shared/shared.
+
+1) Update dependency
+OLD: "@nextjs-shared/shared": "^0.2.35"
+NEW: "@nextjs-shared/shared": "^0.2.36"
+Run: npm install
+
+2) New shared exports
+
+Console:
+- Default export: ConsoleUtils
+- Named export: ConsoleUtils
+
+Examples:
+import ConsoleUtils from "@nextjs-shared/shared";
+OR
+import { ConsoleUtils } from "@nextjs-shared/shared";
+
+Date:
+import {
+  formatDate,
+  formatDateTime,
+  formatNamedMonth,
+  formatNamedDateTime,
+  formatAsDBDate,
+  convertGMTDateToInputFormat,
+  toISO8601Format,
+  sameUpToMinute,
+  type FmtOpts
+} from "@nextjs-shared/shared";
+
+3) Consumer cleanup
+
+Delete local files (if exist):
+- src/utils/consoleUtils.ts
+- src/utils/dateUtils.ts
+
+Replace imports:
+
+Console:
+OLD:
+import ConsoleUtils from "@/utils/consoleUtils";
+NEW:
+import ConsoleUtils from "@nextjs-shared/shared";
+
+Date:
+OLD:
+import { formatDate, formatDateTime, ... } from "@/utils/dateUtils";
+NEW:
+import { formatDate, formatDateTime, ... } from "@nextjs-shared/shared";
+
+4) Final checks
+- Shared build passes
+- Consumer build passes
+- No "@/..." imports inside shared utils
+- No self-import from "@nextjs-shared/shared" inside shared source files

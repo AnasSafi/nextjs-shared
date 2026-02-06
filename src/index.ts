@@ -3,6 +3,9 @@ export * from "./utils/urlUtils";
 export * from "./utils/localeUtils";
 export * from "./utils/localizationUtils";
 export * from "./utils/bcrypt";
+export * from "./utils/consoleUtils";
+export { default } from "./utils/consoleUtils";
+export * from "./utils/dateUtils";
 
 export * from "./models/core/localeModels";
 export * from "./models/core/dbModels";
