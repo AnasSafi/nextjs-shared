@@ -130,7 +130,7 @@ const CInputInner = forwardRef<HTMLInputElement, TextInputProps>(
         const [dir, setDir] = useState<"ltr" | "rtl">(() => {
             if (!languages || !formLocale) return "ltr";
             const three = toThree(formLocale);
-            return three ? (isLanguageRTL(languages, three) ? "rtl" : "ltr") : "ltr";
+            return three ? (isLanguageRTL(three) ? "rtl" : "ltr") : "ltr";
         });
 
         const handleKeyUp = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -187,7 +187,7 @@ const CInputInner = forwardRef<HTMLInputElement, TextInputProps>(
             if (!stackedLocaleView && formLocale) {
                 if (languages) {
                     const three = toThree(formLocale);
-                    setDir(isLanguageRTL(languages, three) ? "rtl" : "ltr");
+                    setDir(isLanguageRTL(three) ? "rtl" : "ltr");
                 } else {
                     setDir("ltr");
                 }
@@ -260,7 +260,7 @@ const CInputInner = forwardRef<HTMLInputElement, TextInputProps>(
                         {locales.map((locRaw) => {
                             const cfgCode = toThree(locRaw); // "ara" / "eng" (3-char)
                             const valKey2 = toTwo(locRaw);   // "ar" / "en" (2-char for local state/labels)
-                            const isRtl = languages ? isLanguageRTL(languages, cfgCode) : false;
+                            const isRtl = languages ? isLanguageRTL(cfgCode) : false;
                             const small =
                                 (localeFieldLabels && (localeFieldLabels[locRaw] ?? localeFieldLabels[valKey2])) ||
                                 (label ? `${label} (${(valKey2 || cfgCode).toUpperCase()})` : (valKey2 || cfgCode).toUpperCase());

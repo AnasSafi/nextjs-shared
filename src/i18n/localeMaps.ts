@@ -189,6 +189,33 @@ export const acceptedLocales = [
     "zul"
 ];
 
+export const rtlLocalesThreeChar = [
+    "ara", // Arabic
+    "heb", // Hebrew
+    "fas", // Persian
+    "urd", // Urdu
+    "pus", // Pashto
+    "uig", // Uyghur
+    "div", // Dhivehi
+    "yid"  // Yiddish
+] as const;
+
+export function isLocaleRTL(localeCode: string): boolean {
+    const code = (localeCode || "").trim().toLowerCase();
+    if (!code) return false;
+
+    const threeChar =
+        code.length === 3
+            ? code
+            : code.length === 2
+                ? convertToThreeCharLocale(code)
+                : null;
+
+    if (!threeChar) return false;
+
+    return (rtlLocalesThreeChar as readonly string[]).includes(threeChar);
+}
+
 // Mapping of 2-char locales to 3-char ISO locales
 export const localeMap: { [key: string]: string } = {
     "ab": "abk", "aa": "aar", "af": "afr", "ak": "aka", "sq": "sqi", "am": "amh", "ar": "ara", "an": "arg", "hy": "hye",
@@ -236,7 +263,7 @@ const threeToTwoCharLocaleMap: { [key: string]: string } = {
     "lub": "lu", "ltz": "lb", "mkd": "mk", "mlg": "mg", "msa": "ms", "mal": "ml", "mlt": "mt", "glv": "gv",
     "mri": "mi", "mar": "mr", "mah": "mh", "mon": "mn", "nau": "na", "nav": "nv", "nde": "nd", "nbl": "nr",
     "ndo": "ng", "nep": "ne", "nor": "no", "nob": "nb", "nno": "nn", "iii": "ii", "oci": "oc", "oji": "oj",
-    "ori": "or", "orm": "om", "oss": "os", "pli": "pi", "pus": "ps", "fas": "fa", "pol": "pl", "por": "pt",
+    "ori": "or", "orm": "om", "oss": "os", "pli": "pi", "pus": "ps",  "fas": "fa", "pol": "pl", "por": "pt",
     "pan": "pa", "que": "qu", "ron": "ro", "roh": "rm", "run": "rn", "rus": "ru", "sme": "se", "smo": "sm",
     "sag": "sg", "san": "sa", "srd": "sc", "srp": "sr", "sna": "sn", "snd": "sd", "sin": "si", "slk": "sk",
     "slv": "sl", "som": "so", "sot": "st", "spa": "es", "sun": "su", "swa": "sw", "ssw": "ss", "swe": "sv",

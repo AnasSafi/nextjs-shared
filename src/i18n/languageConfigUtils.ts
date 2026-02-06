@@ -1,3 +1,5 @@
+import {isLocaleRTL} from "../i18n/localeMaps";
+
 export type LanguageConfig = {
     code: string;
     displayName: string;
@@ -16,8 +18,7 @@ export const getRequiredInputLanguages = (languages: LanguageConfig[]): string[]
 export const getInterfaceLanguages = (languages: LanguageConfig[]): string[] =>
     languages.filter((l) => l.isInterfaceLanguage).map((l) => l.code);
 
-export const isLanguageRTL = (languages: LanguageConfig[], localeCode: string): boolean =>
-    languages.some((l) => l.code === localeCode && l.isRTL);
+export const isLanguageRTL = (localeCode: string): boolean => isLocaleRTL(localeCode);
 
 export const getLanguagesArray = (params: {
     languages: LanguageConfig[];

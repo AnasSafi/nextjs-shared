@@ -1,0 +1,63 @@
+Consumer task: Update isLanguageRTL usage (shared v0.2.42)
+
+Goal:
+Stop passing `languages` into isLanguageRTL. The function now accepts only `localeCode`
+(2-char or 3-char) and returns boolean.
+
+---
+
+1) Bump shared package version
+
+Old:
+"@nextjs-shared/shared": "0.2.41"
+
+New:
+"@nextjs-shared/shared": "0.2.42"
+
+Then run:
+npm i
+
+---
+
+2) Replace all old calls
+
+OLD CODE (to delete):
+isLanguageRTL(languages, localeCode)
+
+NEW CODE:
+isLanguageRTL(localeCode)
+
+---
+
+3) Update imports (if needed)
+
+Remove any imports that existed only to provide `languages` for RTL checks.
+
+Keep or add:
+import {isLanguageRTL} from "@nextjs-shared/shared";
+
+---
+
+4) Common refactor example
+
+OLD CODE (to delete):
+const languages = getLanguagesConfig();
+const rtl = isLanguageRTL(languages, locale);
+
+NEW CODE:
+const rtl = isLanguageRTL(locale);
+
+---
+
+5) Sanity checks
+
+isLanguageRTL("ar")  => true
+isLanguageRTL("ara") => true
+isLanguageRTL("en")  => false
+
+---
+
+Notes:
+- No dependency on LanguageConfig[] anymore.
+- localeCode can be 2-char or 3-char.
+- Logic is fully centralized in shared (rtl locale map).

@@ -80,7 +80,7 @@ const computeDir = (
         if (/[\u0590-\u05FF\u0600-\u06FF]/.test(ch)) return "rtl";
     }
 
-    if (languages && formLocale && isLanguageRTL(languages, formLocale)) return "rtl";
+    if (languages && formLocale && isLanguageRTL(formLocale)) return "rtl";
     return "ltr";
 };
 
