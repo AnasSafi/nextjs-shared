@@ -1,0 +1,35 @@
+UPGRADE GUIDE - Shared Package v0.2.30
+
+Goal:
+Move DisplayMultiLang into @nextjs-shared/shared.
+DisplayMultiLang no longer imports useTranslation. Translation is optional via props.
+
+1) Update dependency
+OLD: "@nextjs-shared/shared": "^0.2.29"
+NEW: "@nextjs-shared/shared": "^0.2.30"
+Run: npm install
+
+2) Replace imports
+OLD:
+import DisplayMultiLang from "@/components/Form/DisplayMultiLang";
+
+NEW:
+import {DisplayMultiLang} from "@nextjs-shared/shared";
+
+3) Optional translation injection
+Example with t:
+import {DisplayMultiLang} from "@nextjs-shared/shared";
+import {useTranslation} from "@/app/i18n/client_translation";
+
+const {t} = useTranslation();
+
+<DisplayMultiLang multiLangValue={value} t={t} />
+
+Example with custom labels:
+<DisplayMultiLang
+  multiLangValue={value}
+  getLangLabel={(lang) => lang.toUpperCase()}
+/>
+
+4) Optional empty text
+<DisplayMultiLang multiLangValue={value} emptyText="-" />
