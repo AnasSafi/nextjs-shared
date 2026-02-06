@@ -11,7 +11,7 @@ import type {RHFErrorInput} from "../../models/core/formModels";
 import {FormError} from "./Helpers/FormError";
 import {RequiredAsterisk} from "./RequiredAsterisk";
 import {TooltipIcon} from "./TooltipIcon";
-import {isLocaleObject} from "../../utils/clientSideUtils";
+import {isLocaleObject} from "../../utils/localizationUtils";
 
 interface TextAreaProps extends InputHTMLAttributes<HTMLTextAreaElement> {
     isRequired?: boolean;

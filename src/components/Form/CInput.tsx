@@ -16,7 +16,7 @@ import type {RHFFieldError} from "../../models/core/formModels";
 import {FormError} from "./Helpers/FormError";
 import {RequiredAsterisk} from "./RequiredAsterisk";
 import {TooltipIcon} from "./TooltipIcon";
-import {isLocaleObject} from "../../utils/clientSideUtils";
+import {isLocaleObject} from "../../utils/localizationUtils";
 import {toGoodPhone} from "../../utils/phoneUtils";
 import type {SanitizePhoneOptions} from "../../utils/phoneUtils";
 

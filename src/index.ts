@@ -1,7 +1,7 @@
 export * from "./utils/phoneUtils";
-export * from "./utils/clientSideUtils";
 export * from "./utils/urlUtils";
 export * from "./utils/localeUtils";
+export * from "./utils/localizationUtils";
 export * from "./utils/bcrypt";
 
 export * from "./models/core/localeModels";
