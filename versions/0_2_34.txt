@@ -1,0 +1,39 @@
+UPGRADE GUIDE - Shared Package v0.2.34
+
+Goal:
+Move bcrypt password utilities into @nextjs-shared/shared.
+
+Context:
+Consumer projects (example: club_next_js) already have bcryptjs installed in dependencies:
+"bcryptjs": "^3.0.3"
+
+1) Update dependency
+OLD: "@nextjs-shared/shared": "^0.2.33"
+NEW: "@nextjs-shared/shared": "^0.2.34"
+Run: npm install
+
+2) New shared exports
+Import from shared:
+- hashPassword(password): Promise<string>
+- comparePasswords(password, hashedPassword): Promise<boolean>
+
+Example:
+
+import { hashPassword, comparePasswords } from "@nextjs-shared/shared";
+
+3) Consumer cleanup
+Delete local file (if exists):
+- src/utils/bcrypt.ts
+
+Replace imports in consumer code:
+OLD:
+import { hashPassword, comparePasswords } from "@/utils/bcrypt";
+
+NEW:
+import { hashPassword, comparePasswords } from "@nextjs-shared/shared";
+
+4) Final checks
+- Shared build passes
+- Consumer build passes
+- No "@/..." imports inside shared bcrypt utils
+- No self-import from "@nextjs-shared/shared" inside shared source files

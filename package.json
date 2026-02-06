@@ -1,6 +1,6 @@
 {
   "name": "@nextjs-shared/shared",
-  "version": "0.2.33",
+  "version": "0.2.34",
   "private": false,
   "type": "module",
   "files": ["dist"],
@@ -16,6 +16,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "i18next": "^23.0.0",
     "react-i18next": "^15.0.0",
     "i18next-resources-to-backend": "^1.2.0"
