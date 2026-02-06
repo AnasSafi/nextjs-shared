@@ -1,18 +1,20 @@
-Upgrade notes for 0.2.32:
+A) Update dependency:
+OLD: "@nextjs-shared/shared": "^0.2.31"
+NEW: "@nextjs-shared/shared": "^0.2.32"
+Run: npm install
 
-- New reusable component: XCheckbox.
+B) Replace imports:
 
-Consumer changes:
+BEFORE:
+import XCheckbox from "@/components/Form/XCheckbox";
 
-1) Replace imports of the local XCheckbox implementation in consuming apps:
+AFTER:
+import {XCheckbox} from "@nextjs-shared/shared";
 
-   Before:
-     import XCheckbox from "@/components/Form/XCheckbox";
+C) Delete local file (optional):
+Delete:
+src/components/Form/XCheckbox.tsx
+Only if it is no longer used after import replacement.
 
-   After:
-     import { XCheckbox } from "@nextjs-shared/shared";
-
-2) After updating all imports, remove the local src/components/Form/XCheckbox.tsx file
-   in the consuming project if it is no longer used.
-
-3) Run the TypeScript type check in the consuming project to verify there are no issues.
+D) Verify:
+Run TypeScript check / Next build to confirm no errors.

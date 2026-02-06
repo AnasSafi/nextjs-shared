@@ -1,0 +1,28 @@
+UPGRADE GUIDE - Shared Package v0.2.33
+
+Goal:
+Move locale utilities from consumer projects into @nextjs-shared/shared.
+
+1) Update dependency
+OLD: "@nextjs-shared/shared": "^0.2.32"
+NEW: "@nextjs-shared/shared": "^0.2.33"
+Run: npm install
+
+2) Shared exports
+You can import from shared:
+- changeLocaleInPath(path, locale)
+- dirIso639v3(localeIso639v3) -> "rtl" | "ltr"
+- normalizeMultiLangValue(value, target) -> MultiLangValue
+- MultiLangValue (type)
+
+3) Consumer cleanup
+- Delete: src/utils/localeUtils.ts
+- Replace imports:
+  - from "@/utils/localeUtils"
+  - to   "@nextjs-shared/shared"
+
+Final checks:
+- Shared build passes
+- Consumer build passes
+- No "@/..." imports inside shared localeUtils
+- No self-import from "@nextjs-shared/shared" inside shared source files
