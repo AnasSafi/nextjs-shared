@@ -1,0 +1,34 @@
+UPGRADE GUIDE - Shared Package v0.2.27
+
+Goal:
+Move CNumberInput into @nextjs-shared/shared.
+
+1) Update dependency
+OLD: "@nextjs-shared/shared": "^0.2.26"
+NEW: "@nextjs-shared/shared": "^0.2.27"
+Run: npm install
+
+2) Replace imports
+OLD:
+import CNumberInput from "@/components/Form/CNumberInput";
+
+NEW:
+import {CNumberInput} from "@nextjs-shared/shared";
+
+3) Pass t only if you need required tooltip
+Example:
+import {CNumberInput} from "@nextjs-shared/shared";
+import {useTranslation} from "@/app/i18n/client_translation";
+
+const {t} = useTranslation();
+
+<CNumberInput
+  t={t}
+  name="..."
+  label="..."
+  isRequired
+/>
+
+4) Optional cleanup
+Delete local file if unused:
+src/components/Form/CNumberInput.tsx
