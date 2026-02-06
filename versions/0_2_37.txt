@@ -1,0 +1,51 @@
+UPGRADE GUIDE - Shared Package v0.2.37
+
+Goal:
+Move number and URLSearchParams utilities into @nextjs-shared/shared.
+
+1) Update dependency
+OLD: "@nextjs-shared/shared": "^0.2.36"
+NEW: "@nextjs-shared/shared": "^0.2.37"
+Run: npm install
+
+2) New shared exports
+
+Numbers:
+import {
+  epsilon,
+  formatNumberWithCommas,
+  areNumbersApproximatelyEqual,
+  bytesToMB,
+  isValidInteger,
+  zeroIfNegative,
+  safeDivide
+} from "@nextjs-shared/shared";
+
+Params:
+import { cast, parseSearchParamsToObject } from "@nextjs-shared/shared";
+
+3) Consumer cleanup
+
+Delete local files (if exist):
+- src/utils/numberUtils.ts
+- src/utils/paramsUtils.ts
+
+Replace imports:
+
+Numbers:
+OLD:
+import { ... } from "@/utils/numberUtils";
+NEW:
+import { ... } from "@nextjs-shared/shared";
+
+Params:
+OLD:
+import { cast, parseSearchParamsToObject } from "@/utils/paramsUtils";
+NEW:
+import { cast, parseSearchParamsToObject } from "@nextjs-shared/shared";
+
+4) Final checks
+- Shared build passes
+- Consumer build passes
+- No "@/..." imports inside shared utils
+- No self-import from "@nextjs-shared/shared" inside shared source files
