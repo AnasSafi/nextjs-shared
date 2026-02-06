@@ -1,0 +1,36 @@
+UPGRADE GUIDE - Shared Package v0.2.23
+
+Goal:
+Move CDateTimeRangeInput into @nextjs-shared/shared.
+
+1) Update dependency
+OLD: "@nextjs-shared/shared": "^0.2.21"
+NEW: "@nextjs-shared/shared": "^0.2.23"
+Run: npm install
+
+2) Replace imports
+OLD:
+import CDateTimeRangeInput from "@/components/Form/CDateTimeRangeInput";
+
+NEW:
+import {CDateTimeRangeInput} from "@nextjs-shared/shared";
+
+3) Always pass t
+Example:
+import {CDateTimeRangeInput} from "@nextjs-shared/shared";
+import {useTranslation} from "@/app/i18n/client_translation";
+
+const {t} = useTranslation();
+
+<CDateTimeRangeInput
+  t={t}
+  nameStart="..."
+  nameEnd="..."
+  labelStart="..."
+  labelEnd="..."
+  onChange={...}
+/>
+
+4) Optional cleanup
+Delete local file if unused:
+src/components/Form/CDateTimeRangeInput.tsx
