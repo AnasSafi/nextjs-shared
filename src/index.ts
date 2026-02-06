@@ -13,6 +13,7 @@ export * from "./components/Auth/Error401";
 export * from "./components/Auth/Error403";
 export * from "./components/Form/CButton";
 export * from "./components/Form/CDateInput";
+export * from "./components/Form/CDateRangeInput";
 export * from "./components/Form/TooltipIcon";
 export * from "./components/Form/RequiredAsterisk";
 export * from "./components/Form/Helpers/FormError";
