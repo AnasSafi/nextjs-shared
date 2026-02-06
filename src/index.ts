@@ -1,4 +1,5 @@
 export * from "./utils/phoneUtils";
+export * from "./utils/clientSideUtils";
 
 export * from "./models/core/localeModels";
 export * from "./models/core/dbModels";
@@ -12,6 +13,7 @@ export * from "./components/Icons/ShieldErrorIcon";
 export * from "./components/Auth/Error401";
 export * from "./components/Auth/Error403";
 export * from "./components/Form/CButton";
+export * from "./components/Form/CInput";
 export * from "./components/Form/CDateInput";
 export * from "./components/Form/CDateRangeInput";
 export * from "./components/Form/CDateTimeInput";
