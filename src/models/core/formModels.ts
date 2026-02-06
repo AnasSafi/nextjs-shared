@@ -2,7 +2,7 @@
 import type {FieldError, FieldErrors, FieldErrorsImpl, FieldValues} from "react-hook-form";
 import type {ObjectSchema} from "yup";
 import type {MultiLangValue} from "./localeModels";
-import type {PaginationRequestModel} from "./dbModels";
+import type {MediaFileViewModel} from "./mediaModels";
 
 /* ----------------------------- RHF Error Types ---------------------------- */
 export type RHFArrayFieldError = Partial<FieldError> & {
@@ -119,41 +119,12 @@ export function errorResponse({
     return response;
 }
 
-/* --------------------------------- Select -------------------------------- */
-export interface SelectOptionModel {
-    id: string;
-    name: MultiLangValue;
-    image?: string;
-    searchTexts?: string[];
-}
-
 /* -------------------------- Filter Form Handler Props --------------------- */
 export interface UseFilterFormHandlerProps<TValues extends FieldValues = FieldValues> {
     validationSchema: ObjectSchema<TValues>;
     bodyData: TValues;
     parseToFilterModel: () => void;
     modalId?: string;
-}
-
-/* --------------------------------- Media --------------------------------- */
-export interface MediaCoverModel {
-    imageUrl?: string | null;
-    alt?: string;
-    width?: number;
-    height?: number;
-    mimeType?: string;
-}
-
-export interface MediaFileViewModel {
-    id: string;
-    url: string;
-    originalUrl?: string | null;
-    filename: string;
-    fileExtension: string;
-    mimeType: string;
-    size: bigint;
-    alt?: string;
-    coverImage?: MediaCoverModel;
 }
 
 /* ---------------------------------- Files -------------------------------- */
@@ -186,10 +157,4 @@ export interface RegularFormPropsModel<TData = unknown> {
 
 export interface FormRefModel {
     submitForm: () => void;
-}
-
-/* ------------------------------- Pagination ------------------------------- */
-export interface PaginationModel {
-    pagination: PaginationRequestModel;
-    data: SelectOptionModel[];
 }

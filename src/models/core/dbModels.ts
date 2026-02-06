@@ -1,4 +1,6 @@
-﻿export type FilterOperation = "=" | "!=" | ">" | "<" | ">=" | "<=";
+import type {MultiLangValue} from "./localeModels";
+
+export type FilterOperation = "=" | "!=" | ">" | "<" | ">=" | "<=";
 
 export interface FilterModel {
     field: string;
@@ -26,4 +28,16 @@ export interface PaginationRequestModel {
     sorts?: SortModel[];
     sortableFields?: SortableFieldModel[];
     filters?: FilterModel[];
+}
+
+export interface SelectOptionModel {
+    id: string;
+    name: MultiLangValue;
+    image?: string;
+    searchTexts?: string[];
+}
+
+export interface PaginationModel {
+    pagination: PaginationRequestModel;
+    data: SelectOptionModel[];
 }

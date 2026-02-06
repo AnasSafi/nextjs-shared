@@ -15,9 +15,11 @@ export * from "./utils/uuidUtils";
 
 export * from "./models/core/localeModels";
 export * from "./models/core/dbModels";
+export * from "./models/core/mediaModels";
 export * from "./models/core/systemModels";
 export * from "./models/core/authenticationModels";
 export * from "./models/core/formModels";
+export * from "./models/user/userModels";
 
 export * from "./components/Alert/ErrorAlert";
 export * from "./components/Alert/InfoAlert";

@@ -1,0 +1,135 @@
+CONSUMER TASK – Update app to use shared core/user models (after shared update)
+
+Project to give this task to:
+Consumer app (e.g. club_next_js)
+
+Goal:
+- Stop duplicating shared models locally.
+- Import dbModels/formModels/mediaModels/userModels directly from @nextjs-shared/shared.
+- Keep ONLY Prisma + react-hook-form dependent bridging types inside the consumer.
+
+------------------------------------------------------------
+1) Update dependency
+------------------------------------------------------------
+
+Update @nextjs-shared/shared to the new version that contains the updated files
+(dbModels, formModels, mediaModels, userModels, exports in index.ts).
+
+Then run:
+npm i
+
+------------------------------------------------------------
+2) Replace local userModels with a thin bridge
+------------------------------------------------------------
+
+File to update:
+src/models/user/userModels.ts
+
+OLD CODE TO DELETE:
+Delete the entire current content of src/models/user/userModels.ts
+(the file that contains all the interfaces/classes: UserModel, User, etc.)
+
+NEW CODE (FULL FILE – COPY/PASTE):
+
+import type {FieldValues} from "react-hook-form";
+import type {User as PrismaUser} from "@/generated/prisma/client";
+import type {
+    LoginResponseOptionsModelsBase,
+    ResetPasswordCodeRequestModelBase
+} from "@nextjs-shared/shared";
+
+export type LoginResponseOptionsModels = LoginResponseOptionsModelsBase<PrismaUser>;
+
+export type ResetPasswordCodeRequestModel = ResetPasswordCodeRequestModelBase & FieldValues;
+
+------------------------------------------------------------
+3) Update imports across the codebase
+------------------------------------------------------------
+
+Anywhere you previously imported any of the following from local paths:
+- PaginationModel, PaginationRequestModel, SelectOptionModel, FilterModel, SortModel, SortableFieldModel
+- ServerErrorModel, ServerSuccessModel, successResponse, errorResponse
+- RHF error types (RHFFieldError, RHFErrorCompat, etc.)
+- MediaFileViewModel, MediaCoverModel
+- UserModel, User, UserPreferencesType, profileResponseModels, etc.
+
+REPLACE with imports from shared:
+
+Example replacements:
+
+OLD:
+import {PaginationModel, SelectOptionModel} from "@/models/core/dbModels";
+
+NEW:
+import type {PaginationModel, SelectOptionModel} from "@nextjs-shared/shared";
+
+---
+
+OLD:
+import {successResponse} from "@/models/core/formModels";
+
+NEW:
+import {successResponse} from "@nextjs-shared/shared";
+
+---
+
+OLD:
+import type {MediaFileViewModel} from "@/models/core/mediaModels";
+
+NEW:
+import type {MediaFileViewModel} from "@nextjs-shared/shared";
+
+---
+
+OLD:
+import type {UserModel} from "@/models/user/userModels";
+
+NEW:
+import type {UserModel} from "@nextjs-shared/shared";
+
+IMPORTANT:
+- After step (2), src/models/user/userModels.ts only exports:
+  - LoginResponseOptionsModels
+  - ResetPasswordCodeRequestModel
+So do NOT import UserModel/User from the local file anymore.
+
+------------------------------------------------------------
+4) Fix any remaining references to the local userModels
+------------------------------------------------------------
+
+Search in the consumer project for:
+from "@/models/user/userModels"
+and replace usages:
+
+- If it imports UserModel/User/etc -> switch to "@nextjs-shared/shared"
+- If it imports LoginResponseOptionsModels or ResetPasswordCodeRequestModel -> keep it local
+
+Examples:
+
+OLD:
+import {UserModel, LoginResponseOptionsModels} from "@/models/user/userModels";
+
+NEW:
+import type {UserModel} from "@nextjs-shared/shared";
+import type {LoginResponseOptionsModels} from "@/models/user/userModels";
+
+------------------------------------------------------------
+5) Cleanup (optional but recommended)
+------------------------------------------------------------
+
+If you now fully rely on shared core models, you can delete local copies:
+
+- src/models/core/dbModels.ts
+- src/models/core/formModels.ts
+- src/models/core/mediaModels.ts
+
+ONLY delete them if no other local app-specific code depends on them.
+
+------------------------------------------------------------
+Done criteria
+------------------------------------------------------------
+
+- UserModel/User/etc are imported from @nextjs-shared/shared
+- core db/form/media models are imported from @nextjs-shared/shared
+- PrismaUser and FieldValues remain only in the consumer bridge file
+- TypeScript builds without circular or missing imports
