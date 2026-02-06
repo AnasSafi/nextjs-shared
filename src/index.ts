@@ -16,6 +16,7 @@ export * from "./components/Form/CDateInput";
 export * from "./components/Form/CDateRangeInput";
 export * from "./components/Form/CDateTimeInput";
 export * from "./components/Form/CDateTimeRangeInput";
+export * from "./components/Form/Checkbox";
 export * from "./components/Form/TooltipIcon";
 export * from "./components/Form/RequiredAsterisk";
 export * from "./components/Form/Helpers/FormError";
