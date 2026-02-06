@@ -22,6 +22,8 @@ export * from "./models/core/formModels";
 export * from "./components/Alert/ErrorAlert";
 export * from "./components/Alert/InfoAlert";
 export * from "./components/Icons/ShieldErrorIcon";
+export {default as FormattedDate} from "./components/Helper/FormattedDate";
+export type {SharedFormattedDateProps} from "./components/Helper/FormattedDate";
 export * from "./components/Auth/Error401";
 export * from "./components/Auth/Error403";
 export * from "./components/Form/CButton";

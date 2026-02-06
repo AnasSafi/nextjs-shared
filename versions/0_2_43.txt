@@ -1,0 +1,64 @@
+CONSUMER TASK – Update FormattedDate usage after shared v0.2.43
+
+Context:
+FormattedDate component has been moved to @nextjs-shared/shared.
+Shared version no longer uses useTranslation.
+Locale (currentLng) must be passed explicitly from the consumer.
+
+---
+
+1) Delete local component
+
+Delete the local file completely:
+src/components/Helper/FormattedDate.tsx
+
+(do NOT keep a local copy)
+
+---
+
+2) Update imports everywhere FormattedDate is used
+
+OLD IMPORT (to delete):
+import FormattedDate from "@/components/Helper/FormattedDate";
+
+NEW IMPORT:
+import {FormattedDate} from "@nextjs-shared/shared";
+
+---
+
+3) Pass currentLng explicitly
+
+Wherever FormattedDate is used, ensure you get currentLng from useTranslation:
+
+import {useTranslation} from "@/app/i18n/client_translation";
+
+const {currentLng} = useTranslation();
+
+---
+
+4) Update component usage
+
+OLD USAGE (to delete):
+<FormattedDate date={value} />
+
+NEW USAGE:
+<FormattedDate
+    date={value}
+    locale={currentLng}
+    format="date"        // optional
+    timeZone="UTC"       // optional
+/>
+
+---
+
+5) Important notes
+
+- Do NOT import useTranslation inside shared components.
+- Consumer is responsible for providing currentLng.
+- RTL handling is done internally in shared via isLanguageRTL(locale).
+- locale can be 2-char or 3-char.
+
+---
+
+Dependency requirement:
+@nextjs-shared/shared >= 0.2.43
