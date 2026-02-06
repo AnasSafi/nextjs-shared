@@ -1,0 +1,40 @@
+UPGRADE GUIDE — Shared Package v0.2.16
+
+Goal:
+CButton was moved into "@nextjs-shared/shared" to reduce UI duplication.
+
+--------------------------------------------------------------------
+1) Update dependency
+
+Consumer project package.json
+
+OLD:
+"@nextjs-shared/shared": "^0.2.15"
+
+NEW:
+"@nextjs-shared/shared": "^0.2.16"
+
+Run:
+npm install
+
+--------------------------------------------------------------------
+2) Replace imports
+
+OLD:
+import {CButton} from "@/components/Form/CButton";
+
+NEW:
+import {CButton} from "@nextjs-shared/shared";
+
+--------------------------------------------------------------------
+3) Optional cleanup
+
+If the local file is no longer used, delete:
+src/components/Form/CButton.tsx
+
+====================================================================
+
+Final checks:
+- Shared build passes
+- Consumer Next build passes
+- No "@/components/Form/CButton" imports remain
