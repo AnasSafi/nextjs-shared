@@ -1,0 +1,45 @@
+UPGRADE GUIDE - Shared Package v0.2.17
+
+Goal:
+Move common form UI helpers into @nextjs-shared/shared:
+- CDateInput
+- FieldHeader and formatting helpers
+- FormError
+- TooltipIcon
+- RequiredAsterisk (requires passing t)
+
+1) Update dependency
+OLD: "@nextjs-shared/shared": "^0.2.16"
+NEW: "@nextjs-shared/shared": "^0.2.17"
+Run: npm install
+
+2) Replace imports
+Replace project imports like:
+- "@/components/Form/CDateInput"
+- "@/components/Form/Helpers/FormError"
+- "@/components/Form/Helpers/fieldShared"
+- "@/components/Form/TooltipIcon"
+- "@/components/Form/requiredAsterisk"
+
+With:
+import {...} from "@nextjs-shared/shared";
+
+3) Required translation injection
+If you used RequiredAsterisk or FieldHeader required tooltip, pass t:
+const {t} = useTranslation();
+<FieldHeader ... isRequired t={t} />
+or use RequiredAsterisk directly:
+<RequiredAsterisk t={t} />
+
+4) Optional cleanup
+Delete local duplicated files if no longer used:
+- src/components/Form/CDateInput.tsx
+- src/components/Form/Helpers/FormError.tsx
+- src/components/Form/Helpers/fieldShared.tsx
+- src/components/Form/TooltipIcon.tsx
+- src/components/Form/requiredAsterisk.tsx
+
+Final checks:
+- Shared build passes
+- Consumer build passes
+- No "@/components/Form/..." imports remain for these moved files
