@@ -20,6 +20,7 @@ export * from "./models/core/systemModels";
 export * from "./models/core/authenticationModels";
 export * from "./models/core/formModels";
 export * from "./models/user/userModels";
+export * from "./store/userStore";
 
 export * from "./components/Alert/ErrorAlert";
 export * from "./components/Alert/InfoAlert";

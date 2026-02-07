@@ -1,0 +1,29 @@
+Actions:
+
+1) Delete local store file:
+src/store/userStore.ts
+
+2) Update imports everywhere:
+
+OLD:
+import {useUserStore} from "@/store/userStore";
+
+NEW:
+import {useUserStore} from "@nextjs-shared/shared";
+
+------------------------------------------------------------
+5) Rules (must follow)
+------------------------------------------------------------
+
+- Do NOT import Zustand store into non-React/server-only environments.
+- Store must stay UI/framework-neutral (no router, no cookies, no localStorage).
+- Store shape must remain based on UserStateModel from shared.
+
+------------------------------------------------------------
+Done criteria
+------------------------------------------------------------
+
+- Shared exports useUserStore
+- Consumer no longer has a local copy
+- No app-level imports exist inside shared store
+- Zustand version conflicts are avoided via peerDependency
