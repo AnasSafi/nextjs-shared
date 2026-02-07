@@ -25,6 +25,7 @@ export * from "./models/ui/tableModels";
 export * from "./store/userStore";
 export * from "./hooks/userHooks/usePermission";
 export * from "./extensions/FetchError";
+export * from "./services/auth/userTokenServices.client";
 
 export * from "./components/Alert/ErrorAlert";
 export * from "./components/Alert/InfoAlert";

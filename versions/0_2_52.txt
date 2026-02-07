@@ -1,0 +1,42 @@
+B1) Refactor local userTokenServices to use shared factory
+------------------------------------------------------------
+
+File to update:
+src/custom_services/auth/userTokenServices.client.ts
+
+OLD CODE TO DELETE:
+(Delete the entire current implementation in this file.)
+
+------------------------------------------------------------
+NEW CODE (FULL FILE – COPY/PASTE)
+------------------------------------------------------------
+
+"use client";
+
+import {createUserTokenServices} from "@nextjs-shared/shared";
+import {JWT_NAME, JWT_PASSWORD_NAME} from "@/constants";
+
+export const {
+    getUserToken,
+    getRefreshToken,
+    clearAuthTokens,
+} = createUserTokenServices({
+    accessTokenCookieName: JWT_NAME,
+    refreshTokenCookieName: JWT_PASSWORD_NAME,
+});
+
+------------------------------------------------------------
+B2) No other changes required
+------------------------------------------------------------
+
+- Keep JWT_NAME / JWT_PASSWORD_NAME in consumer.
+- All imports of getUserToken / clearAuthTokens remain unchanged.
+
+------------------------------------------------------------
+DONE CRITERIA
+------------------------------------------------------------
+
+- Shared contains a reusable, app-agnostic token service factory.
+- Consumer controls cookie names.
+- No shared code imports consumer constants.
+- No duplicated token logic across projects.
