@@ -19,10 +19,12 @@ export * from "./models/core/mediaModels";
 export * from "./models/core/systemModels";
 export * from "./models/core/authenticationModels";
 export * from "./models/core/formModels";
+export * from "./models/core/fetchModels";
 export * from "./models/user/userModels";
 export * from "./models/ui/tableModels";
 export * from "./store/userStore";
 export * from "./hooks/userHooks/usePermission";
+export * from "./extensions/FetchError";
 
 export * from "./components/Alert/ErrorAlert";
 export * from "./components/Alert/InfoAlert";
