@@ -12,6 +12,10 @@ export * from "./utils/sanitizerUtils";
 export * from "./utils/stringUtils";
 export * from "./utils/timeUtils";
 export * from "./utils/uuidUtils";
+export * from "./utils/fetch/types";
+export * from "./utils/fetch/createFetchUtilCore";
+export * from "./utils/fetch/createClientFetchUtil";
+export * from "./utils/fetch/createServerFetchUtil";
 
 export * from "./models/core/localeModels";
 export * from "./models/core/dbModels";
