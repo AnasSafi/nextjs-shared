@@ -1,0 +1,19 @@
+- Delete local file (if exists):
+  src/hooks/userHooks/usePermission.ts
+
+- Replace imports:
+
+  OLD:
+  import {usePermission} from "@/hooks/userHooks/usePermission";
+
+  NEW:
+  import {usePermission} from "@nextjs-shared/shared";
+
+------------------------------------------------------------
+Done criteria
+------------------------------------------------------------
+
+- Hook exists in shared and is exported
+- Hook uses shared store via "@/store/userStore"
+- No consumer/app-specific imports exist
+- TypeScript build passes in shared
