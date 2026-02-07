@@ -1,0 +1,67 @@
+Goal:
+Use Table models directly from @nextjs-shared/shared and remove any local duplicates.
+
+1) Replace imports everywhere
+------------------------------------------------------------
+
+Search in consumer project for any local table models import, for example:
+- "@/models/ui/tableModels"
+- "../models/ui/tableModels"
+- "src/models/ui/tableModels"
+
+Replace with:
+import type {TableProps, Column, RowMeta, RowAction, TableApiResponse, TableAction, ListPageProps, ListMeta, TableQuickFilterArgs, CellConfig, ButtonVariant, RowVariant, OpenFilterModalFn, TableData, TableDescriptionModel} from "@nextjs-shared/shared";
+
+Notes:
+- Use `import type` when you only need types.
+- Enums (ButtonVariant/RowVariant) are runtime values, so import them without `type` if you use them at runtime.
+
+Example:
+
+OLD:
+import type {TableProps, Column} from "@/models/ui/tableModels";
+
+NEW:
+import type {TableProps, Column} from "@nextjs-shared/shared";
+
+If you also use enums at runtime:
+
+NEW:
+import {ButtonVariant, RowVariant} from "@nextjs-shared/shared";
+import type {TableProps, Column} from "@nextjs-shared/shared";
+
+------------------------------------------------------------
+2) Delete local file (if it exists)
+------------------------------------------------------------
+
+If consumer has this file:
+src/models/ui/tableModels.ts
+
+Delete it.
+
+------------------------------------------------------------
+3) Fix any remaining imports from core models
+------------------------------------------------------------
+
+If consumer table-related code imports:
+- PaginationRequestModel
+- FilterModel
+
+Prefer importing from shared as well:
+
+OLD:
+import type {PaginationRequestModel} from "@/models/core/dbModels";
+
+NEW:
+import type {PaginationRequestModel} from "@nextjs-shared/shared";
+
+Same for FilterModel.
+
+------------------------------------------------------------
+Done criteria
+------------------------------------------------------------
+
+- No consumer code imports tableModels from local paths
+- tableModels is imported from @nextjs-shared/shared everywhere
+- If local file existed, it is removed
+- TypeScript build succeeds
