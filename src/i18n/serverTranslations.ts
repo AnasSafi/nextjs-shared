@@ -1,6 +1,6 @@
 import type {ResourceKey, ResourceLanguage} from "i18next";
 import {isAcceptedLocale} from "./localeMaps";
-import {MultiLangValue, TranslationNode, Translations} from "@/models/core/localeModels";
+import {MultiLangValue, TranslationNode, Translations} from "../models/core/localeModels";
 
 const ciFindKey = (obj: Record<string, unknown>, seg: string): string | undefined => {
     if (Object.prototype.hasOwnProperty.call(obj, seg)) return seg;

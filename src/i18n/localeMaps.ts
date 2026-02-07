@@ -1,4 +1,4 @@
-import {MultiLangValue} from "@/models/core/localeModels";
+import {MultiLangValue} from "../models/core/localeModels";
 
 export function isAcceptedLocale(localeCode: string): boolean {
     return acceptedLocales.includes(localeCode.toLowerCase());

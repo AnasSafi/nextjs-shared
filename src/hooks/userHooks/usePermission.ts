@@ -1,6 +1,6 @@
 "use client";
 
-import {useUserStore} from "@/store/userStore";
+import {useUserStore} from "../../store/userStore";
 
 export function usePermission(requiredPerms: string[] = []): { loading: boolean; allowed: boolean } {
     const {user, isInitialized} = useUserStore();
