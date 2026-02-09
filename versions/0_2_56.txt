@@ -1,0 +1,140 @@
+CONSUMER TASK – v0.2.55 (Replace local TableFilters + TableDataStatus with shared)
+
+Project to give this task to:
+ANY consumer project (club_next_js, zeecapital-front-end, etc.)
+
+Goal:
+- Stop using local TableFilters and local TableDataStatus/DataStatus components.
+- Use the shared implementations from @nextjs-shared/shared.
+- Keep consumer-specific translation + CMultiLangInput via a very small wrapper file only.
+
+STRICT RULES (must follow):
+1) Do NOT refactor or redesign table UI.
+2) Do NOT rename existing props (openFilterModalAction, submitFiltersAction, pagination, generalSearchEnabled).
+3) Do NOT change types to `Function`. Keep strong typing.
+4) Only apply the changes described below.
+
+============================================================
+A) TableFilters migration
+============================================================
+
+A1) Delete the old local TableFilters implementation
+
+Delete file (or replace its content if you cannot delete):
+src/components/Tables/TableFilters.tsx
+
+This is the file that currently imports:
+- useTranslation from "@/app/i18n/client_translation"
+- CMultiLangInput from "@/custom_components/Form/CMultiLangInput"
+- lodash.debounce
+and contains the full UI logic.
+
+A2) Create the new strict wrapper (THIS CODE MUST MATCH EXACTLY)
+
+Create file:
+src/custom_components/Tables/TableFilters.tsx
+
+NEW CODE (FULL FILE – COPY/PASTE EXACTLY):
+
+"use client";
+
+import React, {ReactElement} from "react";
+import {TableFilters} from "@nextjs-shared/shared";
+import type {PaginationRequestModel, FilterModel} from "@nextjs-shared/shared";
+import {useTranslation} from "@/app/i18n/client_translation";
+import CMultiLangInput from "@/custom_components/Form/CMultiLangInput";
+
+export type OpenFilterModalFn = (args: { filters: FilterModel[] }) =>
+    Promise<FilterModel[] | null | undefined>;
+
+export type SubmitFiltersFn = (filters: FilterModel[]) => void;
+
+export default function TableFiltersWrapper(
+    {
+        openFilterModalAction,
+        submitFiltersAction,
+        pagination,
+        generalSearchEnabled = true,
+    }: {
+        openFilterModalAction?: OpenFilterModalFn;
+        submitFiltersAction: SubmitFiltersFn;
+        pagination: PaginationRequestModel;
+        generalSearchEnabled?: boolean;
+    }
+): ReactElement {
+    const {t, currentLng} = useTranslation();
+
+    return (
+        <TableFilters
+            openFilterModalAction={openFilterModalAction}
+            submitFiltersAction={submitFiltersAction}
+            pagination={pagination}
+            generalSearchEnabled={generalSearchEnabled}
+            currentLng={currentLng}
+            translations={{
+                generalSearch: t("generalSearch"),
+                advancedFilter: t("advancedFilter"),
+                resetFilters: t("resetFilters"),
+            }}
+            SearchInput={CMultiLangInput}
+        />
+    );
+}
+
+A3) Update imports everywhere in the consumer codebase
+
+Search for any imports that pointed to the old TableFilters file, e.g.:
+- "@/components/Tables/TableFilters"
+- relative imports to the old file
+
+Keep the same import path (since we created the wrapper at the same location).
+No UI code changes needed elsewhere.
+
+A4) Ensure lodash.debounce is no longer used by this component
+- The wrapper must not import lodash.debounce.
+- Shared TableFilters handles debounce internally.
+
+============================================================
+B) TableDataStatus migration
+============================================================
+
+B1) Delete the old local data status component
+
+Delete file (or replace its content if you cannot delete):
+src/components/Tables/TableDataStatus.tsx
+(or any local DataStatus component file used by the table)
+
+B2) Replace usages with shared TableDataStatus
+
+Where you previously used:
+<DataStatus ... />
+or
+<TableDataStatus ... /> (local)
+
+Change to import from shared:
+import {TableDataStatus} from "@nextjs-shared/shared";
+
+Usage requirements:
+- Pass inProgress, hasMoreData
+- Pass dataLength as data.length
+- Pass noDataText as a translated string from consumer, e.g. t("noDataToShow")
+
+Example rule (no need to refactor):
+- Keep same conditions/behavior
+- Only change component import + props mapping to the shared API
+
+============================================================
+C) Final checks (must do)
+============================================================
+
+1) Build should succeed with no missing imports.
+2) The table search input behavior remains the same:
+   - typing triggers debounced filter submission
+   - reset clears filters
+3) Advanced filter modal button remains working (consumer still controls modal).
+4) No duplicate local implementations remain for TableFilters/TableDataStatus.
+
+DONE CRITERIA:
+- Local TableFilters logic removed and replaced by the wrapper above
+- Local TableDataStatus removed and imported from shared
+- No lodash.debounce usage remains in consumer TableFilters

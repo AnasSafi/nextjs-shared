@@ -58,6 +58,14 @@ export * from "./components/Form/TooltipIcon";
 export * from "./components/Form/RequiredAsterisk";
 export * from "./components/Form/Helpers/FormError";
 export * from "./components/Form/Helpers/fieldShared";
+export {default as TableFilters} from "./components/Tables/TableFilters";
+export type {
+    TableFiltersProps,
+    TableFiltersTranslations,
+    TableFiltersSearchInputProps,
+    OpenFilterModalFn,
+    SubmitFiltersFn
+} from "./components/Tables/TableFilters";
 
 export * from "./i18n/localeSingleton";
 export * from "./i18n/localeMaps";
@@ -65,4 +73,3 @@ export * from "./i18n/settings";
 export * from "./i18n/serverTranslations";
 export * from "./i18n/clientTranslation";
 export * from "./i18n/languageConfigUtils";
-export * from "./hooks/tableHooks/useTableFiltersLogic";
