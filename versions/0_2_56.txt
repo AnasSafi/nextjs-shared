@@ -1,8 +1,3 @@
-CONSUMER TASK – v0.2.55 (Replace local TableFilters + TableDataStatus with shared)
-
-Project to give this task to:
-ANY consumer project (club_next_js, zeecapital-front-end, etc.)
-
 Goal:
 - Stop using local TableFilters and local TableDataStatus/DataStatus components.
 - Use the shared implementations from @nextjs-shared/shared.
