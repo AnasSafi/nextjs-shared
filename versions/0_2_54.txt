@@ -1,0 +1,35 @@
+Goal:
+Move CircleLoader to shared and keep it reusable across consumers.
+
+------------------------------------------------------------
+Changes
+------------------------------------------------------------
+
+- Added CircleLoader component to shared at src/components/Loader/CircleLoader.tsx
+- Exported CircleLoader and CircleLoaderProps from src/index.ts
+
+------------------------------------------------------------
+Consumer migration
+------------------------------------------------------------
+
+1) Remove the local CircleLoader file (if any).
+
+2) Replace imports with:
+import {CircleLoader} from "@nextjs-shared/shared";
+
+3) If you used Tailwind dynamic classes like w-{size}/h-{size},
+   use the sizePx prop instead.
+
+------------------------------------------------------------
+Why the API changed
+------------------------------------------------------------
+
+Old API:
+CircleLoader({ size = 8 }) with w-${size} h-${size}
+
+New API:
+CircleLoader({ sizePx = 32 })
+
+Reason:
+Tailwind cannot reliably generate dynamic width/height classes from runtime
+strings, so sizePx ensures consistent output without safelist config.

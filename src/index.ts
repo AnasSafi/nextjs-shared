@@ -36,6 +36,8 @@ export * from "./components/Alert/InfoAlert";
 export * from "./components/Icons/ShieldErrorIcon";
 export {default as FormattedDate} from "./components/Helper/FormattedDate";
 export type {SharedFormattedDateProps} from "./components/Helper/FormattedDate";
+export {default as CircleLoader} from "./components/Loader/CircleLoader";
+export type {CircleLoaderProps} from "./components/Loader/CircleLoader";
 export * from "./components/Auth/Error401";
 export * from "./components/Auth/Error403";
 export * from "./components/Form/CButton";
