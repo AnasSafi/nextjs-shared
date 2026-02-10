@@ -1,0 +1,14 @@
+1) Delete local file:
+src/components/Tables/RowBackgroundClasses.ts
+
+2) Update imports everywhere:
+
+OLD:
+import {rowBackgroundClasses} from "@/components/Tables/RowBackgroundClasses";
+
+NEW:
+import {rowBackgroundClasses} from "@nextjs-shared/shared";
+
+DONE:
+- No local duplicate remains
+- All consumers use shared helper
