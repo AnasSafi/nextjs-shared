@@ -1,0 +1,50 @@
+TASK: Consumer migration — switch tableUtils imports to shared and delete local file
+
+GOAL
+- Consumer project must stop using "@/utils/tableUtils".
+- All table utils must be imported from "@nextjs-shared/shared".
+- Delete the local file src/utils/tableUtils.ts at the end.
+
+STEPS
+
+1) UPDATE IMPORTS (GLOBAL)
+Search the whole consumer repo for:
+from "@/utils/tableUtils"
+
+For every match, replace it with:
+from "@nextjs-shared/shared"
+
+This applies to these symbols:
+- ReplaceOptions
+- getStringFromAny
+- preparePagination
+- addRow
+- deleteRow
+- replaceRow
+
+Example replacement:
+
+OLD:
+import {preparePagination, getStringFromAny} from "@/utils/tableUtils";
+import type {ReplaceOptions} from "@/utils/tableUtils";
+
+NEW:
+import {preparePagination, getStringFromAny} from "@nextjs-shared/shared";
+import type {ReplaceOptions} from "@nextjs-shared/shared";
+
+2) VERIFY ZERO USAGES
+After replacements, confirm there are no remaining references:
+- "@/utils/tableUtils"
+- "src/utils/tableUtils"
+
+3) DELETE LOCAL FILE
+Delete:
+src/utils/tableUtils.ts
+
+4) BUILD CHECK
+Run TypeScript build/typecheck and ensure no errors.
+
+DONE CONDITIONS
+- No imports from "@/utils/tableUtils" remain.
+- src/utils/tableUtils.ts is deleted.
+- Project builds successfully.
