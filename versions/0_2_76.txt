@@ -1,14 +1,17 @@
-1) Update consumer imports everywhere
+1) in `src/app/[lng]/globals.css`, after `@import "tailwindcss";` add this line:
+@import "@nextjs-shared/shared/tailwind.css";
+
+2) Update consumer imports everywhere
 Replace:
 import {ZoomableImage} from "@/components/Tables/ZoomableImage";
 With:
 import {ZoomableImage} from "@nextjs-shared/shared";
 
-2) Delete local consumer file
+3) Delete local consumer file
 Delete:
 src/components/Tables/ZoomableImage.tsx
 
-3) Verify
+4) Verify
 - Search for "@/components/Tables/ZoomableImage" => 0 results
 - Build passes
 
