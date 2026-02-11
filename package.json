@@ -1,6 +1,6 @@
 {
   "name": "@nextjs-shared/shared",
-  "version": "0.2.74",
+  "version": "0.2.75",
   "private": false,
   "type": "module",
   "files": ["dist", "tailwind.css"],
