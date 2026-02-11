@@ -1,6 +1,6 @@
 {
   "name": "@nextjs-shared/shared",
-  "version": "0.2.66",
+  "version": "0.2.67",
   "private": false,
   "type": "module",
   "files": ["dist"],
@@ -9,7 +9,8 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    }
+    },
+    "./tailwind-preset": "./tailwind.preset.cjs"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
