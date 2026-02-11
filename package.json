@@ -1,6 +1,6 @@
 {
   "name": "@nextjs-shared/shared",
-  "version": "0.2.69",
+  "version": "0.2.70",
   "private": false,
   "type": "module",
   "files": ["dist"],
@@ -9,6 +9,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./shared.css": {
+      "style": "./dist/shared.css",
+      "default": "./dist/shared.css"
     }
   },
   "scripts": {
