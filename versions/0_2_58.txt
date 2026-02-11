@@ -1,14 +1,48 @@
-1) Delete local file:
+TASK: Remove local FilterFormMapper and use shared mapper everywhere
+
+GOAL
+- Delete the local mapper implementation file.
+- Replace all local imports to use the shared package mapper.
+- Ensure no duplicate mapper logic remains in the consumer project.
+
+1) DELETE LOCAL FILE
+Delete:
 src/utils/FilterFormMapper.ts
 
-2) Update imports
+2) UPDATE IMPORTS (GLOBAL REPLACE)
+Find all imports like:
 
 OLD (example):
 import {FilterFormMapper} from "@/utils/FilterFormMapper";
 
+Replace with:
+
 NEW:
 import {FilterFormMapper} from "@nextjs-shared/shared";
 
-DONE:
-- No duplicate mapper logic remains in consumer
-- All consumers use shared mapper
+Also handle these possible variants and replace them the same way:
+- import FilterFormMapper from "@/utils/FilterFormMapper";
+- import { FilterFormMapper } from "@/utils/FilterFormMapper";
+- import {FilterFormMapper} from "@/utils/filterFormMapper";
+- Any relative path that points to src/utils/FilterFormMapper
+
+3) FIX TYPE ERRORS CAUSED BY THE SHARED GENERIC CONSTRAINT (IF THEY APPEAR)
+If TypeScript shows:
+TS2344: Type X does not satisfy the constraint Record<string, unknown>
+
+Fix by updating the affected model type definition to satisfy the constraint, using:
+
+export type X = Record<string, unknown> & {
+  // existing fields stay here
+};
+
+Do NOT use any.
+
+4) VERIFICATION
+- Search repo for "FilterFormMapper.ts" and "@/utils/FilterFormMapper" and ensure both are gone.
+- Ensure all mapper usage imports are from "@nextjs-shared/shared".
+- TypeScript build passes.
+
+DONE CONDITIONS
+- No duplicate mapper implementation exists in the consumer project.
+- All consumers use FilterFormMapper from "@nextjs-shared/shared".
