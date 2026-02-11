@@ -1,18 +1,18 @@
 {
   "name": "@nextjs-shared/shared",
-  "version": "0.2.73",
+  "version": "0.2.74",
   "private": false,
   "type": "module",
-  "files": ["dist"],
+  "files": ["dist", "tailwind.css"],
   "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./shared.css": {
-      "style": "./dist/shared.css",
-      "default": "./dist/shared.css"
+    "./tailwind.css": {
+      "style": "./tailwind.css",
+      "default": "./tailwind.css"
     }
   },
   "scripts": {
