@@ -1,0 +1,14 @@
+1) Delete local file:
+src/utils/FilterFormMapper.ts
+
+2) Update imports
+
+OLD (example):
+import {FilterFormMapper} from "@/utils/FilterFormMapper";
+
+NEW:
+import {FilterFormMapper} from "@nextjs-shared/shared";
+
+DONE:
+- No duplicate mapper logic remains in consumer
+- All consumers use shared mapper

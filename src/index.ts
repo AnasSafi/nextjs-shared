@@ -16,6 +16,7 @@ export * from "./utils/fetch/types";
 export * from "./utils/fetch/createFetchUtilCore";
 export * from "./utils/fetch/createClientFetchUtil";
 export * from "./utils/fetch/createServerFetchUtil";
+export * from "./utils/FilterFormMapper";
 
 export * from "./models/core/localeModels";
 export * from "./models/core/dbModels";
