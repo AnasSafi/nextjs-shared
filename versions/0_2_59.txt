@@ -1,0 +1,62 @@
+PART 2) CONSUMER PROJECT: Remove local file and switch imports to shared
+
+1) Delete local file:
+src/models/core/formModelsLocal.ts
+
+2) Update imports globally
+Replace:
+import type {UseFormHandlerProps} from "@/models/core/formModelsLocal";
+With:
+import type {UseFormHandlerProps} from "@nextjs-shared/shared";
+
+Replace:
+import {parseToMultiLangValue} from "@/models/core/formModelsLocal";
+import {parseToTwoCharMultiLangValue} from "@/models/core/formModelsLocal";
+With:
+import {parseToMultiLangValue, parseToTwoCharMultiLangValue} from "@nextjs-shared/shared";
+
+3) Consumer legacy interface cleanup
+File: src/models/core/formModels.ts
+
+If it contains a local UseFormHandlerProps with any, delete it OR replace it with a re-export:
+
+Option A (preferred): delete the local interface and update all imports to shared.
+Option B: re-export only:
+export type {UseFormHandlerProps} from "@nextjs-shared/shared";
+
+-------------------------------------------------------------------------------
+
+PART 3) Fix consumers to use strict generics (remove any from form handler usage)
+
+RULE
+- Replace UseFormHandlerProps<any> with UseFormHandlerProps<TRequest, TSuccess>
+- Replace bodyData:any with a real request type
+- Replace ServerSuccessModel<any> with ServerSuccessModel<unknown> (or real type)
+- Replace onError(error:any) with onError(error: unknown)
+- Call useFormHandler<TRequest, TSuccess>(formProps) with explicit generics
+
+MANDATORY EXAMPLE FIX
+File: src/services/user/completeProfile/useSaveLegalDocsDataServices.ts
+- Define a request type for bodyData (based on the real structure of legal docs request)
+- Update:
+  bodyData param type
+  formProps type
+  onSuccess/onError types
+  useFormHandler generic call
+
+Use the working pattern from:
+src/custom_hooks/common/useSaveCreateOptionService.ts
+
+DONE CONDITIONS FOR PART 3
+- No UseFormHandlerProps<any> remains
+- No bodyData:any remains for useFormHandler flows
+- TypeScript build passes
+
+-------------------------------------------------------------------------------
+
+FINAL ACCEPTANCE CRITERIA
+- Shared package now contains the moved utilities (created by copying the provided code exactly)
+- Consumer deleted formModelsLocal and uses shared imports only
+- All form handler flows are strictly typed (no any)
+- TypeScript build passes
+
