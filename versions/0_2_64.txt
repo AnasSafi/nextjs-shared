@@ -1,0 +1,18 @@
+1) Update consumer imports everywhere
+Replace:
+import {ZoomableImage} from "@/components/Tables/ZoomableImage";
+With:
+import {ZoomableImage} from "@nextjs-shared/shared";
+
+2) Delete local consumer file
+Delete:
+src/components/Tables/ZoomableImage.tsx
+
+3) Verify
+- Search for "@/components/Tables/ZoomableImage" => 0 results
+- Build passes
+
+DONE CONDITIONS (CONSUMER)
+- ZoomableImage is used from shared only
+- Local file removed
+- TypeScript build passes
