@@ -1,4 +1,4 @@
-PART 2) CONSUMER PROJECT: Remove local file and switch imports to shared
+PART 1) CONSUMER PROJECT: Remove local file and switch imports to shared
 
 1) Delete local file:
 src/models/core/formModelsLocal.ts
@@ -26,7 +26,7 @@ export type {UseFormHandlerProps} from "@nextjs-shared/shared";
 
 -------------------------------------------------------------------------------
 
-PART 3) Fix consumers to use strict generics (remove any from form handler usage)
+PART 2) Fix consumers to use strict generics (remove any from form handler usage)
 
 RULE
 - Replace UseFormHandlerProps<any> with UseFormHandlerProps<TRequest, TSuccess>
