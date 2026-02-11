@@ -1,0 +1,25 @@
+1) Update imports everywhere (consumer)
+Replace:
+import CImage from "@/components/Media/CImage";
+With:
+import {CImage} from "@nextjs-shared/shared";
+
+Replace:
+import ImageShimmerOverlay from "@/components/Media/ImageShimmerOverlay";
+With:
+import {ImageShimmerOverlay} from "@nextjs-shared/shared";
+
+2) Delete local consumer files after migration
+Delete:
+- src/components/Media/CImage.tsx
+- src/components/Media/ImageShimmerOverlay.tsx
+
+3) Verify
+- Search for "@/components/Media/CImage" => 0 results
+- Search for "@/components/Media/ImageShimmerOverlay" => 0 results
+- TypeScript build passes
+
+DONE CONDITIONS (CONSUMER)
+- No local copies remain
+- All imports come from "@nextjs-shared/shared"
+- Build passes

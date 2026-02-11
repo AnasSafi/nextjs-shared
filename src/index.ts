@@ -49,6 +49,8 @@ export {default as CircleLoader} from "./components/Loader/CircleLoader";
 export type {CircleLoaderProps} from "./components/Loader/CircleLoader";
 export {default as TableDataStatus} from "./components/Tables/TableDataStatus";
 export type {TableDataStatusProps} from "./components/Tables/TableDataStatus";
+export {default as CImage} from "./components/media/CImage";
+export {default as ImageShimmerOverlay} from "./components/media/ImageShimmerOverlay";
 export * from "./components/Tables/RowBackgroundClasses";
 export * from "./components/Auth/Error401";
 export * from "./components/Auth/Error403";
