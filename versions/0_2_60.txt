@@ -1,0 +1,46 @@
+A) Edit consumer file:
+src/utils/formUtils.ts
+
+1) KEEP ONLY these functions in this file:
+- generateEmptyMultiLangValue
+- isMultiLangValue
+- normalizeToMultiLangValue
+
+2) DELETE these code blocks from src/utils/formUtils.ts (remove entirely):
+- export function getStringFromMultiLangValueByLang(...)
+- export function getStringFromPrismaJson(...)
+- export function mediaFileViewModelToStringList(...)
+- export const idsFromSelectOptions = (...)
+
+3) Clean imports in src/utils/formUtils.ts:
+Remove imports that are only used by deleted functions:
+- MediaFileViewModel
+- SelectOptionModel
+- parseToMultiLangValue
+Keep MultiLangValue import only if still used by remaining functions.
+
+B) Update consumer imports everywhere
+Replace any imports from "@/utils/formUtils" for the moved functions:
+
+OLD examples:
+import {getStringFromMultiLangValueByLang} from "@/utils/formUtils";
+import {getStringFromPrismaJson} from "@/utils/formUtils";
+import {mediaFileViewModelToStringList} from "@/utils/formUtils";
+import {idsFromSelectOptions} from "@/utils/formUtils";
+
+NEW:
+import {getStringFromMultiLangValueByLang} from "@nextjs-shared/shared";
+import {getStringFromPrismaJson} from "@nextjs-shared/shared";
+import {mediaFileViewModelToStringList} from "@nextjs-shared/shared";
+import {idsFromSelectOptions} from "@nextjs-shared/shared";
+
+Functions that remain local (keep importing locally where needed):
+import {generateEmptyMultiLangValue, isMultiLangValue, normalizeToMultiLangValue} from "@/utils/formUtils";
+
+-------------------------------------------------------------------------------
+
+ACCEPTANCE CRITERIA
+- Shared contains the pasted implementations and exports them
+- Consumer no longer contains duplicate implementations
+- Only language-dependent functions remain in consumer src/utils/formUtils.ts
+- TypeScript build passes
