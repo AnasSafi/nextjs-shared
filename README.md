@@ -17,6 +17,11 @@ The goal is:
 
 ---
 
+## Installation 
+1. add `@nextjs-shared/shared` to your `package.json` dependencies
+2. run `npm install`
+3. in file `src\app\[lng]\globals.css` add line `@import "@nextjs-shared/shared/tailwind.css";`
+
 ## Project Structure (example)
 
 - `src/` – Source code
