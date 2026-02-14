@@ -1,0 +1,22 @@
+Goal:
+Remove local component and import it from shared.
+
+1) Delete local file:
+src/components/Media/VideoModalTrigger.tsx
+
+2) Replace imports across project:
+
+OLD:
+import {VideoModalTrigger} from "@/components/Media/VideoModalTrigger";
+
+NEW:
+import {VideoModalTrigger} from "@nextjs-shared/shared";
+
+3) Ensure dependencies:
+package.json
+- No change required (consumer already has "@nextjs-shared/shared" and "hls.js")
+
+DONE:
+- Local file is deleted
+- App builds
+- Video modal works for HLS and non-HLS URLs
