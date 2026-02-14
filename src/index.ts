@@ -80,6 +80,7 @@ export type {
     OpenFilterModalFn,
     SubmitFiltersFn
 } from "./components/Tables/TableFilters";
+export * from "./components/Tables/getTableCellContent";
 
 export * from "./i18n/localeSingleton";
 export * from "./i18n/localeMaps";
