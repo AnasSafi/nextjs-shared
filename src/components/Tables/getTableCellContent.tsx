@@ -1,3 +1,4 @@
+"use client";
 import React, {type JSX} from "react";
 import type {CellConfig, Column} from "../../models/ui/tableModels";
 import FormattedDate from "../Helper/FormattedDate";
@@ -5,6 +6,8 @@ import type {MediaFileViewModel} from "../../models/core/mediaModels";
 import {getStringFromAny} from "../../utils/tableFormatUtils";
 import {ZoomableImage} from "./ZoomableImage";
 import {VideoModalTrigger} from "../media/VideoModalTrigger";
+import CImage from "../media/CImage";
+import Link from "next/link";
 
 const isHeic = (mime: string, ext?: string) =>
     mime === "image/heic" ||
@@ -12,38 +15,15 @@ const isHeic = (mime: string, ext?: string) =>
     ext?.toLowerCase() === "heic" ||
     ext?.toLowerCase() === "heif";
 
-export type TableCellLinkRenderer = (props: {
-    href: string;
-    children: React.ReactNode;
-    className?: string;
-    target?: string;
-    download?: boolean;
-}) => JSX.Element;
-
-export type TableCellImageRenderer = (props: {
-    src: string;
-    alt: string;
-    className?: string;
-    width?: number;
-    height?: number;
-}) => JSX.Element;
-
-export type TableCellContentRenderers = {
-    Link: TableCellLinkRenderer;
-    Image: TableCellImageRenderer;
-};
-
-export function getTableCellContent<T>(
+export function TableCellContent<T>(
     {
         col,
         row,
         currentLng,
-        renderers,
     }: {
         col: Column<T>;
         row: T;
         currentLng: string;
-        renderers: TableCellContentRenderers;
     }): JSX.Element {
 
     const fieldValue: T[keyof T] = row[col.field];
@@ -95,19 +75,27 @@ export function getTableCellContent<T>(
                 if (coverUrl) {
                     return (
                         <div className="flex justify-center">
-                            <div className={`relative ${sizeClass} ${roundedClass} overflow-hidden group cursor-pointer`}>
+                            <div
+                                className={`relative ${sizeClass} ${roundedClass} overflow-hidden group cursor-pointer`}>
                                 {isImage && openInModal ? (
                                     <ZoomableImage
                                         mediaFile={media}
                                         isRounded={rounded}
                                     />
                                 ) : (
-                                    <renderers.Image
-                                        src={coverUrl}
-                                        alt={coverImage?.alt || alt || filename}
-                                        className="object-cover w-full h-full transition-transform group-hover:scale-105"
+                                    <CImage
+                                        media={{
+                                            ...media,
+                                            url: coverUrl,
+                                            alt: (coverImage?.alt || alt || filename) ?? "",
+                                        }}
                                         width={fixedSize?.width || 100}
                                         height={fixedSize?.height || 100}
+                                        isRounded={rounded}
+                                        allowModal={false}
+                                        fillContainer={true}
+                                        wrapperClassName="w-full h-full"
+                                        className="transition-transform group-hover:scale-105"
                                     />
                                 )}
 
@@ -118,13 +106,13 @@ export function getTableCellContent<T>(
                                             fill="currentColor"
                                             viewBox="0 0 24 24"
                                         >
-                                            <path d="M8 5v14l11-7z" />
+                                            <path d="M8 5v14l11-7z"/>
                                         </svg>
                                     </div>
                                 )}
 
                                 {isVideo && openInModal && (
-                                    <VideoModalTrigger videoUrl={url} mimeType={mimeType} />
+                                    <VideoModalTrigger videoUrl={url} mimeType={mimeType}/>
                                 )}
                             </div>
                         </div>
@@ -133,38 +121,38 @@ export function getTableCellContent<T>(
 
                 if (unsupportedHeic) {
                     return (
-                        <renderers.Link
+                        <Link
                             href={url}
                             target="_blank"
-                            download={true}
+                            download
                             className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[11px] font-medium text-blue-700 dark:bg-blue-700/30 dark:text-blue-200"
                         >
                             HEIC
-                        </renderers.Link>
+                        </Link>
                     );
                 }
 
                 if (isVideo) {
                     return (
-                        <renderers.Link
+                        <Link
                             href={url}
                             target="_blank"
                             className="text-blue-500 underline"
                         >
                             {filename}
-                        </renderers.Link>
+                        </Link>
                     );
                 }
 
                 return (
-                    <renderers.Link
+                    <Link
                         href={url}
                         target="_blank"
-                        download={true}
+                        download
                         className="bg-blue-200 dark:bg-blue-800 p-3 rounded-md"
                     >
                         {fileExtension?.toUpperCase() || "File"}
-                    </renderers.Link>
+                    </Link>
                 );
             }
 
@@ -173,13 +161,14 @@ export function getTableCellContent<T>(
 
             case "date":
                 if (typeof fieldValue === "string" || fieldValue instanceof Date) {
-                    return <FormattedDate date={fieldValue} locale={currentLng} format={"date"} />;
+                    return <FormattedDate date={fieldValue} locale={currentLng} format={"date"}/>;
                 }
                 break;
 
             case "dateTime":
                 if (typeof fieldValue === "string" || fieldValue instanceof Date) {
-                    return <FormattedDate date={fieldValue} locale={currentLng} className="text-sm" format={"datetime"} />;
+                    return <FormattedDate date={fieldValue} locale={currentLng} className="text-sm"
+                                          format={"datetime"}/>;
                 }
                 break;
 

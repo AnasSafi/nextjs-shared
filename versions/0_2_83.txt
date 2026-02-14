@@ -1,0 +1,18 @@
+Goal:
+Remove local duplicate and import TableCellContent from shared.
+
+1) Delete local file:
+src/components/Tables/TableCellContent.tsx
+
+2) Replace imports across project:
+
+OLD:
+import {TableCellContent} from "@/components/Tables/TableCellContent";
+
+NEW:
+import {TableCellContent} from "@nextjs-shared/shared";
+
+DONE:
+- No local duplicate remains
+- App builds
+- Table cell rendering behavior unchanged
