@@ -2,7 +2,6 @@
 
 import React, {JSX, useCallback, useEffect, useId, useMemo, useRef, useState} from "react";
 import {createPortal} from "react-dom";
-import Image from "next/image";
 import CImage from "../media/CImage";
 import type {MediaFileViewModel} from "../../models/core/mediaModels";
 
@@ -484,15 +483,12 @@ export function ZoomableImage(
                                                     transition: scale === 1 ? "transform 160ms ease" : undefined,
                                                 }}
                                             >
-                                                <Image
+                                                <img
                                                     alt={mediaFile.alt ?? ""}
                                                     src={src}
-                                                    fill
-                                                    sizes="95vw"
-                                                    unoptimized
                                                     draggable={false}
-                                                    className="pointer-events-none object-contain"
-                                                    priority
+                                                    className="pointer-events-none absolute inset-0 h-full w-full object-contain"
+                                                    loading="eager"
                                                 />
                                             </div>
                                         </div>

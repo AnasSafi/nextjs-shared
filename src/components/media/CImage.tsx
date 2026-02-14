@@ -1,6 +1,5 @@
 "use client";
 import React, {useMemo, useState, CSSProperties} from "react";
-import Image from "next/image";
 import type {MediaFileViewModel} from "../../models/core/mediaModels";
 import ImageShimmerOverlay from "./ImageShimmerOverlay";
 
@@ -106,6 +105,8 @@ export default function CImage(
         .filter(Boolean)
         .join(" ");
 
+    const fillImgClasses = `${imgClasses} absolute inset-0`;
+
     const onImgLoad = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
         const img = e.currentTarget;
         setNatural({w: img.naturalWidth || 0, h: img.naturalHeight || 0});
@@ -136,56 +137,50 @@ export default function CImage(
                 {loading && <ImageShimmerOverlay/>}
 
                 {fillContainer ? (
-                    <Image
+                    <img
                         key={currentSrc}
-                        priority={priority}
                         alt={media?.alt ?? ""}
                         src={currentSrc}
-                        fill
-                        sizes={sizes}
-                        unoptimized
                         onLoad={onImgLoad}
                         onError={onImgError}
-                        className={imgClasses}
+                        className={fillImgClasses}
+                        loading={priority ? "eager" : "lazy"}
+                        sizes={sizes}
                     />
                 ) : width && height ? (
-                    <Image
+                    <img
                         key={currentSrc}
-                        priority={priority}
                         alt={media?.alt ?? ""}
                         src={currentSrc}
                         width={width}
                         height={height}
-                        unoptimized
                         onLoad={onImgLoad}
                         onError={onImgError}
                         className={imgClasses}
+                        loading={priority ? "eager" : "lazy"}
                     />
                 ) : natural.w > 0 && natural.h > 0 ? (
-                    <Image
+                    <img
                         key={currentSrc}
-                        priority={priority}
                         alt={media?.alt ?? ""}
                         src={currentSrc}
                         width={natural.w}
                         height={natural.h}
-                        unoptimized
                         onLoad={onImgLoad}
                         onError={onImgError}
                         className={imgClasses}
+                        loading={priority ? "eager" : "lazy"}
                     />
                 ) : (
-                    <Image
+                    <img
                         key={currentSrc}
-                        priority={priority}
                         alt={media?.alt ?? ""}
                         src={currentSrc}
-                        fill
-                        sizes={sizes}
-                        unoptimized
                         onLoad={onImgLoad}
                         onError={onImgError}
-                        className={imgClasses}
+                        className={fillImgClasses}
+                        loading={priority ? "eager" : "lazy"}
+                        sizes={sizes}
                     />
                 )}
             </div>
@@ -218,14 +213,14 @@ export default function CImage(
                                 isRounded ? "rounded-2xl overflow-hidden" : "",
                             ].join(" ")}
                         >
-                            <Image
+                            <img
                                 alt={media?.alt ?? ""}
                                 src={currentSrc}
                                 width={natural.w || 1200}
                                 height={natural.h || 800}
-                                unoptimized
                                 onError={onImgError}
                                 className="w-auto h-auto max-w-[92vw] max-h-[92vh] object-contain"
+                                loading="eager"
                             />
                         </div>
                     </div>
