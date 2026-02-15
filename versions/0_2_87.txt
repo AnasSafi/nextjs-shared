@@ -1,0 +1,51 @@
+CONSUMER TASK – Replace local TableView + CardView with shared components
+
+Goal:
+Delete local TableView and CardView files and use shared versions, passing t + currentLng from consumer i18n hook.
+
+1) Delete local files:
+src/components/Tables/TableView.tsx
+src/components/Tables/CardView.tsx
+
+2) Replace imports where used:
+
+OLD:
+import {TableView} from "@/components/Tables/TableView";
+import {CardView} from "@/components/Tables/CardView";
+import {useTranslation} from "@/app/i18n/client_translation";
+
+NEW:
+import {TableView, CardView} from "@nextjs-shared/shared";
+import {useTranslation} from "@/app/i18n/client_translation";
+
+3) Always pass currentLng and t:
+
+Example:
+
+const {t, currentLng} = useTranslation();
+
+<TableView
+  ref={ref}
+  data={data}
+  columns={columns}
+  clientRowActions={clientRowActions}
+  showRowsActions={showRowsActions}
+  currentLng={currentLng}
+  t={t}
+/>
+
+<CardView
+  ref={ref}
+  data={data}
+  columns={columns}
+  clientRowActions={clientRowActions}
+  showRowsActions={showRowsActions}
+  currentLng={currentLng}
+  t={t}
+/>
+
+DONE:
+- Local files deleted
+- No consumer i18n import exists inside shared
+- App builds
+- FlashRow/FlashCard refs still work

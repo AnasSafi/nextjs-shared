@@ -85,6 +85,8 @@ export {default as TableRowActionsMobileView} from "./components/Tables/TableRow
 export * from "./components/Tables/TableRowActionsMobileView";
 export {default as TableRowActions} from "./components/Tables/TableRowActions";
 export * from "./components/Tables/TableRowActions";
+export * from "./components/Tables/TableView";
+export * from "./components/Tables/CardView";
 
 export * from "./i18n/localeSingleton";
 export * from "./i18n/localeMaps";
