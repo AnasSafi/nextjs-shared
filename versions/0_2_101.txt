@@ -1,0 +1,38 @@
+CONSUMER TASK – Replace local markdownShared.ts with shared markdown utils (v0.2.101)
+
+Goal:
+Delete local markdownShared.ts and import utilities from shared, passing fallbackLng and languages from consumer localizationConfig.
+
+1) Update dependency:
+Ensure:
+"@nextjs-shared/shared": "^0.2.101"
+
+Run:
+npm install
+
+2) Delete local file:
+src/utils/markdownShared.ts
+
+3) Replace imports across consumer:
+
+OLD (example):
+import {ATTR_BLOCK_RE_FRAGMENT, parseAttrBlock, getPreferredIso3LangFromDom} from "@/utils/markdownShared";
+
+NEW:
+import {ATTR_BLOCK_RE_FRAGMENT, parseAttrBlock, getPreferredIso3LangFromDom} from "@nextjs-shared/shared";
+
+4) Update getPreferredIso3LangFromDom calls (now requires params)
+
+OLD:
+const lang = getPreferredIso3LangFromDom();
+
+NEW:
+import {fallbackLng, languages} from "@/config/localizationConfig";
+
+const lang = getPreferredIso3LangFromDom({fallbackLng, languages});
+
+DONE:
+- Local file deleted
+- All imports use "@nextjs-shared/shared"
+- getPreferredIso3LangFromDom is called with {fallbackLng, languages}
+- App builds
