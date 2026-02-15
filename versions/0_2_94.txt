@@ -1,0 +1,47 @@
+CONSUMER TASK – Use ListPageRef and TablePagesHandle from shared (v0.2.94)
+
+Goal:
+Stop defining local ListPageRef / TablePagesHandle (if any) and import them from "@nextjs-shared/shared".
+
+1) Update dependency:
+Ensure:
+"@nextjs-shared/shared": "^0.2.94"
+
+Run:
+npm install
+
+2) Search for any local interface definitions like:
+
+interface ListPageRef<...> { ... }
+interface TablePagesHandle { ... }
+
+If found in consumer project:
+- DELETE those local interface definitions completely.
+
+3) Replace imports wherever used:
+
+OLD (example):
+import type {ListPageRef, TablePagesHandle} from "@/models/ui/tableModels";
+
+or
+import type {ListPageRef} from "@/some/local/path";
+
+NEW:
+import type {ListPageRef, TablePagesHandle} from "@nextjs-shared/shared";
+
+4) If using refs with these types, ensure usage remains the same:
+
+Example:
+
+const pageRef = useRef<ListPageRef<MyRowType>>(null);
+
+or
+
+const tablePagesRef = useRef<TablePagesHandle>(null);
+
+No API changes required.
+
+DONE:
+- No duplicate local interface definitions remain
+- All types imported from "@nextjs-shared/shared"
+- App builds with no TypeScript errors

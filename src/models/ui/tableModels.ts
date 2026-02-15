@@ -185,3 +185,14 @@ export interface ListMeta {
     description?: TableDescriptionModel[];
     totalCount?: number;
 }
+
+export interface ListPageRef<T extends RowMeta<string | number, T>> {
+    setData: React.Dispatch<React.SetStateAction<(T & RowMeta<string | number, T>)[]>>;
+    flashRowById(id: string | number, flashes?: number, interval?: number): void;
+    doAction(actionKey: "refresh"): void;
+}
+
+export interface TablePagesHandle {
+    flashRowById(id: string | number, flashes?: number, interval?: number): void;
+    doAction(actionKey: "refresh"): void;
+}
