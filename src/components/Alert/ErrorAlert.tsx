@@ -2,11 +2,12 @@
 
 import React from "react";
 import {ExclamationCircleIcon} from "@heroicons/react/24/outline";
+import {TranslateFn} from "../../models/core/localeModels";
 
 export type ErrorAlertProps = {
     titleKey?: string;
     messageKey?: string;
-    t: (key: string) => string;
+    t: TranslateFn;
     className?: string;
 };
 

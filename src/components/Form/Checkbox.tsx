@@ -5,6 +5,7 @@ import type {RHFFieldError} from "../../models/core/formModels";
 import {FormError} from "./Helpers/FormError";
 import {RequiredAsterisk} from "./RequiredAsterisk";
 import {TooltipIcon} from "./TooltipIcon";
+import {TranslateFn} from "../../models/core/localeModels";
 
 export interface CheckboxProps {
     isRequired?: boolean;
@@ -19,7 +20,7 @@ export interface CheckboxProps {
     value?: string | number;
 
     // translation injection (for required tooltip only)
-    t?: (key: string) => string;
+    t?: TranslateFn;
 }
 
 const CheckboxInner: React.ForwardRefRenderFunction<HTMLInputElement, CheckboxProps> = (

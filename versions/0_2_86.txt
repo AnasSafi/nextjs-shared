@@ -1,0 +1,40 @@
+CONSUMER TASK – Replace local TableRowActions with shared component and pass t
+
+Goal:
+Delete local TableRowActions and use shared one. Provide translation function `t` from consumer i18n.
+
+1) Delete local file:
+src/components/Tables/TableRowActions.tsx
+
+2) Replace imports where used:
+
+OLD:
+import TableRowActions from "@/components/Tables/TableRowActions";
+
+NEW:
+import {TableRowActions} from "@nextjs-shared/shared";
+
+3) Update usage where used (always pass t):
+
+OLD (example):
+<TableRowActions
+  row={row}
+  clientRowActions={clientRowActions}
+  handlerMap={handlerMap}
+/>
+
+NEW (example):
+import {useTranslation} from "@/app/i18n/client_translation";
+const {t} = useTranslation();
+
+<TableRowActions
+  row={row}
+  clientRowActions={clientRowActions}
+  handlerMap={handlerMap}
+  t={t}
+/>
+
+DONE:
+- Local file deleted
+- All usages compile (t is passed)
+- App builds and actions rendering works the same (dropdown when >2)

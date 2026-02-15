@@ -1,8 +1,9 @@
 "use client";
 import React from "react";
+import {TranslateFn} from "../../models/core/localeModels";
 
 export type RequiredAsteriskProps = {
-    t: (key: string) => string;
+    t: TranslateFn;
     className?: string;
     titleKey?: string;
 };

@@ -12,6 +12,7 @@ import {FormError} from "./Helpers/FormError";
 import {RequiredAsterisk} from "./RequiredAsterisk";
 import {TooltipIcon} from "./TooltipIcon";
 import {isLocaleObject} from "../../utils/localizationUtils";
+import {TranslateFn} from "../../models/core/localeModels";
 
 interface TextAreaProps extends InputHTMLAttributes<HTMLTextAreaElement> {
     isRequired?: boolean;
@@ -31,7 +32,7 @@ interface TextAreaProps extends InputHTMLAttributes<HTMLTextAreaElement> {
     rows?: number;
 
     // translation injection (for required tooltip only)
-    t?: (key: string) => string;
+    t?: TranslateFn;
 
     // language config injection (for RTL fallback)
     languages?: LanguageConfig[];

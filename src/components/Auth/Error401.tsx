@@ -2,9 +2,10 @@
 
 import React from "react";
 import {ShieldErrorIcon} from "../Icons/ShieldErrorIcon";
+import {TranslateFn} from "../../models/core/localeModels";
 
 export type Error401Props = {
-    t: (key: string) => string;
+    t: TranslateFn;
     titleKey?: string;
     messageKey?: string;
     className?: string;

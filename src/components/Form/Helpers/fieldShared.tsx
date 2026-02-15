@@ -1,6 +1,7 @@
 import React from "react";
 import { TooltipIcon } from "../TooltipIcon";
 import {RequiredAsterisk} from "../RequiredAsterisk";
+import {TranslateFn} from "../../../models/core/localeModels";
 
 export const baseInputClasses = (extra?: string) =>
     [
@@ -32,7 +33,7 @@ export interface FieldHeaderProps {
     isRequired?: boolean;
     rightBadgeText?: string;
     onRightBadgeClick?: () => void;
-    t?: (key: string) => string;
+    t?: TranslateFn;
     requiredTitleKey?: string;
 }
 

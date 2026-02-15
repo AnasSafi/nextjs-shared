@@ -19,6 +19,7 @@ import {TooltipIcon} from "./TooltipIcon";
 import {isLocaleObject} from "../../utils/localizationUtils";
 import {toGoodPhone} from "../../utils/phoneUtils";
 import type {SanitizePhoneOptions} from "../../utils/phoneUtils";
+import {TranslateFn} from "../../models/core/localeModels";
 
 /* ---------------- helpers: normalize codes & read values ---------------- */
 
@@ -62,7 +63,7 @@ interface TextInputProps extends InputHTMLAttributes<HTMLInputElement> {
     onChange?: ChangeEventHandler<HTMLInputElement> | undefined;
 
     // translation injection (for required tooltip only)
-    t?: (key: string) => string;
+    t?: TranslateFn;
 
     // language config injection (for multi-language behavior)
     languages?: LanguageConfig[];

@@ -2,11 +2,12 @@
 
 import React from "react";
 import {QrCodeIcon} from "@heroicons/react/24/outline";
+import {TranslateFn} from "../../models/core/localeModels";
 
 export type InfoAlertProps = {
     titleKey?: string;
     messageKey?: string;
-    t: (key: string) => string;
+    t: TranslateFn;
     className?: string;
 };
 

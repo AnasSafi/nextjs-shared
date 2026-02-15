@@ -5,6 +5,7 @@ import type {FieldError, DeepMap} from "react-hook-form";
 import {FormError} from "./Helpers/FormError";
 import {FieldHeader, baseInputClasses, formatISO} from "./Helpers/fieldShared";
 import {RequiredAsterisk} from "./RequiredAsterisk";
+import {TranslateFn} from "../../models/core/localeModels";
 
 export interface DateRangeInputProps {
     nameStart: string;
@@ -38,7 +39,7 @@ export interface DateRangeInputProps {
     initValueEnd?: Date | string | null;
 
     // translation injection
-    t: (key: string) => string;
+    t: TranslateFn;
 }
 
 export const CDateRangeInput = React.forwardRef<HTMLDivElement, DateRangeInputProps>(

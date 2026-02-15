@@ -5,6 +5,7 @@ import type {FieldError, DeepMap} from "react-hook-form";
 import {FormError} from "./Helpers/FormError";
 import {FieldHeader, baseInputClasses, formatDateTimeLocal} from "./Helpers/fieldShared";
 import {RequiredAsterisk} from "./RequiredAsterisk";
+import {TranslateFn} from "../../models/core/localeModels";
 
 export interface DateTimeRangeInputProps {
     nameStart: string;
@@ -38,7 +39,7 @@ export interface DateTimeRangeInputProps {
     initValueEnd?: Date | string | null;
 
     // translation injection (for required tooltip only)
-    t: (key: string) => string;
+    t: TranslateFn;
 }
 
 export const CDateTimeRangeInput = React.forwardRef<HTMLDivElement, DateTimeRangeInputProps>(

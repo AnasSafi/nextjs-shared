@@ -5,6 +5,7 @@ import type {FieldError, DeepMap} from "react-hook-form";
 import {FormError} from "./Helpers/FormError";
 import {RequiredAsterisk} from "./RequiredAsterisk";
 import {TooltipIcon} from "./TooltipIcon";
+import {TranslateFn} from "../../models/core/localeModels";
 
 export interface NumberRangeInputProps {
     isIntStart?: boolean;
@@ -30,7 +31,7 @@ export interface NumberRangeInputProps {
     initValueEnd?: string;
 
     // translation injection (optional)
-    t?: (key: string) => string;
+    t?: TranslateFn;
     toTextKey?: string;
     toText?: string;
 }

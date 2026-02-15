@@ -4,6 +4,7 @@ import React, {forwardRef, InputHTMLAttributes, JSX} from "react";
 import type {FieldError, DeepMap} from "react-hook-form";
 import {FormError} from "./Helpers/FormError";
 import {FieldHeader, baseInputClasses, formatISO} from "./Helpers/fieldShared";
+import {TranslateFn} from "../../models/core/localeModels";
 
 export interface DateInputProps extends InputHTMLAttributes<HTMLInputElement> {
     isRequired?: boolean;
@@ -19,7 +20,7 @@ export interface DateInputProps extends InputHTMLAttributes<HTMLInputElement> {
     tipText?: string;
 
     // new: translation injection (required tooltip only)
-    t?: (key: string) => string;
+    t?: TranslateFn;
 }
 
 export const CDateInput = forwardRef<HTMLInputElement, DateInputProps>(

@@ -5,6 +5,7 @@ import type {FieldError, DeepMap} from "react-hook-form";
 import {FormError} from "./Helpers/FormError";
 import {RequiredAsterisk} from "./RequiredAsterisk";
 import {TooltipIcon} from "./TooltipIcon";
+import {TranslateFn} from "../../models/core/localeModels";
 
 export interface NumberInputProps extends InputHTMLAttributes<HTMLInputElement> {
     isInt?: boolean;
@@ -24,7 +25,7 @@ export interface NumberInputProps extends InputHTMLAttributes<HTMLInputElement> 
     step?: number;
 
     // translation injection (required tooltip only)
-    t?: (key: string) => string;
+    t?: TranslateFn;
 }
 
 export const CNumberInput = forwardRef<HTMLInputElement, NumberInputProps>(

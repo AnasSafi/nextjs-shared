@@ -1,11 +1,11 @@
 "use client";
 
 import React from "react";
-import type {MultiLangValue} from "../../models/core/localeModels";
+import {MultiLangValue, TranslateFn} from "../../models/core/localeModels";
 
 export type DisplayMultiLangProps = {
     multiLangValue: MultiLangValue | null;
-    t?: (key: string) => string;
+    t?: TranslateFn;
     getLangLabel?: (lang: string) => string;
     emptyText?: string;
     className?: string;
