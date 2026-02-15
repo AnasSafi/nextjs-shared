@@ -17,10 +17,41 @@ The goal is:
 
 ---
 
-## Installation 
-1. add `@nextjs-shared/shared` to your `package.json` dependencies
-2. run `npm install`
-3. in file `src\app\[lng]\globals.css` add line `@import "@nextjs-shared/shared/tailwind.css";`
+## Installation
+
+1. Create an `.npmrc` file in the root of your project with the following content:
+
+   @nextjs-shared:registry=https://gitlab.homyt.dev/api/v4/projects/21/packages/npm/
+   //gitlab.homyt.dev/api/v4/projects/21/packages/npm/:_authToken=${NPM_TOKEN}
+
+2. Generate a token from your GitLab project:
+
+   Navigate to:
+
+   Settings → Repository → Deploy Tokens
+
+   Create a new Deploy Token with the following permission:
+
+  - read_package_registry
+
+3. Set the `NPM_TOKEN` environment variable before running npm commands.
+
+   Example (Windows PowerShell):
+
+       $env:NPM_TOKEN="your_token_here"
+
+   Example (Linux/macOS):
+
+       export NPM_TOKEN="your_token_here"
+
+4. Install the package:
+
+       npm install @nextjs-shared/shared
+
+5. In the file `src/app/[lng]/globals.css`, add the following line:
+
+       @import "@nextjs-shared/shared/tailwind.css";
+
 
 ## Project Structure (example)
 
@@ -118,4 +149,6 @@ You are trying to publish an existing version.
   - `dist/index.js`
   - `dist/index.d.ts`
 - Restart TypeScript Server in your IDE
+
+---
 

@@ -1,69 +1,48 @@
-CONSUMER TASK – Replace local markdownTokens + markdownImage imports with shared (v0.2.102)
+CONSUMER TASK – Fix migration for markdownTokens / markdownImage (v0.2.102)
+
+Project:
+zeecapital-front-end (and any consumer)
 
 Goal:
-Delete local token/model files (or stop importing them) and import from "@nextjs-shared/shared".
+Make the migration unambiguous so you do NOT end up with mixed imports (some from local "@/models/..." and some from "@nextjs-shared/shared"), which causes build/type errors.
 
-1) Update dependency:
-Ensure:
+1) Update dependency
+package.json
+
+Set:
 "@nextjs-shared/shared": "^0.2.102"
 
 Run:
 npm install
 
-2) Replace imports in:
-src/models/core/markdownImage.ts
+2) Decide your strategy (pick ONE, not both)
 
-OLD:
-import type {
-    MarkdownAlignmentAll as MarkdownAlignment,
-    MarkdownCaptionPosition,
-    ImageSizeVariant,
-    ImageObjectFit,
-} from "@/models/core/markdownTokens";
+OPTION A (Recommended): Remove local modules completely
+- You will import everything directly from "@nextjs-shared/shared"
+- You will delete the local files:
+  - src/models/core/markdownTokens.ts
+  - src/models/core/markdownImage.ts
 
-NEW:
-import type {
-    MarkdownAlignmentAll as MarkdownAlignment,
-    MarkdownCaptionPosition,
-    ImageSizeVariant,
-    ImageObjectFit,
-} from "@nextjs-shared/shared";
+OPTION B: Keep local markdownImage.ts ONLY as a compatibility re-export
+- You will delete:
+  - src/models/core/markdownTokens.ts
+- You will keep:
+  - src/models/core/markdownImage.ts
+- But markdownImage.ts must import + re-export ONLY from "@nextjs-shared/shared"
+  (no local "@/models/core/..." imports remain)
 
-3) Replace re-exports in:
-src/models/core/markdownImage.ts
+3) Apply the safe change that avoids “mixed sources”
 
-OLD:
-export {
-    IMAGE_SIZE_VARIANTS,
-    IMAGE_OBJECT_FIT_VARIANTS,
-} from "@/models/core/markdownTokens";
+A) Update ALL imports across the project that reference markdownTokens
 
-export type {MarkdownCaptionPosition, ImageSizeVariant, ImageObjectFit} from "@/models/core/markdownTokens";
+Search for:
+from "@/models/core/markdownTokens"
+from "src/models/core/markdownTokens"
+from "@/models/core/markdownImage" (if you choose Option A)
 
-NEW:
-export {
-    IMAGE_SIZE_VARIANTS,
-    IMAGE_OBJECT_FIT_VARIANTS,
-} from "@nextjs-shared/shared";
+Replace with:
+from "@nextjs-shared/shared"
 
-export type {MarkdownCaptionPosition, ImageSizeVariant, ImageObjectFit} from "@nextjs-shared/shared";
-
-4) Optional cleanup (recommended):
-If these files exist and are no longer used, delete them:
-
-src/models/core/markdownTokens.ts
-
-(Keep src/models/core/markdownImage.ts ONLY if you still need it as a local re-export module. If not needed, you can delete it too and import InsertMarkdownImageResult directly from shared.)
-
-5) If you want to fully remove local markdownImage.ts:
-- Replace imports of "@/models/core/markdownImage" across the app with imports from "@nextjs-shared/shared":
-  - InsertMarkdownImageResult
-  - IMAGE_SIZE_VARIANTS
-  - IMAGE_OBJECT_FIT_VARIANTS
-  - MarkdownCaptionPosition / ImageSizeVariant / ImageObjectFit
-  - MarkdownAlignmentAll
-
-DONE:
-- All markdown token/model imports come from "@nextjs-shared/shared"
-- Local duplicates removed (where applicable)
-- App builds
+This includes:
+- markdownImageHelpers.ts
+- Markdown
