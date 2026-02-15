@@ -71,6 +71,8 @@ export * from "./components/Form/TooltipIcon";
 export * from "./components/Form/RequiredAsterisk";
 export * from "./components/Form/Helpers/FormError";
 export * from "./components/Form/Helpers/fieldShared";
+export {default as ViewInput} from "./components/Form/ViewInput";
+export * from "./components/Form/ViewInput";
 
 export {default as TableFilters} from "./components/Tables/TableFilters";
 export type {

@@ -1,0 +1,45 @@
+CONSUMER TASK – Replace local ViewInput with shared component and pass currentLng
+
+Goal:
+Delete local ViewInput file and use shared one. Pass currentLng from consumer useTranslation.
+
+1) Update dependency:
+Ensure:
+"@nextjs-shared/shared": "^0.2.99"
+
+Run:
+npm install
+
+2) Delete local file:
+src/components/Form/ViewInput.tsx
+
+3) Replace imports:
+
+OLD:
+import ViewInput from "@/components/Form/ViewInput";
+
+NEW:
+import {ViewInput} from "@nextjs-shared/shared";
+
+4) Update usage (pass currentLng):
+
+Example:
+
+import {useTranslation} from "@/app/i18n/client_translation";
+import {ViewInput} from "@nextjs-shared/shared";
+
+const {currentLng} = useTranslation();
+
+<ViewInput
+  currentLng={currentLng}
+  label="..."
+  value={...}
+  forceTextLTR={...}
+  valueClassName="..."
+/>
+
+DONE:
+- Local duplicate removed
+- currentLng is passed everywhere ViewInput is used
+- App builds
+- Direction behavior unchanged
