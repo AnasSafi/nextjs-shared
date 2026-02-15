@@ -87,6 +87,8 @@ export {default as TableRowActions} from "./components/Tables/TableRowActions";
 export * from "./components/Tables/TableRowActions";
 export * from "./components/Tables/TableView";
 export * from "./components/Tables/CardView";
+export {default as TableSort} from "./components/Tables/TableSort";
+export * from "./components/Tables/TableSort";
 
 export * from "./i18n/localeSingleton";
 export * from "./i18n/localeMaps";

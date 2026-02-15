@@ -1,0 +1,36 @@
+CONSUMER TASK – Replace local TableSort with shared component and pass t
+
+Goal:
+Delete local TableSort and import from shared. Pass translation function `t`.
+
+1) Update dependency:
+NEW: "@nextjs-shared/shared": "^0.2.88"
+Run: npm install
+
+2) Delete local file:
+src/components/Tables/TableSort.tsx
+
+3) Replace imports where used:
+
+OLD:
+import TableSort from "@/components/Tables/TableSort";
+
+NEW:
+import {TableSort} from "@nextjs-shared/shared";
+
+4) Always pass t:
+
+Example:
+import {useTranslation} from "@/app/i18n/client_translation";
+const {t} = useTranslation();
+
+<TableSort
+  pagination={pagination}
+  updateSorts={updateSorts}
+  t={t}
+/>
+
+DONE:
+- Local file deleted
+- App builds
+- Sorting dropdown works the same
