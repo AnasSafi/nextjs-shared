@@ -36,7 +36,6 @@ export * from "./models/core/fetchModels";
 export * from "./models/user/userModels";
 export * from "./models/ui/tableModels";
 export * from "./store/userStore";
-export * from "./hooks/userHooks/usePermission";
 export * from "./extensions/FetchError";
 export * from "./services/auth/userTokenServices.client";
 
@@ -96,3 +95,6 @@ export * from "./i18n/settings";
 export * from "./i18n/serverTranslations";
 export * from "./i18n/clientTranslation";
 export * from "./i18n/languageConfigUtils";
+
+export * from "./hooks/userHooks/usePermission";
+export * from "./hooks/tableHooks/useFlashById";
