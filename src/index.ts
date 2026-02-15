@@ -98,3 +98,4 @@ export * from "./i18n/languageConfigUtils";
 
 export * from "./hooks/userHooks/usePermission";
 export * from "./hooks/tableHooks/useFlashById";
+export * from "./hooks/tableHooks/useDoAction";

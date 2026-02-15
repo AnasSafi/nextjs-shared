@@ -1,0 +1,27 @@
+CONSUMER TASK – Replace local useDoAction with shared hook
+
+Goal:
+Delete local hook file and import from shared.
+
+1) Update dependency:
+Ensure:
+"@nextjs-shared/shared": "^0.2.91"
+
+Run:
+npm install
+
+2) Delete local file:
+src/components/Tables/useDoAction.ts
+
+3) Replace imports across project:
+
+OLD:
+import {useDoAction} from "@/components/Tables/useDoAction";
+
+NEW:
+import {useDoAction} from "@nextjs-shared/shared";
+
+DONE:
+- Local file deleted
+- App builds
+- Refresh behavior unchanged
