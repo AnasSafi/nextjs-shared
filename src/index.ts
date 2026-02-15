@@ -71,6 +71,7 @@ export * from "./components/Form/TooltipIcon";
 export * from "./components/Form/RequiredAsterisk";
 export * from "./components/Form/Helpers/FormError";
 export * from "./components/Form/Helpers/fieldShared";
+
 export {default as TableFilters} from "./components/Tables/TableFilters";
 export type {
     TableFiltersProps,
@@ -88,6 +89,7 @@ export * from "./components/Tables/TableView";
 export * from "./components/Tables/CardView";
 export {default as TableSort} from "./components/Tables/TableSort";
 export * from "./components/Tables/TableSort";
+export * from "./components/Tables/PaginationControls";
 
 export * from "./i18n/localeSingleton";
 export * from "./i18n/localeMaps";

@@ -1,0 +1,45 @@
+CONSUMER TASK – Replace local PaginationControls with shared component and pass themeColor
+
+Goal:
+Delete local PaginationControls file and import from shared. Pass themeColor from consumer config.
+
+1) Update dependency:
+Ensure:
+"@nextjs-shared/shared": "^0.2.93"
+
+Run:
+npm install
+
+2) Delete local file:
+src/components/Tables/PaginationControls.tsx
+
+3) Replace imports where used:
+
+OLD:
+import {PaginationControls} from "@/components/Tables/PaginationControls";
+
+NEW:
+import {PaginationControls} from "@nextjs-shared/shared";
+
+4) Always pass themeColor:
+
+Example:
+import {themeColor} from "@/config/style";
+
+<PaginationControls
+  themeColor={themeColor}
+  current={current}
+  total={total}
+  onChange={onChange}
+  maxPages={maxPages}
+  disabled={disabled}
+  mode={mode}
+  hasNext={hasNext}
+  labels={labels}
+/>
+
+DONE:
+- Local file deleted
+- App builds
+- Pagination UI behavior unchanged
+- themeColor is passed explicitly
