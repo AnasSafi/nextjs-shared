@@ -90,6 +90,7 @@ export * from "./components/Tables/CardView";
 export {default as TableSort} from "./components/Tables/TableSort";
 export * from "./components/Tables/TableSort";
 export * from "./components/Tables/PaginationControls";
+export * from "./components/Tables/TablePagesCore";
 
 export * from "./i18n/localeSingleton";
 export * from "./i18n/localeMaps";

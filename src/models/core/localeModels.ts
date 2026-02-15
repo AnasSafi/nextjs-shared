@@ -6,4 +6,4 @@ export type Translations = { [key: string]: TranslationNode };
 
 export type ForcePlusMode = "auto" | "always" | "never";
 
-export type TranslateFn = (key: string) => string;
+export type TranslateFn = (key: string, vars?: Record<string, any>) => string;

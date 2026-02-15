@@ -1,0 +1,72 @@
+CONSUMER TASK – Keep wrapper in consumer and delegate to shared TablePagesCore (v0.2.96)
+
+Goal:
+Convert the existing heavy consumer TablePages.tsx into a thin wrapper that injects consumer-specific dependencies (useTranslation, fetchUtil, themeColor, buttonClassNames, TableApiMethod, TableFilters wrapper) into shared TablePagesCore.
+
+1) Update dependency:
+OLD: "@nextjs-shared/shared": "^0.2.94"
+NEW: "@nextjs-shared/shared": "^0.2.96"
+Run: npm install
+
+2) Update file (REPLACE ENTIRE FILE CONTENT):
+src/custom_components/Tables/TablePages.tsx
+
+OLD FILE CONTENT TO DELETE:
+(the current heavy implementation in this file)
+
+NEW FILE CONTENT (copy/paste):
+
+"use client";
+
+import React, {forwardRef, type JSX} from "react";
+
+import {useTranslation} from "@/app/i18n/client_translation";
+import {fetchUtil} from "@/custom_utils/fetchUtils/fetchUtil.client";
+import {buttonClassNames, themeColor} from "@/config/style";
+import {TableApiMethod} from "@/config/tableConfig";
+import TableFilters from "@/custom_components/Tables/TableFilters";
+
+import {
+    TablePagesCore,
+    type RowMeta,
+    type TableProps,
+    type TablePagesHandle,
+} from "@nextjs-shared/shared";
+
+function TablePagesInnerRef<R extends RowMeta<string | number, R>>(
+    props: TableProps<R>,
+    ref: React.Ref<TablePagesHandle>,
+): JSX.Element {
+    const {t, currentLng} = useTranslation();
+
+    return (
+        <TablePagesCore
+            {...props}
+            ref={ref}
+            t={t}
+            currentLng={currentLng}
+            fetchUtil={fetchUtil}
+            themeColor={themeColor}
+            buttonClassNames={buttonClassNames}
+            tableApiMethod={TableApiMethod}
+            TableFiltersComponent={TableFilters}
+        />
+    );
+}
+
+export const TablePages = forwardRef(TablePagesInnerRef) as <
+    R extends RowMeta<string | number, R>,
+>(
+    p: TableProps<R> & { ref?: React.Ref<TablePagesHandle> },
+) => JSX.Element;
+
+3) Replace imports in consumer wherever TablePages is used:
+
+IF you previously imported TablePages from this file, keep it as-is.
+No external usage change needed.
+
+DONE:
+- Consumer keeps wrapper file (TablePages.tsx)
+- Wrapper injects i18n + fetchUtil + themeColor/buttonClassNames + TableApiMethod + TableFilters wrapper
+- Heavy logic lives in shared TablePagesCore
+- App builds and behavior stays the same
