@@ -81,6 +81,8 @@ export type {
     SubmitFiltersFn
 } from "./components/Tables/TableFilters";
 export * from "./components/Tables/getTableCellContent";
+export {default as TableRowActionsMobileView} from "./components/Tables/TableRowActionsMobileView";
+export * from "./components/Tables/TableRowActionsMobileView";
 
 export * from "./i18n/localeSingleton";
 export * from "./i18n/localeMaps";

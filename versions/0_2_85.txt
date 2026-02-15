@@ -1,0 +1,28 @@
+CONSUMER TASK – Replace local TableRowActionsMobileView
+
+Goal:
+Delete local component and import shared version, passing translated label from consumer i18n.
+
+1) Delete local file:
+src/components/Tables/TableRowActionsMobileView.tsx
+
+2) Replace imports where used:
+
+OLD:
+import TableRowActionsMobileView from "@/components/Tables/TableRowActionsMobileView";
+
+NEW:
+import {TableRowActionsMobileView} from "@nextjs-shared/shared";
+
+3) Update component usage where used (pass translated label):
+
+OLD (example):
+<TableRowActionsMobileView actions={actions} />
+
+NEW (example):
+<TableRowActionsMobileView actions={actions} label={t("actions")} />
+
+DONE:
+- Local file deleted
+- All usages compile (label prop provided)
+- App builds and dropdown works the same
