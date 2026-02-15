@@ -91,6 +91,7 @@ export {default as TableSort} from "./components/Tables/TableSort";
 export * from "./components/Tables/TableSort";
 export * from "./components/Tables/PaginationControls";
 export * from "./components/Tables/TablePagesCore";
+export * from "./components/Tables/ListPage";
 
 export * from "./i18n/localeSingleton";
 export * from "./i18n/localeMaps";

@@ -1,0 +1,68 @@
+CONSUMER TASK – Create stable consumer wrapper: src/custom_components/Tables/ListPage.tsx (uses shared ListPage)
+
+Goal:
+Avoid ambiguity in consumers by providing a stable wrapper file at:
+src/custom_components/Tables/ListPage.tsx
+This wrapper wires:
+- TablePages wrapper
+- useTranslation (t)
+Then re-exports a ready-to-use ListPage for the app.
+
+1) Update dependency:
+Ensure:
+"@nextjs-shared/shared": "^0.2.97"
+
+Run:
+npm install
+
+2) Create file:
+src/custom_components/Tables/ListPage.tsx
+
+NEW FILE CONTENT (copy/paste):
+
+"use client";
+
+import React, {type JSX} from "react";
+import {ListPage as SharedListPage} from "@nextjs-shared/shared";
+import type {
+    ListPageProps,
+    ListPageRef,
+    RowMeta,
+} from "@nextjs-shared/shared";
+
+import {useTranslation} from "@/app/i18n/client_translation";
+import {TablePages} from "@/custom_components/Tables/TablePages";
+
+export function ListPage<T>(
+    props: ListPageProps<T> & {
+        ref?: React.ForwardedRef<ListPageRef<T & RowMeta<string | number, T>>>;
+    },
+): JSX.Element {
+    const {t} = useTranslation();
+
+    return (
+        <SharedListPage<T>
+            {...props}
+            TablePagesComponent={TablePages as any}
+            t={t}
+        />
+    );
+}
+
+3) Replace imports across the app:
+
+OLD (example):
+import {ListPage} from "@/components/Tables/ListPage";
+
+NEW:
+import {ListPage} from "@/custom_components/Tables/ListPage";
+
+4) Optional cleanup (recommended):
+If this file exists, delete it to avoid duplicates:
+src/components/Tables/ListPage.tsx
+
+DONE:
+- Wrapper file exists at src/custom_components/Tables/ListPage.tsx with the exact content above
+- All app imports use "@/custom_components/Tables/ListPage"
+- App builds with no type errors
+- Permission guards and TablePages behavior unchanged
