@@ -36,6 +36,9 @@ export * from "./models/core/formHandlerModels";
 export * from "./models/core/fetchModels";
 export * from "./models/user/userModels";
 export * from "./models/ui/tableModels";
+export * from "./models/markdown/markdownTokens";
+export * from "./models/markdown/markdownImageModels";
+
 export * from "./store/userStore";
 export * from "./extensions/FetchError";
 export * from "./services/auth/userTokenServices.client";

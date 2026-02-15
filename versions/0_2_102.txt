@@ -1,0 +1,69 @@
+CONSUMER TASK – Replace local markdownTokens + markdownImage imports with shared (v0.2.102)
+
+Goal:
+Delete local token/model files (or stop importing them) and import from "@nextjs-shared/shared".
+
+1) Update dependency:
+Ensure:
+"@nextjs-shared/shared": "^0.2.102"
+
+Run:
+npm install
+
+2) Replace imports in:
+src/models/core/markdownImage.ts
+
+OLD:
+import type {
+    MarkdownAlignmentAll as MarkdownAlignment,
+    MarkdownCaptionPosition,
+    ImageSizeVariant,
+    ImageObjectFit,
+} from "@/models/core/markdownTokens";
+
+NEW:
+import type {
+    MarkdownAlignmentAll as MarkdownAlignment,
+    MarkdownCaptionPosition,
+    ImageSizeVariant,
+    ImageObjectFit,
+} from "@nextjs-shared/shared";
+
+3) Replace re-exports in:
+src/models/core/markdownImage.ts
+
+OLD:
+export {
+    IMAGE_SIZE_VARIANTS,
+    IMAGE_OBJECT_FIT_VARIANTS,
+} from "@/models/core/markdownTokens";
+
+export type {MarkdownCaptionPosition, ImageSizeVariant, ImageObjectFit} from "@/models/core/markdownTokens";
+
+NEW:
+export {
+    IMAGE_SIZE_VARIANTS,
+    IMAGE_OBJECT_FIT_VARIANTS,
+} from "@nextjs-shared/shared";
+
+export type {MarkdownCaptionPosition, ImageSizeVariant, ImageObjectFit} from "@nextjs-shared/shared";
+
+4) Optional cleanup (recommended):
+If these files exist and are no longer used, delete them:
+
+src/models/core/markdownTokens.ts
+
+(Keep src/models/core/markdownImage.ts ONLY if you still need it as a local re-export module. If not needed, you can delete it too and import InsertMarkdownImageResult directly from shared.)
+
+5) If you want to fully remove local markdownImage.ts:
+- Replace imports of "@/models/core/markdownImage" across the app with imports from "@nextjs-shared/shared":
+  - InsertMarkdownImageResult
+  - IMAGE_SIZE_VARIANTS
+  - IMAGE_OBJECT_FIT_VARIANTS
+  - MarkdownCaptionPosition / ImageSizeVariant / ImageObjectFit
+  - MarkdownAlignmentAll
+
+DONE:
+- All markdown token/model imports come from "@nextjs-shared/shared"
+- Local duplicates removed (where applicable)
+- App builds
