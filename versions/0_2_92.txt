@@ -5,7 +5,7 @@ Delete local hook file and import from shared.
 
 1) Update dependency:
 Ensure:
-"@nextjs-shared/shared": "^0.2.91"
+"@nextjs-shared/shared": "^0.2.92"
 
 Run:
 npm install
