@@ -1,0 +1,65 @@
+CONSUMER TASK – Keep wrapper in consumer for SingleFileDropzone (useTranslation + getUserToken)
+
+Goal:
+Replace the heavy local component with a thin wrapper that injects:
+- t from useTranslation
+- getUserToken from consumer auth service
+Optionally keep uploadUrl default.
+
+1) Update dependency:
+Ensure:
+"@nextjs-shared/shared": "^0.2.100"
+
+Run:
+npm install
+
+2) Move the wrapper to a stable location (recommended):
+Create/Update file:
+src/custom_components/Form/SingleFileDropzone.tsx
+
+NEW FILE CONTENT (copy/paste):
+
+"use client";
+
+import React, {type JSX} from "react";
+import {SingleFileDropzoneCore} from "@nextjs-shared/shared";
+import type {SingleFileDropzoneCoreProps} from "@nextjs-shared/shared";
+import {useTranslation} from "@/app/i18n/client_translation";
+import {getUserToken} from "@/custom_services/auth/userTokenServices";
+
+type Props = Omit<SingleFileDropzoneCoreProps, "t" | "getUserToken"> & {
+    uploadUrl?: string;
+};
+
+export default function SingleFileDropzone(props: Props): JSX.Element {
+    const {t} = useTranslation();
+
+    return (
+        <SingleFileDropzoneCore
+            {...props}
+            t={t}
+            getUserToken={getUserToken}
+            uploadUrl={props.uploadUrl}
+        />
+    );
+}
+
+3) Delete the old heavy file:
+src/components/Form/SingleFileDropzone.tsx
+
+OLD FILE CONTENT TO DELETE:
+(the current heavy implementation)
+
+4) Replace imports across the consumer project:
+
+OLD:
+import SingleFileDropzone from "@/components/Form/SingleFileDropzone";
+
+NEW:
+import SingleFileDropzone from "@/custom_components/Form/SingleFileDropzone";
+
+DONE:
+- Heavy logic is in shared SingleFileDropzoneCore
+- Consumer wrapper provides t + getUserToken
+- Old file deleted
+- App builds and upload behavior unchanged

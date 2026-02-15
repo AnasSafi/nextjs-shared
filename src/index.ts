@@ -73,6 +73,8 @@ export * from "./components/Form/Helpers/FormError";
 export * from "./components/Form/Helpers/fieldShared";
 export {default as ViewInput} from "./components/Form/ViewInput";
 export * from "./components/Form/ViewInput";
+export {default as SingleFileDropzoneCore} from "./components/Form/SingleFileDropzoneCore";
+export * from "./components/Form/SingleFileDropzoneCore";
 
 export {default as TableFilters} from "./components/Tables/TableFilters";
 export type {
