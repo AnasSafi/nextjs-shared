@@ -10,7 +10,7 @@ export interface DateInputProps extends InputHTMLAttributes<HTMLInputElement> {
     isRequired?: boolean;
     toggleLocale?: () => void;
     formLocale?: string;
-    initValue?: string;
+    initValue?: string | null | Date;
     name: string;
     id?: string;
     className?: string;
@@ -18,8 +18,6 @@ export interface DateInputProps extends InputHTMLAttributes<HTMLInputElement> {
     error?: FieldError | DeepMap<Record<string, unknown>, FieldError> | undefined;
     label?: string;
     tipText?: string;
-
-    // new: translation injection (required tooltip only)
     t?: TranslateFn;
 }
 
@@ -42,8 +40,9 @@ export const CDateInput = forwardRef<HTMLInputElement, DateInputProps>(
         }: DateInputProps,
         ref: React.ForwardedRef<HTMLInputElement>
     ): JSX.Element => {
-        const inputClassName = baseInputClasses(className);
-        const formattedInitValue = initValue ? formatISO(initValue) : "";
+        const inputClassName: string = baseInputClasses(className);
+
+        const formattedInitValue: string = formatISO(initValue);
 
         return (
             <div>
