@@ -1,0 +1,53 @@
+CONSUMER TASK – Replace local formUtils with shared language-injected helpers (v0.2.122)
+
+Goal:
+Delete local formUtils.ts and use shared helpers with consumer languages config passed explicitly.
+
+1) Delete local file:
+src/utils/formUtils.ts
+
+2) Replace imports and calls
+
+A) Replace imports:
+
+OLD:
+import {getInputLanguages} from "@nextjs-shared/shared";
+import {languages} from "@/config/localizationConfig";
+import type {MultiLangValue} from "@nextjs-shared/shared";
+
+(importing local functions from "@/utils/formUtils")
+
+NEW:
+import {languages} from "@/config/localizationConfig";
+import type {MultiLangValue} from "@nextjs-shared/shared";
+import {
+    generateEmptyMultiLangValueFromLanguages,
+    isMultiLangValueFromLanguages,
+    normalizeToMultiLangValueFromLanguages,
+} from "@nextjs-shared/shared";
+
+B) Replace function calls:
+
+OLD:
+generateEmptyMultiLangValue()
+
+NEW:
+generateEmptyMultiLangValueFromLanguages(languages)
+
+OLD:
+isMultiLangValue(value)
+
+NEW:
+isMultiLangValueFromLanguages(languages, value)
+
+OLD:
+normalizeToMultiLangValue(input)
+
+NEW:
+normalizeToMultiLangValueFromLanguages(languages, input)
+
+DONE:
+- Local formUtils.ts deleted
+- All logic sourced from shared
+- languages config stays in consumer and is passed into shared helpers
+- App builds successfully

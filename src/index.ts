@@ -27,6 +27,7 @@ export * from "./utils/FilterFormMapper";
 export * from "./utils/markdownUtils";
 export * from "./utils/comboboxFetchUtils";
 export * from "./utils/markdown/markdownImageHelpers";
+export * from "./utils/formUtils";
 
 export * from "./models/core/localeModels";
 export * from "./models/core/dbModels";
