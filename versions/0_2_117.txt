@@ -1,0 +1,139 @@
+CONSUMER TASK – Simplify modal hooks architecture and keep ONLY createModalHook wrapper (v0.2.117)
+
+Goal:
+- Do NOT keep local wrappers for:
+  - useModalActions
+  - useReusableModal
+- Keep ONLY a thin wrapper for createModalHook
+- All modal hooks (SignIn, SignUp, etc.) must use createModalHook
+- Shared owns:
+  - useModalActions
+  - useReusableModal
+  - createModalHook (requires injected t)
+
+---------------------------------------------------------------------
+
+1) Create file:
+src/custom_hooks/formHooks/createModalHook.ts
+
+NEW FILE CONTENT (copy/paste):
+
+"use client";
+
+import {useTranslation} from "@/app/i18n/client_translation";
+import {createModalHook as createModalHookShared} from "@nextjs-shared/shared";
+import type {AllowedUserType} from "@nextjs-shared/shared";
+import type {FormPropsModel, FormRefModel} from "@nextjs-shared/shared";
+
+export function createModalHook<TIn, TOut = TIn>(config: {
+    modalId: string;
+    dialogTitleKey: string;
+    FormComponent: React.ForwardRefExoticComponent<
+        React.PropsWithoutRef<FormPropsModel<TIn, TOut>> &
+        React.RefAttributes<FormRefModel>
+    >;
+    allowed?: AllowedUserType;
+    acceptButtonText?: string;
+    withMinHeight?: boolean;
+    dialogMaxWidthClass?: string;
+    readOnly?: boolean;
+    fullHeightScreen?: boolean;
+}) {
+    const {t} = useTranslation();
+    return createModalHookShared<TIn, TOut>({...config, t});
+}
+
+---------------------------------------------------------------------
+
+2) DELETE these local files completely:
+
+DELETE:
+src/hooks/core/modal/useModalActions.tsx
+
+DELETE:
+src/hooks/formHooks/useReusableModal.tsx
+
+DELETE:
+src/hooks/formHooks/useModalFactory.ts
+
+IMPORTANT:
+Delete the whole files. Do not leave re-exports.
+
+---------------------------------------------------------------------
+
+3) Update SignIn modal hook
+
+File:
+src/custom_hooks/auth/useSignInModal.tsx
+
+REPLACE ENTIRE FILE CONTENT with:
+
+import {createModalHook} from "@/custom_hooks/formHooks/createModalHook";
+import {MODAL_IDS} from "@/config/modalIDs";
+import SignInForm from "@/custom_components/website/user/SignInForm";
+
+export const useSignInModal = createModalHook({
+    allowed: "Guests",
+    modalId: MODAL_IDS.SIGN_IN,
+    FormComponent: SignInForm,
+    dialogTitleKey: "signIn",
+});
+
+---------------------------------------------------------------------
+
+4) Update SignUp modal hook
+
+File:
+src/custom_hooks/auth/useSignUpModal.tsx
+
+REPLACE ENTIRE FILE CONTENT with:
+
+import {createModalHook} from "@/custom_hooks/formHooks/createModalHook";
+import {MODAL_IDS} from "@/components/Modals/modalIDs";
+import SignUpForm from "@/custom_components/website/user/SignUpForm";
+
+export const useSignUpModal = createModalHook({
+    allowed: "Guests",
+    modalId: MODAL_IDS.SIGN_UP,
+    FormComponent: SignUpForm,
+    dialogTitleKey: "signUp",
+});
+
+---------------------------------------------------------------------
+
+5) Replace imports across project (if any remain)
+
+If any file still imports:
+
+OLD:
+import {useModalActions} from "@/hooks/core/modal/useModalActions";
+
+OR
+
+OLD:
+import {useReusableModal} from "@/hooks/formHooks/useReusableModal";
+
+OR
+
+OLD:
+import {createModalHook} from "@/hooks/formHooks/useModalFactory";
+
+REPLACE with:
+
+NEW:
+import {createModalHook} from "@/custom_hooks/formHooks/createModalHook";
+
+---------------------------------------------------------------------
+
+DONE CRITERIA:
+
+✔ Only one wrapper exists in consumer:
+   src/custom_hooks/formHooks/createModalHook.ts
+
+✔ No local useModalActions
+✔ No local useReusableModal
+✔ No local useModalFactory
+✔ SignIn/SignUp use createModalHook directly
+✔ Shared owns modal core logic
+✔ App builds successfully
+✔ Modal behavior unchanged
