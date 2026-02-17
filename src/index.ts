@@ -39,8 +39,11 @@ export * from "./models/user/userModels";
 export * from "./models/ui/tableModels";
 export * from "./models/markdown/markdownTokens";
 export * from "./models/markdown/markdownImageModels";
+export * from "./models/ui/modalModels";
 
 export * from "./store/userStore";
+export * from "./store/modalStore";
+
 export * from "./extensions/FetchError";
 export * from "./services/auth/userTokenServices.client";
 
@@ -80,6 +83,8 @@ export {default as ViewInput} from "./components/Form/ViewInput";
 export * from "./components/Form/ViewInput";
 export {default as SingleFileDropzoneCore} from "./components/Form/SingleFileDropzoneCore";
 export * from "./components/Form/SingleFileDropzoneCore";
+export {default as ModalTemplateCore} from "./components/Modal/ModalTemplateCore";
+export * from "./components/Modal/ModalTemplateCore";
 
 export {default as TableFilters} from "./components/Tables/TableFilters";
 export type {

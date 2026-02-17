@@ -1,0 +1,79 @@
+CONSUMER TASK – Keep wrapper ModalTemplate in consumer (inject t) and remove local modal store/models (v0.2.115)
+
+Goal:
+Use shared modal store/models/template core.
+Keep a thin consumer wrapper for ModalTemplate to inject `t` from consumer i18n.
+
+1) Create file:
+src/custom_components/Modal/ModalTemplate.tsx
+
+NEW FILE CONTENT (copy/paste):
+
+"use client";
+
+import type {FC, ReactNode} from "react";
+import React from "react";
+import {ModalTemplateCore} from "@nextjs-shared/shared";
+import type {ModalTemplateProps} from "@nextjs-shared/shared";
+import {useTranslation} from "@/app/i18n/client_translation";
+
+type Props = Omit<ModalTemplateProps, "t"> & { children: ReactNode };
+
+export const ModalTemplate: FC<Props> = ({id, children}) => {
+    const {t} = useTranslation();
+    return <ModalTemplateCore id={id} t={t} >{children}</ModalTemplateCore>;
+};
+
+export default ModalTemplate;
+
+---------------------------------------------------------------------
+
+2) Delete local files (after updating imports):
+- src/store/modalStore.ts
+- src/models/core/modalModels.ts
+- src/components/Modal/ModalTemplate.tsx
+
+---------------------------------------------------------------------
+
+3) Replace imports across consumer project
+
+A) Replace modal store imports:
+
+OLD:
+import {useModalStore, useLastOpenModal} from "@/store/modalStore";
+
+NEW:
+import {useModalStore, useLastOpenModal} from "@nextjs-shared/shared";
+
+B) Replace modal models imports:
+
+OLD:
+import type {ModalModel, ModalStateModel, OptionalModalTemplateProps, ModalTemplateProps} from "@/models/core/modalModels";
+
+NEW:
+import type {ModalModel, ModalStateModel, OptionalModalTemplateProps, ModalTemplateProps} from "@nextjs-shared/shared";
+
+C) Replace DialogType imports:
+
+OLD:
+import {DialogType} from "@/components/Modal/ModalTemplate";
+
+NEW:
+import {DialogType} from "@nextjs-shared/shared";
+
+D) Replace ModalTemplate component imports:
+
+OLD:
+import {ModalTemplate} from "@/components/Modal/ModalTemplate";
+(or default import)
+
+NEW:
+import ModalTemplate from "@/custom_components/Modal/ModalTemplate";
+
+---------------------------------------------------------------------
+
+DONE:
+- Consumer uses shared store/models/core modal template
+- Consumer keeps only a tiny wrapper for i18n t injection
+- All old local modal files are deleted
+- App builds and modal behavior unchanged
