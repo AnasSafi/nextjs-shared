@@ -1,0 +1,52 @@
+CONSUMER TASK – Create wrapper FileDropzone in consumer (v0.2.113)
+
+Goal:
+Keep translation, token service, and FileIconPreview in consumer.
+Inject them into shared FileDropzoneCore.
+
+1) Create file:
+src/custom_components/Form/FileDropzone.tsx
+
+NEW FILE CONTENT (copy/paste):
+
+"use client";
+
+import React from "react";
+import {useTranslation} from "@/app/i18n/client_translation";
+import {getUserToken} from "@/custom_services/auth/userTokenServices";
+import FileIconPreview from "@/custom_components/Helper/FileIconPreview";
+
+import {FileDropzoneCore} from "@nextjs-shared/shared";
+
+export default function FileDropzone(props: any) {
+    const {t} = useTranslation();
+
+    return (
+        <FileDropzoneCore
+            {...props}
+            t={t}
+            getUserToken={getUserToken}
+            FileIconPreview={FileIconPreview}
+        />
+    );
+}
+
+2) Delete old files:
+- src/components/Helper/FileDropzoneCard.ts
+- src/components/Form/FileDropzone.ts
+
+3) Replace imports across consumer:
+
+OLD:
+import FileDropzone from "@/components/Form/FileDropzone";
+
+NEW:
+import FileDropzone from "@/custom_components/Form/FileDropzone";
+
+---------------------------------------------------------------------
+
+DONE:
+- Shared owns FileDropzoneCore
+- Consumer injects translation + token service + FileIconPreview
+- No duplication
+- App builds and behavior unchanged
