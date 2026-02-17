@@ -1,0 +1,84 @@
+CONSUMER TASK – Move BaseComboBox wrapper to custom_components and delegate to shared BaseComboBoxCore (v0.2.108)
+
+Goal:
+Move BaseComboBox into a stable custom_components location and delete the old heavy implementation.
+The wrapper injects:
+- useTranslation (t/currentLng)
+- useComboCore wrapper (binds fetchPage)
+- useCreateOptionModal / useEditOptionModal
+- fetchUtil
+
+1) Create file:
+src/custom_components/Form/Helpers/BaseComboBox.tsx
+
+NEW FILE CONTENT (copy/paste):
+
+"use client";
+
+import React, {forwardRef, type JSX} from "react";
+import type {FieldValues} from "react-hook-form";
+
+import {BaseComboBoxCore} from "@nextjs-shared/shared";
+import type {BaseComboBoxProps} from "@nextjs-shared/shared";
+
+import {useTranslation} from "@/app/i18n/client_translation";
+import {useCreateOptionModal} from "@/custom_hooks/common/useCreateOptionModal";
+import {useEditOptionModal} from "@/custom_hooks/common/useEditOptionModal";
+import {useComboCore} from "@/custom_utils/Form/Helpers/useComboCore";
+import {fetchUtil} from "@/custom_utils/fetchUtils/fetchUtil.client";
+
+function BaseComboBoxInner<TFormValues extends FieldValues = FieldValues>(
+    props: BaseComboBoxProps<TFormValues>,
+    ref: React.ForwardedRef<HTMLInputElement>,
+): JSX.Element {
+    const {t, currentLng} = useTranslation();
+    const {openModal: openCreateOptionModal} = useCreateOptionModal();
+    const {openModal: openEditOptionModal} = useEditOptionModal();
+
+    return (
+        <BaseComboBoxCore
+            {...props}
+            ref={ref}
+            t={t}
+            currentLng={currentLng}
+            useComboCore={useComboCore}
+            openCreateOptionModal={openCreateOptionModal}
+            openEditOptionModal={openEditOptionModal}
+            fetchUtil={fetchUtil}
+        />
+    );
+}
+
+export const BaseComboBox = forwardRef(BaseComboBoxInner) as <
+    TFormValues extends FieldValues = FieldValues
+>(
+    props: BaseComboBoxProps<TFormValues> & {
+        ref?: React.ForwardedRef<HTMLInputElement>;
+    },
+) => JSX.Element;
+
+export default BaseComboBox;
+
+2) Delete old file:
+src/components/Form/Helpers/BaseComboBox.tsx
+
+IMPORTANT:
+- Delete the entire file (do not keep as re-export).
+- Ensure no remaining imports reference this old path.
+
+3) Update imports across the consumer project:
+
+OLD:
+import BaseComboBox from "@/components/Form/Helpers/BaseComboBox";
+
+NEW:
+import BaseComboBox from "@/custom_components/Form/Helpers/BaseComboBox";
+
+If some files already import from the new path, no change is required.
+
+DONE:
+- src/components/Form/Helpers/BaseComboBox.tsx is deleted
+- Wrapper exists at src/custom_components/Form/Helpers/BaseComboBox.tsx
+- Shared owns BaseComboBoxCore logic
+- Consumer injects i18n/modals/fetchUtil/useComboCore
+- App builds and behavior remains unchanged
