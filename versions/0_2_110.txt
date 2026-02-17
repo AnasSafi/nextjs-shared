@@ -1,0 +1,83 @@
+CONSUMER TASK – Move MultiSelectComboBox wrapper to custom_components and inject deps (v0.2.110)
+
+Goal:
+Replace the old MultiSelectComboBox implementation with a thin wrapper that calls shared MultiSelectComboBoxCore and injects:
+- t/currentLng (useTranslation)
+- useComboCore wrapper (consumer-bound fetchPage)
+- useCreateOptionModal/useEditOptionModal
+- fetchUtil
+
+1) Update dependency:
+Ensure:
+"@nextjs-shared/shared": "^0.2.110"
+
+Run:
+npm install
+
+2) Create file:
+src/custom_components/Form/MultiSelectComboBox.tsx
+
+NEW FILE CONTENT (copy/paste):
+
+"use client";
+
+import React, {forwardRef, type JSX} from "react";
+import type {FieldValues} from "react-hook-form";
+
+import {MultiSelectComboBoxCore} from "@nextjs-shared/shared";
+import type {MultiSelectComboBoxCoreProps} from "@nextjs-shared/shared";
+
+import {useTranslation} from "@/app/i18n/client_translation";
+import {useComboCore} from "@/custom_utils/Form/Helpers/useComboCore";
+import {useCreateOptionModal} from "@/custom_hooks/common/useCreateOptionModal";
+import {useEditOptionModal} from "@/custom_hooks/common/useEditOptionModal";
+import {fetchUtil} from "@/custom_utils/fetchUtils/fetchUtil.client";
+
+function MultiSelectComboBoxInner<TFormValues extends FieldValues = FieldValues>(
+    props: MultiSelectComboBoxCoreProps<TFormValues>,
+    ref: React.ForwardedRef<HTMLInputElement>,
+): JSX.Element {
+    const {t, currentLng} = useTranslation();
+    const {openModal: openCreateOptionModal} = useCreateOptionModal();
+    const {openModal: openEditOptionModal} = useEditOptionModal();
+
+    return (
+        <MultiSelectComboBoxCore
+            {...props}
+            ref={ref}
+            t={t}
+            currentLng={currentLng}
+            useComboCore={useComboCore}
+            openCreateOptionModal={openCreateOptionModal}
+            openEditOptionModal={openEditOptionModal}
+            fetchUtil={fetchUtil}
+        />
+    );
+}
+
+export const MultiSelectComboBox = forwardRef(MultiSelectComboBoxInner) as <
+    TFormValues extends FieldValues = FieldValues
+>(
+    props: MultiSelectComboBoxCoreProps<TFormValues> & {
+        ref?: React.ForwardedRef<HTMLInputElement>;
+    },
+) => JSX.Element;
+
+export default MultiSelectComboBox;
+
+3) Delete old file:
+src/components/Form/MultiSelectComboBox.tsx
+
+4) Replace imports across consumer:
+
+OLD:
+import MultiSelectComboBox from "@/components/Form/MultiSelectComboBox";
+
+NEW:
+import MultiSelectComboBox from "@/custom_components/Form/MultiSelectComboBox";
+
+DONE:
+- Old file deleted
+- New wrapper exists under custom_components
+- Uses shared MultiSelectComboBoxCore with injected dependencies
+- App builds and behavior unchanged
