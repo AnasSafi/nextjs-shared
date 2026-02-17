@@ -1,0 +1,52 @@
+CONSUMER TASK – Keep tiny wrapper hook that binds fetchPage and calls shared useComboCore (v0.2.106)
+
+Goal:
+Keep a local wrapper to avoid passing fetchPage everywhere, since fetchPage depends on consumer fetchUtil.
+All logic stays in shared; consumer only binds fetchPage.
+
+1) Update dependency:
+Ensure:
+"@nextjs-shared/shared": "^0.2.106"
+
+Run:
+npm install
+
+2) Create file:
+src/custom_utils/Form/Helpers/useComboCore.ts
+
+NEW FILE CONTENT (copy/paste):
+
+"use client";
+
+import type {UseComboCoreConfig, UseComboCoreReturn} from "@nextjs-shared/shared";
+import {useComboCore as useComboCoreShared} from "@nextjs-shared/shared";
+import {fetchPage} from "@/custom_utils/Form/Helpers/ComboboxFetch";
+
+export function useComboCore(
+    config: UseComboCoreConfig,
+): UseComboCoreReturn {
+    return useComboCoreShared({
+        ...config,
+        fetchPage,
+    });
+}
+
+3) Delete old file:
+src/components/Form/Helpers/useComboCore.ts
+
+OLD FILE CONTENT TO DELETE:
+(the current full implementation)
+
+4) Replace imports across the consumer project:
+
+OLD:
+import {useComboCore} from "@/components/Form/Helpers/useComboCore";
+
+NEW:
+import {useComboCore} from "@/custom_utils/Form/Helpers/useComboCore";
+
+DONE:
+- Consumer wrapper exists and is very small
+- Shared owns the logic
+- No duplicated hook logic in consumer
+- App builds and behavior unchanged
