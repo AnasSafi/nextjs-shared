@@ -102,6 +102,8 @@ export * from "./components/Tables/TablePagesCore";
 export * from "./components/Tables/ListPage";
 export * from "./components/Form/TabScope";
 
+export * from "./components/Form/Helpers/ComboboxShared";
+
 export * from "./i18n/localeSingleton";
 export * from "./i18n/localeMaps";
 export * from "./i18n/settings";
