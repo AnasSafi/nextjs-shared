@@ -104,6 +104,8 @@ export * from "./components/Tables/ListPage";
 export * from "./components/Form/TabScope";
 
 export * from "./components/Form/Helpers/ComboboxShared";
+export {default as OptionList} from "./components/Form/OptionList";
+export * from "./components/Form/OptionList";
 
 export * from "./i18n/localeSingleton";
 export * from "./i18n/localeMaps";
