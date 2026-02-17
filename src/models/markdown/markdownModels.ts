@@ -15,6 +15,7 @@ import type {
     MarkdownAlignment,
     CaptionUiPositionId,
 } from "./markdownTokens";
+import type {RHFErrorInput} from "../core/formModels";
 
 /* ------------------------- Markdown textarea props ------------------------ */
 export interface MarkdownTextAreaProps extends InputHTMLAttributes<HTMLTextAreaElement> {
@@ -30,7 +31,7 @@ export interface MarkdownTextAreaProps extends InputHTMLAttributes<HTMLTextAreaE
     className?: string;
     disabled?: boolean;
     alwaysLTR?: boolean;
-    error?: Merge<FieldError, FieldErrorsImpl<{ [x: string]: string }>>;
+    error?: RHFErrorInput;
     label?: string;
     handleInputChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
     markdownGroups?: MarkdownGroup[];
