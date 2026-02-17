@@ -1,0 +1,74 @@
+CONSUMER TASK – Keep thin ComboBox wrapper in consumer (v0.2.109)
+
+Goal:
+Move ComboBox to custom_components and delegate to shared ComboBoxCore.
+Inject consumer-only dependencies through BaseComboBox wrapper (already injected there).
+
+1) Create file:
+src/custom_components/Form/ComboBox.tsx
+
+NEW FILE CONTENT (copy/paste):
+
+"use client";
+
+import React, {forwardRef, type JSX} from "react";
+import type {FieldValues} from "react-hook-form";
+
+import {ComboBoxCore} from "@nextjs-shared/shared";
+import type {ComboBoxCoreProps} from "@nextjs-shared/shared";
+
+import {useTranslation} from "@/app/i18n/client_translation";
+import {useComboCore} from "@/custom_utils/Form/Helpers/useComboCore";
+import {useCreateOptionModal} from "@/custom_hooks/common/useCreateOptionModal";
+import {useEditOptionModal} from "@/custom_hooks/common/useEditOptionModal";
+import {fetchUtil} from "@/custom_utils/fetchUtils/fetchUtil.client";
+
+function ComboBoxInner<TFormValues extends FieldValues = FieldValues>(
+    props: ComboBoxCoreProps<TFormValues>,
+    ref: React.ForwardedRef<HTMLInputElement>,
+): JSX.Element {
+    const {t, currentLng} = useTranslation();
+    const {openModal: openCreateOptionModal} = useCreateOptionModal();
+    const {openModal: openEditOptionModal} = useEditOptionModal();
+
+    return (
+        <ComboBoxCore
+            {...props}
+            ref={ref}
+            t={t}
+            currentLng={currentLng}
+            useComboCore={useComboCore}
+            openCreateOptionModal={openCreateOptionModal}
+            openEditOptionModal={openEditOptionModal}
+            fetchUtil={fetchUtil}
+        />
+    );
+}
+
+export const ComboBox = forwardRef(ComboBoxInner) as <
+    TFormValues extends FieldValues = FieldValues
+>(
+    props: ComboBoxCoreProps<TFormValues> & {
+        ref?: React.ForwardedRef<HTMLInputElement>;
+    },
+) => JSX.Element;
+
+export default ComboBox;
+
+
+2) Delete old file:
+src/components/Form/ComboBox.tsx
+
+3) Update imports across consumer:
+
+OLD:
+import ComboBox from "@/components/Form/ComboBox";
+
+NEW:
+import ComboBox from "@/custom_components/Form/ComboBox";
+
+DONE:
+- Shared owns ComboBoxCore logic
+- Consumer keeps lightweight wrapper
+- No duplication of logic
+- App builds and behavior unchanged

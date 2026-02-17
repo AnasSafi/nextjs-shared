@@ -108,6 +108,8 @@ export {default as OptionList} from "./components/Form/OptionList";
 export * from "./components/Form/OptionList";
 export {default as BaseComboBoxCore} from "./components/Form/BaseComboBoxCore";
 export * from "./components/Form/BaseComboBoxCore";
+export {default as ComboBoxCore} from "./components/Form/ComboBoxCore";
+export * from "./components/Form/ComboBoxCore";
 
 export * from "./i18n/localeSingleton";
 export * from "./i18n/localeMaps";
