@@ -1,0 +1,50 @@
+CONSUMER TASK – Switch to shared ValidationErrorsList + shared useErrorMessageModalActions (inject t) – v0.2.116
+
+Goal:
+Delete local modal helper files and use shared ones.
+Inject t from consumer i18n at call-site (useTranslation).
+
+1) Update dependency:
+Ensure:
+"@nextjs-shared/shared": "^0.2.116"
+
+Run:
+npm install
+
+2) Delete local files:
+src/components/Modals/ValidationErrorsList.tsx
+src/components/Modals/errorMessageModalActions.tsx
+
+3) Update file:
+src/hooks/core/modal/useModalActions.tsx
+
+A) REPLACE THIS OLD IMPORT (delete it):
+import {useErrorMessageModalActions} from "@/components/Modals/errorMessageModalActions";
+
+WITH THIS NEW IMPORT:
+import {useErrorMessageModalActions} from "@nextjs-shared/shared";
+
+B) Update hook usage:
+
+OLD:
+const {openErrorMessageModal} = useErrorMessageModalActions();
+
+NEW:
+const {openErrorMessageModal} = useErrorMessageModalActions(t);
+
+4) If ValidationErrorsList is imported directly anywhere else in consumer, replace it:
+
+OLD:
+import ValidationErrorsList from "@/components/Modals/ValidationErrorsList";
+(or its types from the same path)
+
+NEW:
+import {ValidationErrorsList} from "@nextjs-shared/shared";
+and render it with:
+<ValidationErrorsList items={...} t={t} />
+
+DONE:
+- Local modal error UI files deleted
+- useModalActions uses shared useErrorMessageModalActions(t)
+- ValidationErrorsList rendered with injected t
+- App builds and behavior unchanged
