@@ -1,6 +1,6 @@
 {
   "name": "@nextjs-shared/shared",
-  "version": "0.2.118",
+  "version": "0.2.119",
   "private": false,
   "type": "module",
   "files": [
@@ -29,7 +29,8 @@
     "bcryptjs": "^3.0.3",
     "i18next": "^25.8.7",
     "i18next-resources-to-backend": "^1.2.1",
-    "react-i18next": "^16.5.4"
+    "react-i18next": "^16.5.4",
+    "type-fest": "^4"
   },
   "peerDependencies": {
     "@heroicons/react": ">=2",

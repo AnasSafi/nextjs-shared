@@ -1,0 +1,22 @@
+CONSUMER TASK – Replace local markdownModels with shared markdownModels (v0.2.119)
+
+Goal:
+Delete local markdownModels file and import types from "@nextjs-shared/shared".
+
+1) Delete local file:
+src/models/core/markdownModels.ts
+
+2) Replace imports across the consumer project:
+
+OLD:
+import type {SaveMarkdownImageModel, OpenMarkdownImageModel, ...} from "@/models/core/markdownModels";
+
+NEW:
+import type {SaveMarkdownImageModel, OpenMarkdownImageModel, ...} from "@nextjs-shared/shared";
+
+(Import the specific types you used.)
+
+DONE:
+- Local markdownModels.ts removed
+- All markdown model types come from "@nextjs-shared/shared"
+- App builds successfully
