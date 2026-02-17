@@ -15,6 +15,7 @@ import {generateUniqueString} from "../../utils/stringUtils";
 import {FormError} from "./Helpers/FormError";
 import {RequiredAsterisk} from "./RequiredAsterisk";
 import {TooltipIcon} from "./TooltipIcon";
+import {TranslateFn} from "../../models/core/localeModels";
 
 type UploadApiResponse = {
     success?: { data?: { mediaId?: string; publicUrl?: string } };
@@ -44,7 +45,7 @@ export type SingleFileDropzoneCoreProps = {
     onUploadedAction?: (payload: { mediaId: string; publicUrl?: string | null }) => void;
     resetToken?: number | string;
 
-    t: (key: string) => string;
+    t: TranslateFn;
 
     getUserToken: () => Promise<string | null>;
     uploadUrl?: string;

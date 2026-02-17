@@ -14,9 +14,10 @@ import {RequiredAsterisk} from "./RequiredAsterisk";
 import {TooltipIcon} from "./TooltipIcon";
 import {FormError} from "./Helpers/FormError";
 import {generateUniqueString} from "../../utils/stringUtils";
+import {TranslateFn} from "../../models/core/localeModels";
 
 type Injected = {
-    t: (key: string, vars?: Record<string, any>) => string;
+    t: TranslateFn;
     getUserToken: () => Promise<string | null>;
     FileIconPreview: React.ComponentType<{ file: FileState }>;
 };

@@ -9,7 +9,7 @@ import type {PaginationModel, SelectOptionModel} from "../../models/core/dbModel
 import {RHFErrorCompat} from "../../models/core/formModels";
 import {composeRefs, getOptionLabelFactory, getPrimaryLabelFactory, normalizeForSearch} from "./Helpers/ComboboxShared";
 import {mapKeysToThreeCharLocales} from "../../i18n/localeMaps";
-import {MultiLangValue} from "../../models/core/localeModels";
+import {MultiLangValue, TranslateFn} from "../../models/core/localeModels";
 import {RequiredAsterisk} from "./RequiredAsterisk";
 import {TooltipIcon} from "./TooltipIcon";
 import OptionList from "./OptionList";
@@ -20,7 +20,7 @@ export type BaseVariant = "single" | "multiple";
 type PathBuilder = string | ((opt: SelectOptionModel) => string);
 
 export type BaseComboBoxInjected = {
-    t: (key: string, vars?: Record<string, any>) => string;
+    t: TranslateFn;
     currentLng: string;
 
     useComboCore: (config: {
