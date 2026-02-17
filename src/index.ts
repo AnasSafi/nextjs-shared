@@ -142,3 +142,5 @@ export * from "./hooks/modalHooks/useErrorMessageModalActions";
 export * from "./hooks/modalHooks/useModalActions";
 export * from "./hooks/modalHooks/useReusableModal";
 export * from "./hooks/modalHooks/useModalFactory";
+
+export * from "./validations/yup/yupSchemaExtensions";

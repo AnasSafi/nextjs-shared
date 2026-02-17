@@ -1,0 +1,69 @@
+CONSUMER TASK – Replace yupSchema.ts with thin wrapper that uses shared applyYupSchemaExtensions (v0.2.123)
+
+Goal:
+Stop maintaining the huge yupSchema.ts in consumer.
+Keep ONLY a tiny local bootstrap that:
+- imports yup
+- applies shared extensions (side effects on yup prototypes)
+- exports yup as default
+Consumer will keep translationInputName and pass it via yup context when validating.
+
+1) Update file:
+src/custom_validations/schema/client/yupConfig.ts
+
+REPLACE ENTIRE FILE CONTENT with:
+
+import * as yup from "yup";
+import {applyYupSchemaExtensions} from "@nextjs-shared/shared";
+
+applyYupSchemaExtensions(yup);
+
+export default yup;
+
+------------------------------------------------------------
+
+2) Delete file:
+src/custom_validations/schema/client/yupSchema.ts
+
+------------------------------------------------------------
+
+3) Keep this file as-is (consumer-specific, DO NOT move):
+src/utils/translationUtils.ts
+
+Because it depends on consumer i18n server.
+
+------------------------------------------------------------
+
+4) IMPORTANT: Pass translateFieldName in yup context wherever you validate
+
+When you validate (examples):
+
+A) If you use schema.validate:
+
+import yup from "@/custom_validations/schema/client/yupConfig";
+import {translationInputName} from "@/utils/translationUtils";
+
+await schema.validate(data, {
+  context: {
+    t,
+    translateFieldName: translationInputName,
+  },
+});
+
+B) If you use yupResolver:
+
+import {yupResolver} from "@hookform/resolvers/yup";
+import {translationInputName} from "@/utils/translationUtils";
+
+const resolver = yupResolver(schema, {
+  context: {
+    t,
+    translateFieldName: translationInputName,
+  },
+});
+
+DONE:
+- Consumer no longer has a giant yupSchema.ts
+- Shared owns the validation rules/extensions
+- Consumer injects translationInputName via yup context
+- App builds and validation behavior remains unchanged
