@@ -42,7 +42,7 @@ export * from "./models/markdown/markdownTokens";
 export * from "./models/markdown/markdownImageModels";
 export * from "./models/ui/modalModels";
 export * from "./models/core/formResponseModels";
-
+export * from "./models/markdown/markdownModels";
 
 export * from "./store/userStore";
 export * from "./store/modalStore";
