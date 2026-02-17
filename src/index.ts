@@ -102,6 +102,8 @@ export * from "./components/Tables/PaginationControls";
 export * from "./components/Tables/TablePagesCore";
 export * from "./components/Tables/ListPage";
 export * from "./components/Form/TabScope";
+export {default as FileIconPreviewCore} from "./components/Helper/FileIconPreviewCore";
+export * from "./components/Helper/FileIconPreviewCore";
 
 export * from "./components/Form/Helpers/ComboboxShared";
 export {default as OptionList} from "./components/Form/OptionList";

@@ -1,6 +1,6 @@
 {
   "name": "@nextjs-shared/shared",
-  "version": "0.2.110",
+  "version": "0.2.112",
   "private": false,
   "type": "module",
   "files": [
