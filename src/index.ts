@@ -25,6 +25,7 @@ export * from "./utils/fetch/createClientFetchUtil";
 export * from "./utils/fetch/createServerFetchUtil";
 export * from "./utils/FilterFormMapper";
 export * from "./utils/markdownUtils";
+export * from "./utils/comboboxFetchUtils";
 
 export * from "./models/core/localeModels";
 export * from "./models/core/dbModels";
