@@ -1,0 +1,36 @@
+CONSUMER TASK – Replace useModalForm with wrapper using shared createUseModalForm
+Goal: Move useModalForm logic to shared, keep i18n local, relocate hook under custom_hooks, and update imports.
+
+1) Delete old file
+Delete file:
+  src/hooks/formHooks/useModalForm.ts
+
+--------------------------------------------------
+
+2) Create new wrapper file
+Create file:
+  src/custom_hooks/formHooks/useModalForm.ts
+
+FULL FILE CONTENT:
+import {createUseModalForm} from "@nextjs-shared/shared";
+import {useTranslation} from "@/app/i18n/client_translation";
+
+export const useModalForm = createUseModalForm(useTranslation);
+
+--------------------------------------------------
+
+3) Update imports across project
+
+Search for:
+  from "@/hooks/formHooks/useModalForm"
+
+Replace with:
+  from "@/custom_hooks/formHooks/useModalForm"
+
+--------------------------------------------------
+
+DONE CRITERIA:
+- Consumer no longer duplicates useModalForm logic.
+- useTranslation remains consumer-controlled.
+- All imports updated to the new path.
+- Hook behavior and typing remain consistent.

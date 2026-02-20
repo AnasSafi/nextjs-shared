@@ -144,5 +144,6 @@ export * from "./hooks/modalHooks/useReusableModal";
 export * from "./hooks/modalHooks/useModalFactory";
 export {createUseRegularForm} from "./hooks/formHooks/useRegularForm";
 export {createUseModalOpenError} from "./hooks/formHooks/useModalOpenError";
+export {createUseModalForm} from "./hooks/formHooks/useModalForm";
 
 export * from "./validations/yup/yupSchemaExtensions";
