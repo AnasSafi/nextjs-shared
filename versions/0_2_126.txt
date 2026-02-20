@@ -8,16 +8,14 @@ Delete file:
 --------------------------------------------------
 
 2) Create new wrapper file
-Create file:
-  src/custom_hooks/formHooks/useModalOpenError.ts
+  Create file:
+    src/custom_hooks/formHooks/useModalOpenError.ts
 
-FULL FILE CONTENT:
-import {createUseModalOpenError} from "@nextjs-shared/shared";
-import {useTranslation} from "@/app/i18n/client_translation";
+  FULL FILE CONTENT:
+  import {createUseModalOpenError} from "@nextjs-shared/shared";
+  import {useTranslation} from "@/app/i18n/client_translation";
 
-const useModalOpenError = createUseModalOpenError(useTranslation().t);
-
-export default useModalOpenError;
+  export default createUseModalOpenError(useTranslation);
 
 --------------------------------------------------
 

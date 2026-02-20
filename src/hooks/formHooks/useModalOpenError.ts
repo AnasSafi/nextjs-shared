@@ -1,9 +1,9 @@
-import type {TFunction} from "i18next";
 import {useModalStore} from "../../store/modalStore";
 import {useErrorMessageModalActions} from "../modalHooks/useErrorMessageModalActions";
 import {FetchError} from "../../extensions/FetchError";
+import {TranslateFn} from "../../models/core/localeModels";
 
-export function createUseModalOpenError(t: TFunction) {
+export function createUseModalOpenError(t: TranslateFn) {
     return function useModalOpenError() {
         const {closeModal} = useModalStore();
         const {openErrorMessageModal} = useErrorMessageModalActions(t);

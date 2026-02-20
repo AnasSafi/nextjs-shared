@@ -2,8 +2,9 @@ import {useState} from "react";
 import type {FieldValues} from "react-hook-form";
 import {RegularFormPropsModel} from "../../models/core/formModels";
 import {UseRegularFormFunction} from "../../models/ui/modalModels";
+import {TranslateFn} from "../../models/core/localeModels";
 
-export type UseTranslationHook = () => {t: (key: string, options?: any) => string};
+export type UseTranslationHook = () => {t: TranslateFn};
 
 export function createUseRegularForm(useTranslationHook: UseTranslationHook) {
     return function useRegularForm<TFieldValues extends FieldValues>(
