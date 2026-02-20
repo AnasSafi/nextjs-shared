@@ -44,6 +44,7 @@ export * from "./models/markdown/markdownImageModels";
 export * from "./models/ui/modalModels";
 export * from "./models/core/formResponseModels";
 export * from "./models/markdown/markdownModels";
+export type {WithRowId, RepeaterRowModel} from "./models/core/repeaterModels";
 
 export * from "./store/userStore";
 export * from "./store/modalStore";
@@ -145,5 +146,6 @@ export * from "./hooks/modalHooks/useModalFactory";
 export {createUseRegularForm} from "./hooks/formHooks/useRegularForm";
 export {createUseModalOpenError} from "./hooks/formHooks/useModalOpenError";
 export {createUseModalForm} from "./hooks/formHooks/useModalForm";
+export {createUseFormInput} from "./hooks/formHooks/useFormInput";
 
 export * from "./validations/yup/yupSchemaExtensions";
