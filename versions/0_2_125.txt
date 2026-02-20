@@ -1,0 +1,38 @@
+CONSUMER TASK – Move useModalOpenError to custom wrapper using shared factory
+Goal: Keep consumer i18n dependency local, move hook logic to shared, and relocate hook under custom_hooks.
+
+1) Delete old file
+Delete file:
+  src/hooks/formHooks/useModalOpenError.ts
+
+--------------------------------------------------
+
+2) Create new wrapper file
+Create file:
+  src/custom_hooks/formHooks/useModalOpenError.ts
+
+FULL FILE CONTENT:
+import {createUseModalOpenError} from "@nextjs-shared/shared";
+import {useTranslation} from "@/app/i18n/client_translation";
+
+const useModalOpenError = createUseModalOpenError(useTranslation().t);
+
+export default useModalOpenError;
+
+--------------------------------------------------
+
+3) Update imports across project
+
+Search for (default import):
+  from "@/hooks/formHooks/useModalOpenError"
+
+Replace with:
+  from "@/custom_hooks/formHooks/useModalOpenError"
+
+--------------------------------------------------
+
+DONE CRITERIA:
+- Consumer no longer contains duplicated modal-open error logic.
+- Translation remains consumer-controlled.
+- All imports updated to new path.
+- Project builds successfully.
