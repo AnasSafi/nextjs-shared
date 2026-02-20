@@ -1,5 +1,5 @@
-CONSUMER TASK – Replace local useFormInput with thin wrapper + keep consumer language config
-Goal: Move heavy hook logic to shared, keep project language config local, and keep existing consumer imports stable via thin wrappers where needed.
+CONSUMER TASK – Replace local useFormInput with thin wrapper + import repeater types directly from shared
+Goal: Move heavy hook logic to shared, keep project language config local, and AVOID creating any consumer re-export files for shared types.
 
 1) Delete old hook file
 Delete file:
@@ -19,23 +19,9 @@ export const useFormInput = createUseFormInput(languages);
 
 --------------------------------------------------
 
-3) Keep (or improve) repeater models import stability
-File: src/models/core/repeaterModels.ts
-
-OLD CODE TO REMOVE:
-export interface WithRowId {
-    rowId: string;
-
-    [key: string]: unknown; // Allows for additional properties beyond rowId
-}
-
-export interface RepeaterRowModel<T extends WithRowId> {
-    sections?: T[];
-    toDeleteSections?: string[];
-}
-
-NEW CODE TO ADD (FULL FILE CONTENT):
-export type {WithRowId, RepeaterRowModel} from "@nextjs-shared/shared";
+3) Delete local repeater models file (if it exists)
+Delete file:
+  src/models/core/repeaterModels.ts
 
 --------------------------------------------------
 
@@ -47,14 +33,22 @@ Search for:
 Replace with:
   from "@/custom_hooks/formHooks/useFormInput"
 
-B) If any files import repeater models from the local path, you can keep them as-is:
-  "@/models/core/repeaterModels"
-because it now re-exports from shared.
+B) Repeater models imports (IMPORTANT)
+Search for:
+  from "@/models/core/repeaterModels"
+Replace with:
+  from "@nextjs-shared/shared"
+
+Also replace any type-only imports like:
+  import type {RepeaterRowModel, WithRowId} from "@/models/core/repeaterModels";
+With:
+  import type {RepeaterRowModel, WithRowId} from "@nextjs-shared/shared";
 
 --------------------------------------------------
 
 DONE CRITERIA:
 - Consumer no longer contains the heavy `useFormInput` implementation.
 - Consumer still controls `languages` via its local localizationConfig.
-- Any existing imports of repeater models remain working (now sourced from shared).
+- Consumer does NOT re-export shared types from local files.
+- All repeater model imports point directly to "@nextjs-shared/shared".
 - Project builds successfully.
