@@ -48,6 +48,7 @@ export type {WithRowId, RepeaterRowModel} from "./models/core/repeaterModels";
 
 export * from "./store/userStore";
 export * from "./store/modalStore";
+export {useLoaderStore} from "./store/loaderStore";
 
 export * from "./extensions/FetchError";
 export * from "./services/auth/userTokenServices.client";

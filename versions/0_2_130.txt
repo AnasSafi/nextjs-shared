@@ -1,0 +1,25 @@
+CONSUMER TASK – Delete local loaderStore and import shared useLoaderStore directly
+Goal: Stop having a consumer-level loader store. Use the shared store exactly like modalStore usage.
+
+1) Delete local file
+Delete file:
+  src/store/loaderStore.ts
+
+--------------------------------------------------
+
+2) Replace imports across consumer project
+
+Search for:
+import {useLoaderStore} from "@/store/loaderStore";
+
+Replace with:
+import {useLoaderStore} from "@nextjs-shared/shared";
+
+(If you had default exports or different import style, update accordingly.)
+
+--------------------------------------------------
+
+DONE CRITERIA:
+- Consumer has no src/store/loaderStore.ts.
+- All loader store usage imports from "@nextjs-shared/shared".
+- App builds and loader behavior is unchanged.
