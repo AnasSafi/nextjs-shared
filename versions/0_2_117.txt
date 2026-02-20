@@ -24,6 +24,7 @@ import {useTranslation} from "@/app/i18n/client_translation";
 import {createModalHook as createModalHookShared} from "@nextjs-shared/shared";
 import type {AllowedUserType} from "@nextjs-shared/shared";
 import type {FormPropsModel, FormRefModel} from "@nextjs-shared/shared";
+import React from "react";
 
 export function createModalHook<TIn, TOut = TIn>(config: {
     modalId: string;
@@ -39,8 +40,11 @@ export function createModalHook<TIn, TOut = TIn>(config: {
     readOnly?: boolean;
     fullHeightScreen?: boolean;
 }) {
-    const {t} = useTranslation();
-    return createModalHookShared<TIn, TOut>({...config, t});
+    return function useGeneratedModal() {
+        const {t} = useTranslation();
+        const useModal = createModalHookShared<TIn, TOut>({...config, t});
+        return useModal();
+    };
 }
 
 ---------------------------------------------------------------------
