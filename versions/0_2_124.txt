@@ -1,0 +1,33 @@
+CONSUMER TASK – Migrate useRegularForm to shared-based thin wrapper
+Goal: Move logic to shared, keep i18n local, relocate hook under custom_hooks.
+
+1) Delete old file
+Delete file:
+  src/hooks/formHooks/useRegularForm.ts
+
+2) Create new wrapper file
+Create file:
+  src/custom_hooks/formHooks/useRegularForm.ts
+
+FULL FILE CONTENT:
+import {useTranslation} from "@/app/i18n/client_translation";
+import {createUseRegularForm} from "@nextjs-shared/shared";
+
+export const useRegularForm = createUseRegularForm(useTranslation);
+
+3) Update imports across project (IMPORTANT)
+
+Search for:
+  from "@/hooks/formHooks/useRegularForm"
+
+Replace with:
+  from "@/custom_hooks/formHooks/useRegularForm"
+
+This ensures all existing call sites continue working without logic changes.
+
+DONE CRITERIA:
+- No form logic duplicated inside consumer.
+- Translation remains injected from consumer.
+- All imports updated to new path.
+- Project builds successfully.
+- Behavior remains identical (t + inProgress + form bindings).
