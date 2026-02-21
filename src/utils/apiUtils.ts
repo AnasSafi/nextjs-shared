@@ -26,7 +26,11 @@ export type RouteConfigLike = {
 
 export type ServerResponseLike = unknown;
 
-export type ServerResponseCtor = new (payload: unknown, status?: number) => ServerResponseLike;
+/**
+ * Allow consumer ServerResponse classes with extended constructor signatures,
+ * e.g. new (body, status?, extraHeaders?) => ServerResponse<T>.
+ */
+export type ServerResponseCtor = new (...args: any[]) => ServerResponseLike;
 
 export type GetTranslations = () => Promise<{t: TranslateFn}>;
 
