@@ -1,0 +1,48 @@
+CONSUMER TASK – Delete old validationUtils and create thin wrapper under custom_utils
+Project: club_next_js
+Goal: Remove heavy validation logic from consumer and create a thin wrapper that injects `languages` and consumer `yup` instance.
+
+1) Delete old file
+Delete file:
+  src/utils/validationUtils.ts
+
+--------------------------------------------------
+
+2) Create new wrapper file
+Create file:
+  src/custom_utils/validationUtils.ts
+
+FULL FILE CONTENT:
+import {
+    createGenerateMultiLangTextValidationSchema,
+    extractRequiredFields as sharedExtractRequiredFields,
+} from "@nextjs-shared/shared";
+import {languages} from "@/config/localizationConfig";
+import yup from "@/custom_validations/schema/client/yupConfig";
+
+export const extractRequiredFields = sharedExtractRequiredFields;
+
+export const generateMultiLangTextValidationSchema =
+    createGenerateMultiLangTextValidationSchema({
+        languages,
+        yup,
+    });
+
+--------------------------------------------------
+
+3) Update imports across project
+
+Search for:
+  from "@/utils/validationUtils"
+
+Replace with:
+  from "@/custom_utils/validationUtils"
+
+--------------------------------------------------
+
+DONE CRITERIA:
+- src/utils/validationUtils.ts no longer exists.
+- New thin wrapper exists at src/custom_utils/validationUtils.ts.
+- All imports updated to new path.
+- Consumer contains no validation business logic.
+- Project builds successfully.
