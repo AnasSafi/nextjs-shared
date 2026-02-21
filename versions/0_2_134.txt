@@ -1,0 +1,47 @@
+CONSUMER TASK – Delete local useFormHandler and create wrapper injecting useTranslation + fetchUtil (v0.2.134)
+Goal: Remove duplicated heavy hook from consumer, keep auth/locale fetch logic in consumer, inject it into shared hook factory.
+
+---------------------------------------------------------------------
+
+1) Delete old file
+Delete file:
+  src/hooks/formHooks/useFormHandler.ts
+
+---------------------------------------------------------------------
+
+2) Create wrapper file
+Create file:
+  src/custom_hooks/formHooks/useFormHandler.ts
+
+FULL FILE CONTENT:
+"use client";
+
+import {createUseFormHandler} from "@nextjs-shared/shared";
+import {useTranslation} from "@/app/i18n/client_translation";
+import {fetchUtil} from "@/custom_utils/fetchUtils/fetchUtil.client";
+
+export const useFormHandler = createUseFormHandler({
+    useTranslationHook: useTranslation,
+    fetchUtil,
+});
+
+---------------------------------------------------------------------
+
+3) Update imports across project
+
+A) Replace hook imports
+Search for:
+  from "@/hooks/formHooks/useFormHandler"
+Replace with:
+  from "@/custom_hooks/formHooks/useFormHandler"
+
+B) Remove now-unneeded local validation util import usages inside the deleted file only
+- No other files need changes for extractRequiredFields/createTranslationInputName because shared handles them internally now.
+
+---------------------------------------------------------------------
+
+DONE CRITERIA:
+- Consumer no longer has src/hooks/formHooks/useFormHandler.ts.
+- Wrapper exists at src/custom_hooks/formHooks/useFormHandler.ts.
+- All imports updated to new path.
+- App builds successfully and behavior is unchanged.

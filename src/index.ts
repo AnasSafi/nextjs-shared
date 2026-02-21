@@ -152,5 +152,7 @@ export {createUseModalForm} from "./hooks/formHooks/useModalForm";
 export {createUseFormInput} from "./hooks/formHooks/useFormInput";
 export {createUseModalEntityForm} from "./hooks/formHooks/useModalEntityForm";
 export {createUseFilterFormHandler} from "./hooks/formHooks/useFilterFormHandler";
+export {createUseFormHandler} from "./hooks/formHooks/useFormHandler";
+export type {FetchUtilLike} from "./hooks/formHooks/useFormHandler";
 
 export * from "./validations/yup/yupSchemaExtensions";
