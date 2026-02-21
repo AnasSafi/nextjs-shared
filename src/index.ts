@@ -36,7 +36,6 @@ export {createApiUtils} from "./utils/apiUtils";
 export type {
     RouteConfigLike,
     ServerResponseCtor,
-    ServerResponseLike,
     GetTranslations,
     SetAppLocale,
     GetUserFromRequest,

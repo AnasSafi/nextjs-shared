@@ -24,13 +24,11 @@ export type RouteConfigLike = {
     bodyType?: BodyType;
 };
 
-export type ServerResponseLike = unknown;
-
 /**
  * Allow consumer ServerResponse classes with extended constructor signatures,
  * e.g. new (body, status?, extraHeaders?) => ServerResponse<T>.
  */
-export type ServerResponseCtor = new (...args: any[]) => ServerResponseLike;
+export type ServerResponseCtor<TServerResponse> = new (...args: any[]) => TServerResponse;
 
 export type GetTranslations = () => Promise<{t: TranslateFn}>;
 
@@ -46,11 +44,11 @@ export type IsUnderMaintenance = () => Promise<boolean>;
 
 export type GetUserPermissions = (user: UserModel | null) => Promise<string[]>;
 
-export type IsServerResponse = (v: unknown) => v is ServerResponseLike;
+export type IsServerResponse<TServerResponse> = (v: unknown) => v is TServerResponse;
 
-export function createApiUtils(args: {
-    ServerResponse: ServerResponseCtor;
-    isServerResponse: IsServerResponse;
+export function createApiUtils<TServerResponse>(args: {
+    ServerResponse: ServerResponseCtor<TServerResponse>;
+    isServerResponse: IsServerResponse<TServerResponse>;
 
     getTranslations: GetTranslations;
     setAppLocale: SetAppLocale;
@@ -76,9 +74,9 @@ export function createApiUtils(args: {
     /* ------------------------- Error handling wrapper ------------------------ */
 
     const withErrorHandling = <A extends unknown[]>(
-        fn: (...args: A) => Promise<ServerResponseLike>,
+        fn: (...args: A) => Promise<TServerResponse>,
     ) => {
-        return async (...args: A): Promise<ServerResponseLike> => {
+        return async (...args: A): Promise<TServerResponse> => {
             try {
                 return await fn(...args);
             } catch (e) {
@@ -92,7 +90,7 @@ export function createApiUtils(args: {
                         },
                     },
                     500,
-                );
+                ) as unknown as TServerResponse;
             }
         };
     };
@@ -100,10 +98,10 @@ export function createApiUtils(args: {
     /* --------------------------- Config/permissions -------------------------- */
 
     function withConfig<B>(
-        routeFunc: (req: NextRequest, body?: B) => Promise<ServerResponseLike>,
+        routeFunc: (req: NextRequest, body?: B) => Promise<TServerResponse>,
         config: RouteConfigLike,
     ) {
-        return async (req: NextRequest, body?: B): Promise<ServerResponseLike> => {
+        return async (req: NextRequest, body?: B): Promise<TServerResponse> => {
             if ((config.apiUrl ?? "").toLowerCase() !== "/api/auth/refresh") {
                 const [translations, user, isUserAuthenticated, maintenanceMode] = await Promise.all([
                     getTranslations(),
@@ -167,9 +165,9 @@ export function createApiUtils(args: {
     /* ----------------------------- Locale wrapper ---------------------------- */
 
     function withChangeLocale<B>(
-        routeFunc: (request: NextRequest, body?: B) => Promise<ServerResponseLike>,
+        routeFunc: (request: NextRequest, body?: B) => Promise<TServerResponse>,
     ) {
-        return async (req: NextRequest, body?: B): Promise<ServerResponseLike> => {
+        return async (req: NextRequest, body?: B): Promise<TServerResponse> => {
             const locale = req.headers.get("Accept-Language");
             if (locale) setAppLocale(locale);
             return routeFunc(req, body);
@@ -182,7 +180,7 @@ export function createApiUtils(args: {
         req: NextRequest,
         bodyType: BodyType,
         t: TranslateFn,
-    ): Promise<B | ServerResponseLike> {
+    ): Promise<B | TServerResponse> {
         try {
             switch (bodyType) {
                 case "json":
@@ -210,10 +208,10 @@ export function createApiUtils(args: {
     /* ------------------------------- withAll HOF ------------------------------ */
 
     function withAll<J = unknown>(
-        routeFunc: (req: NextRequest, body?: InferBody<BodyType, J>) => Promise<ServerResponseLike>,
+        routeFunc: (req: NextRequest, body?: InferBody<BodyType, J>) => Promise<TServerResponse>,
         config: RouteConfigLike,
     ) {
-        return withErrorHandling(async (req: NextRequest): Promise<ServerResponseLike> => {
+        return withErrorHandling(async (req: NextRequest): Promise<TServerResponse> => {
             const {t} = await getTranslations();
 
             const bodyOrError = await validateRequestBody<InferBody<BodyType, J>>(req, config.bodyType, t);
