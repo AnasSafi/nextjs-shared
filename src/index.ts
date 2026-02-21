@@ -148,5 +148,6 @@ export {createUseRegularForm} from "./hooks/formHooks/useRegularForm";
 export {createUseModalOpenError} from "./hooks/formHooks/useModalOpenError";
 export {createUseModalForm} from "./hooks/formHooks/useModalForm";
 export {createUseFormInput} from "./hooks/formHooks/useFormInput";
+export {createUseModalEntityForm} from "./hooks/formHooks/useModalEntityForm";
 
 export * from "./validations/yup/yupSchemaExtensions";

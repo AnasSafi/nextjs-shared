@@ -1,0 +1,49 @@
+CONSUMER TASK – Replace local useFormLocale + useModalEntityForm with shared-based wrapper (v0.2.131)
+Goal: Remove both local hooks, keep language config local, keep i18n local, and expose a thin wrapper in consumer. Keep your existing wrappers for useModalForm/useFormInput unchanged.
+
+1) Delete old files
+Delete file:
+  src/hooks/formHooks/useFormLocale.ts
+Delete file:
+  src/hooks/formHooks/useModalEntityForm.ts
+
+--------------------------------------------------
+
+2) Create wrapper file for useModalEntityForm (inject languages/defaultLng/useTranslation)
+Create file:
+  src/custom_hooks/formHooks/useModalEntityForm.ts
+
+FULL FILE CONTENT:
+"use client";
+
+import {createUseModalEntityForm} from "@nextjs-shared/shared";
+import {languages, defaultLng} from "@/config/localizationConfig";
+import {useTranslation} from "@/app/i18n/client_translation";
+
+export const useModalEntityForm = createUseModalEntityForm({
+    languages,
+    defaultLng,
+    useTranslationHook: useTranslation,
+});
+
+3) Update imports across project
+
+A) useModalEntityForm import path
+Search for:
+  from "@/hooks/formHooks/useModalEntityForm"
+Replace with:
+  from "@/custom_hooks/formHooks/useModalEntityForm"
+
+B) useFormLocale imports (should become unused)
+Search for:
+  from "@/hooks/formHooks/useFormLocale"
+- Remove these imports and remove any direct usage (since it was only used inside useModalEntityForm).
+- If you find any other usage, migrate that call site to useModalEntityForm outputs (formLocale/toggle/rtl/etc) or tell me and we’ll export a dedicated wrapper.
+
+--------------------------------------------------
+
+DONE CRITERIA:
+- Consumer no longer has local implementations for useFormLocale/useModalEntityForm.
+- Consumer keeps localizationConfig local (languages/defaultLng).
+- Consumer injects useTranslation from client_translation into shared factory.
+- All imports updated and build succeeds.
