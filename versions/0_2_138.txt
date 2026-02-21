@@ -1,0 +1,63 @@
+CONSUMER TASK – Replace local ServerResponse + handlePostRequest with shared versions (v0.2.139)
+Goal:
+- Delete local ServerResponse.
+- Delete local postRequestHandler.
+- Inject getTranslations + HttpError into shared handler.
+- Update imports.
+
+--------------------------------------------------
+
+1) Delete files
+
+Delete:
+  src/extensions/ServerResponse.ts
+
+Delete:
+  src/utils/postRequestHandler.ts
+
+--------------------------------------------------
+
+2) Create wrapper: src/custom_utils/serverResponse.ts
+
+FULL FILE CONTENT:
+export {ServerResponse} from "@nextjs-shared/shared";
+
+--------------------------------------------------
+
+3) Create wrapper: src/custom_utils/postRequestHandler.ts
+
+FULL FILE CONTENT:
+import {createHandlePostRequest} from "@nextjs-shared/shared";
+import {getTranslations} from "@/app/i18n/server_translation";
+import {HttpError} from "@/custom_utils/apiUtils";
+
+export const handlePostRequest = createHandlePostRequest({
+    getTranslations: async () => {
+        const {t} = await getTranslations();
+        return {t};
+    },
+    HttpErrorClass: HttpError,
+});
+
+--------------------------------------------------
+
+4) Update imports across project
+
+A) Replace:
+from "@/extensions/ServerResponse"
+WITH:
+from "@/custom_utils/serverResponse"
+
+B) Replace:
+from "@/utils/postRequestHandler"
+WITH:
+from "@/custom_utils/postRequestHandler"
+
+--------------------------------------------------
+
+DONE CRITERIA:
+- No local ServerResponse implementation.
+- No local postRequestHandler implementation.
+- All routes compile.
+- API behavior unchanged.
+- Error handling + validation still work.
