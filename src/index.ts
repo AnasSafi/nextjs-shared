@@ -29,6 +29,7 @@ export * from "./utils/comboboxFetchUtils";
 export * from "./utils/markdown/markdownImageHelpers";
 export * from "./utils/formUtils";
 export {extractRequiredFields, createGenerateMultiLangTextValidationSchema} from "./utils/validationUtils";
+export {translationInputName, createTranslationInputName} from "./utils/translationUtils";
 
 export * from "./models/core/localeModels";
 export * from "./models/core/dbModels";
@@ -150,5 +151,6 @@ export {createUseModalOpenError} from "./hooks/formHooks/useModalOpenError";
 export {createUseModalForm} from "./hooks/formHooks/useModalForm";
 export {createUseFormInput} from "./hooks/formHooks/useFormInput";
 export {createUseModalEntityForm} from "./hooks/formHooks/useModalEntityForm";
+export {createUseFilterFormHandler} from "./hooks/formHooks/useFilterFormHandler";
 
 export * from "./validations/yup/yupSchemaExtensions";

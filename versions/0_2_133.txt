@@ -1,0 +1,63 @@
+CONSUMER TASK – Delete local filter/translation utils and create thin wrapper (v0.2.133)
+Goal:
+- Remove local useFilterFormHandler.
+- Remove both translationUtils.client.ts and translationUtils.server.ts.
+- Inject consumer useTranslation into shared factory.
+- Update imports.
+
+---------------------------------------------------------------------
+
+1) Delete old files
+
+Delete:
+  src/hooks/formHooks/useFilterFormHandler.ts
+
+Delete:
+  src/utils/translationUtils.client.ts
+
+Delete:
+  src/utils/translationUtils.server.ts
+
+---------------------------------------------------------------------
+
+2) Create wrapper file
+
+Create:
+  src/custom_hooks/formHooks/useFilterFormHandler.ts
+
+FULL FILE CONTENT:
+"use client";
+
+import {createUseFilterFormHandler} from "@nextjs-shared/shared";
+import {useTranslation} from "@/app/i18n/client_translation";
+
+export const useFilterFormHandler =
+    createUseFilterFormHandler(useTranslation);
+
+---------------------------------------------------------------------
+
+3) Update imports across project
+
+A) Replace:
+from "@/hooks/formHooks/useFilterFormHandler"
+
+WITH:
+from "@/custom_hooks/formHooks/useFilterFormHandler"
+
+B) Replace any:
+from "@/utils/translationUtils.client"
+from "@/utils/translationUtils.server"
+
+WITH:
+from "@nextjs-shared/shared"
+
+(for translationInputName or createTranslationInputName)
+
+---------------------------------------------------------------------
+
+DONE CRITERIA:
+- No local translationUtils files exist.
+- No local useFilterFormHandler file exists.
+- All translation utilities now imported from "@nextjs-shared/shared".
+- Consumer injects only useTranslation.
+- App builds successfully.
