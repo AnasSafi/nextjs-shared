@@ -1,0 +1,131 @@
+CONSUMER TASK – Replace jwtUtils/apiUtils with thin wrappers + add missing translation key (v0.2.135)
+Goal:
+- Delete local jwtUtils + apiUtils implementations.
+- Create wrappers under src/custom_utils that inject consumer constants/services.
+- Add serverErrorMessageWithoutCode to locales if missing.
+- Update imports across project.
+
+--------------------------------------------------
+
+1) Add missing i18n key (if not exists)
+File: src/app/i18n/locales/app.json
+
+Add this block at root level IF it does not exist (ensure JSON commas are valid):
+"serverErrorMessageWithoutCode": {
+  "ara": "حدث خطأ غير متوقع أثناء معالجة البيانات من طرف الخادم، نعتذر وجار العمل على إصلاحه.",
+  "eng": "An unexpected error has occurred on our end. We apologize for the inconvenience and are working to fix it."
+},
+
+--------------------------------------------------
+
+3) Delete old files
+Delete file:
+  src/utils/jwtUtils.ts
+Delete file:
+  src/utils/apiUtils.ts
+
+--------------------------------------------------
+
+4) Create wrapper: src/custom_utils/jwtUtils.ts
+FULL FILE CONTENT:
+import * as jose from "jose";
+import {createJWTUtils} from "@nextjs-shared/shared";
+import type {JWTPayload} from "@/models/core/jwtModels";
+import {BASE_URL, JWT_SECRET} from "@/constants";
+
+const JWTUtils = createJWTUtils<JWTPayload>({
+    jose,
+    config: {
+        issuer: BASE_URL,
+        audience: BASE_URL,
+        secret: JWT_SECRET ?? "",
+    },
+});
+
+export default JWTUtils;
+
+--------------------------------------------------
+
+5) Create wrapper: src/custom_utils/apiUtils.ts
+FULL FILE CONTENT:
+import type {NextRequest} from "next/server";
+import {createApiUtils} from "@nextjs-shared/shared";
+import type {UserModel, PermissionModel} from "@nextjs-shared/shared";
+import {getTranslations} from "@/app/i18n/server_translation";
+import JWTUtils from "@/custom_utils/jwtUtils";
+import {ServerResponse} from "@/extensions/ServerResponse";
+import type {RouteConfigModel} from "@/models/core/routeConfigModes";
+import SystemQueries from "@/db/queries/SystemQueries";
+import {setAppLocale} from "@/custom_utils/appLocale";
+import {getUserFromRequest} from "@/custom_services/user/userServices"; (or import {getUserFromRequest} from "@/services/user/UserServices";)
+
+async function isAuthenticated(request: NextRequest): Promise<boolean> {
+    const token: string | null = request.headers.get("Authorization");
+    return token ? JWTUtils.isValid(token) : false;
+}
+
+async function isSuperAdmin(user: UserModel | null): Promise<boolean> {
+    if (user?.id) return user.properties?.isSuperAdmin ?? false;
+    return false;
+}
+
+async function isUnderMaintenance(): Promise<boolean> {
+    const systemQueries = new SystemQueries();
+    return systemQueries.isInMaintenanceMode();
+}
+
+async function getUserPermissions(user: UserModel | null): Promise<string[]> {
+    return user?.permissions.map((p: PermissionModel) => p.permissionKey) ?? [];
+}
+
+const api = createApiUtils({
+    ServerResponse,
+    isServerResponse: (v: unknown): v is ServerResponse => v instanceof ServerResponse,
+
+    getTranslations: async () => {
+        const {t} = await getTranslations();
+        return {t};
+    },
+    setAppLocale,
+
+    getUserFromRequest,
+    isAuthenticated,
+    isSuperAdmin,
+    isUnderMaintenance,
+    getUserPermissions,
+});
+
+export const withErrorHandling = api.withErrorHandling;
+export const withAll = <J = unknown>(
+    routeFunc: Parameters<typeof api.withAll<J>>[0],
+    config: RouteConfigModel & {bodyType?: "json" | "form" | "text" | undefined},
+) => api.withAll<J>(routeFunc, config);
+
+export const HttpError = api.HttpError;
+export const BadRequestError = api.BadRequestError;
+export const assertDefined = api.assertDefined;
+
+--------------------------------------------------
+
+6) Update imports across project
+
+A) jwtUtils imports
+Search for:
+  from "@/utils/jwtUtils"
+Replace with:
+  from "@/custom_utils/jwtUtils"
+
+B) apiUtils imports
+Search for:
+  from "@/utils/apiUtils"
+Replace with:
+  from "@/custom_utils/apiUtils"
+
+--------------------------------------------------
+
+DONE CRITERIA:
+- src/utils/jwtUtils.ts and src/utils/apiUtils.ts are deleted.
+- Wrappers exist at src/custom_utils/jwtUtils.ts and src/custom_utils/apiUtils.ts.
+- All imports updated to new paths.
+- app.json contains serverErrorMessageWithoutCode.
+- Project builds and route behavior remains unchanged.

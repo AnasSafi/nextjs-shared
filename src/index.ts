@@ -5,7 +5,7 @@ export * from "./utils/localizationUtils";
 export * from "./utils/multiLangValueUtils";
 export * from "./utils/bcrypt";
 export * from "./utils/consoleUtils";
-export { default } from "./utils/consoleUtils";
+export {default} from "./utils/consoleUtils";
 export * from "./utils/dateUtils";
 export * from "./utils/numberUtils";
 export * from "./utils/paramsUtils";
@@ -30,6 +30,22 @@ export * from "./utils/markdown/markdownImageHelpers";
 export * from "./utils/formUtils";
 export {extractRequiredFields, createGenerateMultiLangTextValidationSchema} from "./utils/validationUtils";
 export {translationInputName, createTranslationInputName} from "./utils/translationUtils";
+export {createJWTUtils} from "./utils/jwtUtils";
+export type {JoseLike, JwtConfig, JwtPayloadLike} from "./utils/jwtUtils";
+export {createApiUtils} from "./utils/apiUtils";
+export type {
+    RouteConfigLike,
+    ServerResponseCtor,
+    ServerResponseLike,
+    GetTranslations,
+    SetAppLocale,
+    GetUserFromRequest,
+    IsAuthenticated,
+    IsSuperAdmin,
+    IsUnderMaintenance,
+    GetUserPermissions,
+    IsServerResponse,
+} from "./utils/apiUtils";
 
 export * from "./models/core/localeModels";
 export * from "./models/core/dbModels";
