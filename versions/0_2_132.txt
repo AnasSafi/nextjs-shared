@@ -1,5 +1,4 @@
 CONSUMER TASK – Delete old validationUtils and create thin wrapper under custom_utils
-Project: club_next_js
 Goal: Remove heavy validation logic from consumer and create a thin wrapper that injects `languages` and consumer `yup` instance.
 
 1) Delete old file
