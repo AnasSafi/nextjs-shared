@@ -1,0 +1,52 @@
+CONSUMER TASK – Replace local mediaUtils with shared version (v0.2.142)
+Goal:
+- Delete local src/utils/mediaUtils.ts
+- Use shared blobToUint8Array + getFileType
+- If consumer needs Buffer, convert locally via Buffer.from(bytes) at call site (no wrapper file needed).
+
+--------------------------------------------------
+
+1) Delete local file
+Delete:
+  src/utils/mediaUtils.ts
+
+--------------------------------------------------
+
+2) Update imports across project
+
+A) Replace old imports
+
+Search for:
+from "@/utils/mediaUtils"
+
+Replace with:
+from "@nextjs-shared/shared"
+
+B) Function rename (IMPORTANT)
+The shared function is renamed to avoid Buffer typing:
+- OLD:
+  blobToBuffer(blob)
+- NEW:
+  blobToUint8Array(blob)
+
+So update call sites:
+
+OLD:
+const buf = await blobToBuffer(blob);
+
+NEW:
+const bytes = await blobToUint8Array(blob);
+
+If you specifically need a Buffer (Node runtime):
+Add at the call site:
+const buf = Buffer.from(bytes);
+
+getFileType stays the same name.
+
+--------------------------------------------------
+
+DONE CRITERIA:
+- src/utils/mediaUtils.ts removed.
+- All imports point to "@nextjs-shared/shared".
+- All code compiles (no Buffer typing issues).
+- Runtime behavior unchanged (Buffer conversion done only where needed).
