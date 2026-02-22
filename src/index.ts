@@ -50,6 +50,15 @@ export {
     mlToStrings,
     toStaticSelectPagination,
 } from "./utils/formLookupUtils";
+export type {
+    BackendOp,
+    ExtendedFilterOp,
+    UnsupportedOpEncoding,
+    FieldConfig,
+    RangeConfig,
+    BuildFiltersOptions,
+} from "./utils/filterBuilder";
+export {hasValue, buildFilters} from "./utils/filterBuilder";
 
 export * from "./models/core/localeModels";
 export * from "./models/core/dbModels";

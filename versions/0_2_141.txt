@@ -1,0 +1,38 @@
+CONSUMER TASK – Remove local filterBuilder and import from shared (v0.2.141)
+Goal:
+- Delete local src/utils/filterBuilder.ts
+- Import buildFilters/hasValue/types from "@nextjs-shared/shared"
+- No wrapper file needed.
+
+--------------------------------------------------
+
+1) Delete file
+Delete:
+  src/utils/filterBuilder.ts
+
+--------------------------------------------------
+
+2) Update imports across project
+
+Search for:
+from "@/utils/filterBuilder"
+
+Replace with:
+from "@nextjs-shared/shared"
+
+Examples:
+
+OLD:
+import {buildFilters} from "@/utils/filterBuilder";
+import type {FieldConfig, RangeConfig} from "@/utils/filterBuilder";
+
+NEW:
+import {buildFilters} from "@nextjs-shared/shared";
+import type {FieldConfig, RangeConfig} from "@nextjs-shared/shared";
+
+--------------------------------------------------
+
+DONE CRITERIA:
+- Local filterBuilder file removed.
+- All imports reference shared exports.
+- Project builds successfully.
