@@ -1,9 +1,10 @@
-CONSUMER TASK – Replace local ServerResponse + handlePostRequest with shared versions (v0.2.139)
+CONSUMER TASK – Remove ServerResponse wrappers, keep only injected handlePostRequest wrapper (v0.2.139)
 Goal:
-- Delete local ServerResponse.
-- Delete local postRequestHandler.
-- Inject getTranslations + HttpError into shared handler.
-- Update imports.
+- Delete local ServerResponse implementation.
+- Delete local postRequestHandler implementation.
+- Do NOT create a wrapper file that only re-exports ServerResponse.
+- Keep a wrapper ONLY for handlePostRequest because it needs getTranslations + HttpError injection.
+- Update imports accordingly.
 
 --------------------------------------------------
 
@@ -17,14 +18,10 @@ Delete:
 
 --------------------------------------------------
 
-2) Create wrapper: src/custom_utils/serverResponse.ts
+2) Create wrapper (ONLY this one is needed)
 
-FULL FILE CONTENT:
-export {ServerResponse} from "@nextjs-shared/shared";
-
---------------------------------------------------
-
-3) Create wrapper: src/custom_utils/postRequestHandler.ts
+Create file:
+  src/custom_utils/postRequestHandler.ts
 
 FULL FILE CONTENT:
 import {createHandlePostRequest} from "@nextjs-shared/shared";
@@ -41,23 +38,42 @@ export const handlePostRequest = createHandlePostRequest({
 
 --------------------------------------------------
 
-4) Update imports across project
+3) Update imports across project
 
-A) Replace:
+A) ServerResponse imports (direct import from shared, no wrapper)
+
+Search for:
 from "@/extensions/ServerResponse"
-WITH:
-from "@/custom_utils/serverResponse"
 
-B) Replace:
+Replace with:
+from "@nextjs-shared/shared"
+
+And update the imported symbol if needed:
+OLD:
+import {ServerResponse} from "@/extensions/ServerResponse";
+NEW:
+import {ServerResponse} from "@nextjs-shared/shared";
+
+B) handlePostRequest imports
+
+Search for:
 from "@/utils/postRequestHandler"
-WITH:
+
+Replace with:
 from "@/custom_utils/postRequestHandler"
+
+--------------------------------------------------
+
+4) Ensure no unnecessary wrapper exists
+
+Delete file (if it was created previously):
+  src/custom_utils/serverResponse.ts
 
 --------------------------------------------------
 
 DONE CRITERIA:
 - No local ServerResponse implementation.
-- No local postRequestHandler implementation.
-- All routes compile.
-- API behavior unchanged.
-- Error handling + validation still work.
+- No consumer re-export wrapper for ServerResponse (no src/custom_utils/serverResponse.ts).
+- All ServerResponse imports come directly from "@nextjs-shared/shared".
+- Only handlePostRequest remains as a consumer wrapper (because it needs injection).
+- App builds and route behavior unchanged.
