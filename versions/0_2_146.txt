@@ -1,0 +1,29 @@
+CONSUMER TASK – Remove local injectReadableValuesAsync and import from shared (v0.2.146)
+Goal:
+- Delete local file (or replace its exports) and import injectReadableValuesAsync from shared directly.
+- No wrapper needed.
+
+--------------------------------------------------
+
+1) Update file: src/services/common/apiServices.ts
+Replace with a re-export-free direct usage (delete file if it only contained this function).
+
+Option A (Preferred): Delete file if it's only this function
+Delete:
+  src/services/common/apiServices.ts
+
+Then update imports across project:
+Search for:
+  from "@/services/common/apiServices"
+Replace with:
+  from "@nextjs-shared/shared"
+
+Option B: Keep file but re-export (NOT recommended unless you need path stability)
+(You said you prefer no unnecessary wrappers, so use Option A.)
+
+--------------------------------------------------
+
+DONE CRITERIA:
+- injectReadableValuesAsync imported from "@nextjs-shared/shared".
+- No redundant consumer wrappers.
+- Project builds successfully.
