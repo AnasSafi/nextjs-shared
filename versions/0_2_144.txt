@@ -1,0 +1,41 @@
+CONSUMER TASK – Replace local edge decoder with shared factory (v0.2.144)
+Goal:
+- Delete local src/utils/edge/decodeJwtPayload.ts
+- Create a thin wrapper (only because it must read process.env.JWT_SECRET)
+- Update imports.
+
+--------------------------------------------------
+
+1) Delete old file
+Delete:
+  src/utils/edge/decodeJwtPayload.ts
+
+--------------------------------------------------
+
+2) Create wrapper file (env access stays consumer-owned)
+Create:
+  src/custom_utils/edge/decodeJwtPayload.ts
+
+FULL FILE CONTENT:
+import {jwtVerify} from "jose";
+import {createDecodeJwtUserId} from "@nextjs-shared/shared";
+
+export const decodeJwtUserId = createDecodeJwtUserId({
+    jose: {jwtVerify},
+    getJwtSecret: () => process.env.JWT_SECRET,
+});
+
+--------------------------------------------------
+
+3) Update imports across project
+Search for:
+  from "@/utils/edge/decodeJwtPayload"
+Replace with:
+  from "@/custom_utils/edge/decodeJwtPayload"
+
+--------------------------------------------------
+
+DONE CRITERIA:
+- No local edge JWT decode logic remains.
+- Only env access is in consumer wrapper.
+- All imports updated and build succeeds (including Edge runtime).

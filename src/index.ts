@@ -61,6 +61,8 @@ export type {
 export {hasValue, buildFilters} from "./utils/filterBuilder";
 export {prismaSelectToRawSQL, prismaWhereToRawSQL} from "./utils/dbUtils";
 export type {PrismaLikeWhere} from "./utils/dbUtils";
+export {createDecodeJwtUserId} from "./utils/edge/decodeJwtPayload";
+export type {GetJwtSecret} from "./utils/edge/decodeJwtPayload";
 
 export * from "./models/core/localeModels";
 export * from "./models/core/dbModels";
