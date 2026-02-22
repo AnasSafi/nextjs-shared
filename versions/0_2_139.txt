@@ -1,0 +1,37 @@
+CONSUMER TASK – Remove local formLookupUtils and use shared version (v0.2.141)
+Goal:
+- Delete local utility file.
+- Import functions directly from shared.
+- No wrapper needed.
+
+--------------------------------------------------
+
+1) Delete file
+
+Delete:
+  src/utils/formLookupUtils.ts
+
+--------------------------------------------------
+
+2) Update imports across project
+
+Search for:
+from "@/utils/formLookupUtils"
+
+Replace with:
+from "@nextjs-shared/shared"
+
+Example:
+
+OLD:
+import {toIsoOrNull, toStaticSelectPagination} from "@/utils/formLookupUtils";
+
+NEW:
+import {toIsoOrNull, toStaticSelectPagination} from "@nextjs-shared/shared";
+
+--------------------------------------------------
+
+DONE CRITERIA:
+- src/utils/formLookupUtils.ts no longer exists.
+- All references use shared exports.
+- Project builds successfully.
