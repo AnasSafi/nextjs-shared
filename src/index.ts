@@ -59,6 +59,8 @@ export type {
     BuildFiltersOptions,
 } from "./utils/filterBuilder";
 export {hasValue, buildFilters} from "./utils/filterBuilder";
+export {prismaSelectToRawSQL, prismaWhereToRawSQL} from "./utils/dbUtils";
+export type {PrismaLikeWhere} from "./utils/dbUtils";
 
 export * from "./models/core/localeModels";
 export * from "./models/core/dbModels";

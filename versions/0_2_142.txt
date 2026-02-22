@@ -1,0 +1,61 @@
+CONSUMER TASK – Remove local dbUtils/dbModels and import from shared directly (v0.2.142)
+Goal:
+- Delete local dbUtils file.
+- Stop using consumer-owned dbModels types for SelectModel/TableRelation if they are only used for dbUtils.
+- Import shared types/functions directly from "@nextjs-shared/shared".
+- Avoid creating consumer re-export wrappers.
+
+--------------------------------------------------
+
+1) Delete local dbUtils
+Delete file:
+  src/utils/dbUtils.ts
+
+--------------------------------------------------
+
+2) Update imports in files that used dbUtils
+Search for:
+from "@/utils/dbUtils"
+Replace with:
+from "@nextjs-shared/shared"
+
+Example:
+OLD:
+import {prismaSelectToRawSQL, prismaWhereToRawSQL} from "@/utils/dbUtils";
+NEW:
+import {prismaSelectToRawSQL, prismaWhereToRawSQL} from "@nextjs-shared/shared";
+
+If you used PrismaLikeWhere:
+OLD:
+import type {PrismaLikeWhere} from "@/utils/dbUtils";
+NEW:
+import type {PrismaLikeWhere} from "@nextjs-shared/shared";
+
+--------------------------------------------------
+
+3) Update dbModels imports where needed (NO wrapper)
+If you used these types:
+- SelectModel
+- TableRelation
+
+Then replace imports:
+
+OLD:
+import type {SelectModel, TableRelation} from "@/models/core/dbModels";
+(or "@/models/core/dbModelsLocal")
+
+NEW:
+import type {SelectModel, TableRelation} from "@nextjs-shared/shared";
+
+--------------------------------------------------
+
+4) Optional cleanup (only if safe in your project)
+If src/models/core/dbModels.ts (or dbModelsLocal.ts) becomes unused after steps above:
+- Delete it.
+Otherwise:
+- Keep it (do not change other models in this task).
+
+DONE CRITERIA:
+- Project compiles with dbUtils imported from shared.
+- No local wrapper files created for shared exports.
+- Any needed types are imported directly from "@nextjs-shared/shared".

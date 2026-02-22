@@ -41,3 +41,13 @@ export interface PaginationModel {
     pagination: PaginationRequestModel;
     data: SelectOptionModel[];
 }
+
+export type SelectModel = Record<string, boolean | {select: SelectModel}> | undefined;
+
+export interface TableRelation {
+    mainTable: string;
+    joinColumn: string;
+    relatedTable: string;
+    relatedColumn: string;
+    relationName?: string;
+}
