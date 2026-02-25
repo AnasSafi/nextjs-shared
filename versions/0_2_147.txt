@@ -1,0 +1,64 @@
+CONSUMER TASK – Replace MarkdownTextView with a thin wrapper that injects sanitize + config (v0.2.148)
+Goal:
+- Keep the component path stable (no project-wide import changes).
+- Move full implementation to shared.
+- Keep only injection in consumer (DOMPurify + languages/fallbackLng).
+
+--------------------------------------------------
+
+1) Update file (replace entire content):
+src/components/Form/MarkdownTextView.tsx
+
+OLD CODE TO REMOVE:
+(Your entire existing MarkdownTextView.tsx content)
+
+NEW CODE TO ADD (FULL FILE CONTENT):
+"use client";
+
+import React from "react";
+import DOMPurify from "isomorphic-dompurify";
+import {
+    ATTR_BLOCK_RE_FRAGMENT,
+    createMarkdownTextView,
+    getPreferredIso3LangFromDom,
+    getStringFromMultiLangValueByLang,
+    isLanguageRTL,
+    parseAttrBlock,
+    parseMLAttr,
+    resolveMediaSrc,
+} from "@nextjs-shared/shared";
+import {fallbackLng, languages} from "@/config/localizationConfig";
+
+const sanitizeHtml = (html: string): string => {
+    return DOMPurify.sanitize(html, {
+        ALLOW_DATA_ATTR: true,
+        ADD_TAGS: ["figure", "figcaption"],
+        ADD_ATTR: ["referrerpolicy"],
+    });
+};
+
+const MarkdownTextView = createMarkdownTextView({
+    sanitizeHtml,
+    fallbackLng,
+    languages,
+
+    ATTR_BLOCK_RE_FRAGMENT,
+    parseAttrBlock,
+    parseMLAttr,
+
+    getPreferredIso3LangFromDom,
+    getStringFromMultiLangValueByLang,
+    isLanguageRTL,
+
+    resolveMediaSrc,
+});
+
+export default MarkdownTextView;
+
+--------------------------------------------------
+
+DONE CRITERIA:
+- No behavior changes in rendering/sanitization.
+- The local file is now a thin injection wrapper (not a re-export-only wrapper).
+- No import changes needed elsewhere because component path stayed the same.
+- Project builds successfully.
