@@ -1,4 +1,4 @@
-CONSUMER TASK – Rollback wrapper file and re-apply it cleanly (use shared v0.2.148)
+CONSUMER TASK – Rollback wrapper file and re-apply it cleanly (use shared v0.2.149)
 Goal: Restore the exact thin wrapper approach (v0.2.148 style) and make it compile by upgrading shared to v0.2.149.
 
 --------------------------------------------------

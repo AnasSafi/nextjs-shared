@@ -13,7 +13,7 @@ export type MarkdownTextViewDeps = {
 
     ATTR_BLOCK_RE_FRAGMENT: string;
     parseAttrBlock: (attrsBlock?: string) => Record<string, string>;
-    parseMLAttr: (raw?: string) => MultiLangValue | null;
+    parseMLAttr: (raw?: string) => MultiLangValue | null | undefined;
 
     getPreferredIso3LangFromDom: (args: {
         fallbackLng: string;
