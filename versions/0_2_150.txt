@@ -1,0 +1,42 @@
+CONSUMER TASK – Keep MarkdownImageModal hook in consumer; wrap MarkdownControls to inject deps (v0.2.150)
+Goal:
+- Do NOT migrate useMarkdownImageModal (it is consumer-specific: modalId + FormComponent).
+- Replace MarkdownControls component with a thin wrapper that injects:
+  - useMarkdownImageModal (consumer hook)
+  - iconPath (consumer assets path)
+  - Next.js Image component
+
+--------------------------------------------------
+
+1) Update file (replace entire content):
+src/components/Form/MarkdownTextArea/MarkdownControls.tsx
+
+OLD CODE TO REMOVE:
+(Your entire existing MarkdownControls.tsx content)
+
+NEW CODE TO ADD (FULL FILE CONTENT):
+"use client";
+
+import type {JSX} from "react";
+import Image from "next/image";
+import {createMarkdownControls} from "@nextjs-shared/shared";
+import {useMarkdownImageModal} from "@/custom_hooks/core/markdown/markdownImageModal";
+
+const iconPath = "/assets/images/icon/markdown";
+
+const MarkdownControls = createMarkdownControls({
+    iconPath,
+    NextImage: (props): JSX.Element => <Image {...props} />,
+    useMarkdownImageModal,
+});
+
+export default MarkdownControls;
+
+--------------------------------------------------
+
+DONE CRITERIA:
+- MarkdownControls file is a thin injection wrapper.
+- useMarkdownImageModal remains in consumer.
+- Assets path remains in consumer.
+- No project-wide import changes needed (path stays the same).
+- UI behavior unchanged.
