@@ -19,23 +19,7 @@ Important:
   (In ESM, `export *` does NOT re-export default. Always import sanitize as named.)
 
 ====================================================================
-A) Upgrade dependency
-====================================================================
-
-MODIFY FILE:
-package.json
-
-OLD:
-"@nextjs-shared/shared": "^0.2.37"
-
-NEW:
-"@nextjs-shared/shared": "^0.2.38"
-
-Run:
-npm install
-
-====================================================================
-B) Update ALL imports across the consumer project
+A) Update ALL imports across the consumer project
 ====================================================================
 
 1) Global search & replace for sanitizer imports
@@ -88,7 +72,7 @@ Notes:
   (NO third argument, NO uuidValidator)
 
 ====================================================================
-C) Ensure the route code stays clean (example)
+B) Ensure the route code stays clean (example)
 ====================================================================
 
 Your old correct style:
@@ -110,7 +94,7 @@ Do NOT add this:
 import {isValidUUID} from "@/utils/uuidUtils";
 
 ====================================================================
-D) Delete the local file (mandatory)
+C) Delete the local file (mandatory)
 ====================================================================
 
 DELETE FILE:
@@ -120,7 +104,7 @@ OLD CODE TO DELETE:
 (delete the entire file content and remove the file from repo)
 
 ====================================================================
-E) Verification checklist
+D) Verification checklist
 ====================================================================
 
 1) Ensure there are ZERO references left to local sanitizer file:

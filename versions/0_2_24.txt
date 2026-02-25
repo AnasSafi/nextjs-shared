@@ -3,19 +3,14 @@ UPGRADE GUIDE - Shared Package v0.2.24
 Goal:
 Move Checkbox into @nextjs-shared/shared.
 
-1) Update dependency
-OLD: "@nextjs-shared/shared": "^0.2.23"
-NEW: "@nextjs-shared/shared": "^0.2.24"
-Run: npm install
-
-2) Replace imports
+1) Replace imports
 OLD:
 import Checkbox from "@/components/Form/Checkbox";
 
 NEW:
 import {Checkbox} from "@nextjs-shared/shared";
 
-3) Pass t if you need required tooltip
+2) Pass t if you need required tooltip
 Example:
 import {Checkbox} from "@nextjs-shared/shared";
 import {useTranslation} from "@/app/i18n/client_translation";
@@ -29,6 +24,6 @@ const {t} = useTranslation();
   isRequired
 />
 
-4) Optional cleanup
+3) Optional cleanup
 Delete local file if unused:
 src/components/Form/Checkbox.tsx

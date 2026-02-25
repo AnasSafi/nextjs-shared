@@ -8,12 +8,7 @@ Move common form UI helpers into @nextjs-shared/shared:
 - TooltipIcon
 - RequiredAsterisk (requires passing t)
 
-1) Update dependency
-OLD: "@nextjs-shared/shared": "^0.2.16"
-NEW: "@nextjs-shared/shared": "^0.2.18"
-Run: npm install
-
-2) Replace imports
+1) Replace imports
 Replace project imports like:
 - "@/components/Form/CDateInput"
 - "@/components/Form/Helpers/FormError"
@@ -24,14 +19,14 @@ Replace project imports like:
 With:
 import {...} from "@nextjs-shared/shared";
 
-3) Required translation injection
+2) Required translation injection
 If you used RequiredAsterisk or FieldHeader required tooltip, pass t:
 const {t} = useTranslation();
 <FieldHeader ... isRequired t={t} />
 or use RequiredAsterisk directly:
 <RequiredAsterisk t={t} />
 
-4) Optional cleanup
+3) Optional cleanup
 Delete local duplicated files if no longer used:
 - src/components/Form/CDateInput.tsx
 - src/components/Form/Helpers/FormError.tsx

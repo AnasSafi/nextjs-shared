@@ -1,19 +1,4 @@
-1) Update dependency version
-
-MODIFY FILE:
-package.json
-
-OLD:
-"@nextjs-shared/shared": "^0.2.10"
-
-NEW:
-"@nextjs-shared/shared": "^0.2.11"
-
-Run:
-npm install
-
---------------------------------------------------------------------
-2) Delete local InfoAlert file (mandatory)
+1) Delete local InfoAlert file (mandatory)
 
 DELETE FILE FROM CONSUMER PROJECT:
 src/components/Alert/InfoAlert.tsx

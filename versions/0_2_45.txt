@@ -9,17 +9,7 @@ Goal:
 - Keep ONLY Prisma + react-hook-form dependent bridging types inside the consumer.
 
 ------------------------------------------------------------
-1) Update dependency
-------------------------------------------------------------
-
-Update @nextjs-shared/shared to the new version that contains the updated files
-(dbModels, formModels, mediaModels, userModels, exports in index.ts).
-
-Then run:
-npm i
-
-------------------------------------------------------------
-2) Replace local userModels with a thin bridge
+1) Replace local userModels with a thin bridge
 ------------------------------------------------------------
 
 File to update:
@@ -43,7 +33,7 @@ export type LoginResponseOptionsModels = LoginResponseOptionsModelsBase<PrismaUs
 export type ResetPasswordCodeRequestModel = ResetPasswordCodeRequestModelBase & FieldValues;
 
 ------------------------------------------------------------
-3) Update imports across the codebase
+2) Update imports across the codebase
 ------------------------------------------------------------
 
 Anywhere you previously imported any of the following from local paths:
@@ -94,7 +84,7 @@ IMPORTANT:
 So do NOT import UserModel/User from the local file anymore.
 
 ------------------------------------------------------------
-4) Fix any remaining references to the local userModels
+3) Fix any remaining references to the local userModels
 ------------------------------------------------------------
 
 Search in the consumer project for:
@@ -114,7 +104,7 @@ import type {UserModel} from "@nextjs-shared/shared";
 import type {LoginResponseOptionsModels} from "@/models/user/userModels";
 
 ------------------------------------------------------------
-5) Cleanup (optional but recommended)
+4) Cleanup (optional but recommended)
 ------------------------------------------------------------
 
 If you now fully rely on shared core models, you can delete local copies:

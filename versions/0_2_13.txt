@@ -4,21 +4,7 @@ Goal:
 Introduce the shared Error401 component and remove project-specific implementations.
 
 --------------------------------------------------------------------
-1) Update dependency
-
-Consumer project package.json
-
-OLD:
-"@nextjs-shared/shared": "^0.2.12"
-
-NEW:
-"@nextjs-shared/shared": "^0.2.13"
-
-Run:
-npm install
-
---------------------------------------------------------------------
-2) Delete local files (if they exist)
+1) Delete local files (if they exist)
 
 Delete from consumer projects:
 src/components/Auth/Error401.tsx
@@ -27,7 +13,7 @@ Delete old project icon if it was only used for Error401:
 src/components/Icons/LockIcon.tsx
 
 --------------------------------------------------------------------
-3) Update imports
+2) Update imports
 
 OLD:
 import Error401 from "@/components/Auth/Error401";
@@ -36,7 +22,7 @@ NEW:
 import {Error401} from "@nextjs-shared/shared";
 
 --------------------------------------------------------------------
-4) Usage example (t must be passed)
+3) Usage example (t must be passed)
 
 import {Error401} from "@nextjs-shared/shared";
 import {useTranslation} from "@/app/i18n/client_translation";

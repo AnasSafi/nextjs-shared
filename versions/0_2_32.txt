@@ -1,9 +1,4 @@
-A) Update dependency:
-OLD: "@nextjs-shared/shared": "^0.2.31"
-NEW: "@nextjs-shared/shared": "^0.2.32"
-Run: npm install
-
-B) Replace imports:
+1) Replace imports:
 
 BEFORE:
 import XCheckbox from "@/components/Form/XCheckbox";
@@ -11,10 +6,10 @@ import XCheckbox from "@/components/Form/XCheckbox";
 AFTER:
 import {XCheckbox} from "@nextjs-shared/shared";
 
-C) Delete local file (optional):
+2) Delete local file (optional):
 Delete:
 src/components/Form/XCheckbox.tsx
 Only if it is no longer used after import replacement.
 
-D) Verify:
+3) Verify:
 Run TypeScript check / Next build to confirm no errors.

@@ -4,17 +4,12 @@ Goal:
 Move generic locale object validation utility into @nextjs-shared/shared
 and rename its util grouping to reflect localization domain.
 
-1) Update dependency
-OLD: "@nextjs-shared/shared": "^0.2.34"
-NEW: "@nextjs-shared/shared": "^0.2.35"
-Run: npm install
-
-2) New shared export
+1) New shared export
 You can import from shared:
 
 import { isLocaleObject } from "@nextjs-shared/shared";
 
-3) Consumer cleanup
+2) Consumer cleanup
 Delete local file (if exists):
 - src/utils/clientSideUtils.ts
 
@@ -30,7 +25,7 @@ import { isLocaleObject } from "@/utils/clientSideUtils";
 NEW:
 import { isLocaleObject } from "@nextjs-shared/shared";
 
-4) Final checks
+3) Final checks
 - Shared build passes
 - Consumer build passes
 - No "@/..." imports inside shared localization utils

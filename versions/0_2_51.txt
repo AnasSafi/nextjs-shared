@@ -3,18 +3,7 @@ Use shared FetchOptions/HttpHeaders and FetchError.
 Keep userTokenServices.client.ts local.
 
 ------------------------------------------------------------
-1) Update dependency
-------------------------------------------------------------
-
-Update @nextjs-shared/shared to the version that includes:
-- models/core/fetchModels
-- extensions/FetchError exports
-
-Then run:
-npm i
-
-------------------------------------------------------------
-2) Replace local imports
+1) Replace local imports
 ------------------------------------------------------------
 
 A) FetchError import fix
@@ -51,7 +40,7 @@ NEW:
 import type {FetchOptions, HttpHeaders} from "@nextjs-shared/shared";
 
 ------------------------------------------------------------
-3) Keep token services local
+2) Keep token services local
 ------------------------------------------------------------
 
 Keep:

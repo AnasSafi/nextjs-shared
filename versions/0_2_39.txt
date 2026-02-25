@@ -3,12 +3,7 @@ UPGRADE GUIDE - Shared Package v0.2.39
 Goal:
 Move string utilities into @nextjs-shared/shared.
 
-1) Update dependency
-OLD: "@nextjs-shared/shared": "^0.2.38"
-NEW: "@nextjs-shared/shared": "^0.2.39"
-Run: npm install
-
-2) New shared exports
+1) New shared exports
 Import from shared:
 - generateUniqueString
 - isArabic
@@ -35,7 +30,7 @@ import {
   capitalizeFirstLetter
 } from "@nextjs-shared/shared";
 
-3) Consumer cleanup
+2) Consumer cleanup
 Delete local file (if exists):
 - src/utils/stringUtils.ts
 
@@ -45,7 +40,7 @@ import { ... } from "@/utils/stringUtils";
 NEW:
 import { ... } from "@nextjs-shared/shared";
 
-4) Final checks
+3) Final checks
 - Shared build passes
 - Consumer build passes
 - No "@/..." imports inside shared stringUtils

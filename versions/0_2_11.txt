@@ -5,24 +5,13 @@ Remove the local ErrorAlert component from consumer projects and use the shared 
 The shared ErrorAlert requires passing the translation function `t` from the project.
 
 --------------------------------------------------------------------
-A) Update dependency
-
-Consumer project: package.json
-
-NEW (add or modify):
-"@nextjs-shared/shared": "^0.2.11"
-
-Run:
-npm install
-
---------------------------------------------------------------------
-B) Delete the local component file (must be removed)
+1) Delete the local component file (must be removed)
 
 Delete this file from the consumer project:
 src/components/Alert/ErrorAlert.tsx
 
 --------------------------------------------------------------------
-C) Replace all imports and usages across the project
+2) Replace all imports and usages across the project
 
 1) Replace imports
 
@@ -58,7 +47,7 @@ Finally pass t:
 <ErrorAlert t={t} ... />
 
 --------------------------------------------------------------------
-D) Notes / Rules
+3) Notes / Rules
 
 - The shared ErrorAlert must remain generic and must NOT import from any project path (no "@/..." imports).
 - Consumers are responsible for providing `t` (translation function) from their own i18n setup.

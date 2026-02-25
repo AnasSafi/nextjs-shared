@@ -6,20 +6,7 @@ Stop passing `languages` into isLanguageRTL. The function now accepts only `loca
 
 ---
 
-1) Bump shared package version
-
-Old:
-"@nextjs-shared/shared": "0.2.41"
-
-New:
-"@nextjs-shared/shared": "0.2.42"
-
-Then run:
-npm i
-
----
-
-2) Replace all old calls
+1) Replace all old calls
 
 OLD CODE (to delete):
 isLanguageRTL(languages, localeCode)
@@ -29,7 +16,7 @@ isLanguageRTL(localeCode)
 
 ---
 
-3) Update imports (if needed)
+2) Update imports (if needed)
 
 Remove any imports that existed only to provide `languages` for RTL checks.
 
@@ -38,7 +25,7 @@ import {isLanguageRTL} from "@nextjs-shared/shared";
 
 ---
 
-4) Common refactor example
+3) Common refactor example
 
 OLD CODE (to delete):
 const languages = getLanguagesConfig();
@@ -49,7 +36,7 @@ const rtl = isLanguageRTL(locale);
 
 ---
 
-5) Sanity checks
+4) Sanity checks
 
 isLanguageRTL("ar")  => true
 isLanguageRTL("ara") => true

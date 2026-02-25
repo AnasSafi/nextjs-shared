@@ -18,12 +18,7 @@ Use the multi-language wrapper when ANY of these is true:
 - You use stackedLocaleView / stackedLocales / localeFieldLabels / placeholdersByLocale
 - You need RTL detection per locale and required tooltip per locale
 
-1) Update dependency
-OLD: "@nextjs-shared/shared": "^0.2.24"
-NEW: "@nextjs-shared/shared": "^0.2.26"
-Run: npm install
-
-2) Normal input (recommended)
+1) Normal input (recommended)
 import {CInput} from "@nextjs-shared/shared";
 
 <CInput
@@ -34,7 +29,7 @@ import {CInput} from "@nextjs-shared/shared";
 
 No t or languages are required for normal usage.
 
-3) Multi-language input (recommended wrapper)
+2) Multi-language input (recommended wrapper)
 For multi-language fields, create a local wrapper that injects t and languages.
 
 CREATE NEW FILE (consumer project):
@@ -71,7 +66,7 @@ Notes:
 - The wrapper exists only to provide t + languages for multi-language behavior (RTL + required tooltip + locale switching/stacked view).
 - Keep old call sites that used formLocale/toggleLocale by switching them from CInput -> CMultiLangInput.
 
-4) isLocaleObject usage
+3) isLocaleObject usage
 If any project imports:
 import {isLocaleObject} from "@/utils/clientSideUtils";
 Replace with:
