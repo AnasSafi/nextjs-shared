@@ -2,19 +2,28 @@
 
 import React, {useMemo} from "react";
 import type {JSX} from "react";
+import type {MultiLangValue} from "../../models/core/localeModels";
+import {LanguageConfig} from "../../i18n/languageConfigUtils";
 
 export type MarkdownTextViewDeps = {
     sanitizeHtml: (html: string) => string;
 
     fallbackLng: string;
-    languages: unknown;
+    languages: LanguageConfig[];
 
     ATTR_BLOCK_RE_FRAGMENT: string;
     parseAttrBlock: (attrsBlock?: string) => Record<string, string>;
-    parseMLAttr: (raw?: string) => unknown;
+    parseMLAttr: (raw?: string) => MultiLangValue | null;
 
-    getPreferredIso3LangFromDom: (args: {fallbackLng: string; languages: unknown}) => string;
-    getStringFromMultiLangValueByLang: (ml: unknown, iso3: string) => string | null | undefined;
+    getPreferredIso3LangFromDom: (args: {
+        fallbackLng: string;
+        languages: LanguageConfig[];
+    }) => string;
+
+    getStringFromMultiLangValueByLang: (
+        value: MultiLangValue | null | undefined,
+        langCode?: string,
+    ) => string;
     isLanguageRTL: (iso3: string) => boolean;
 
     resolveMediaSrc: (src: string, attrs?: Record<string, string>) => string;
