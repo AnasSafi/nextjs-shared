@@ -1,0 +1,59 @@
+CONSUMER TASK – Rollback wrapper file and re-apply it cleanly (use shared v0.2.149)
+Goal: Restore the exact thin wrapper approach (v0.2.148 style) and make it compile by upgrading shared to v0.2.149.
+
+--------------------------------------------------
+
+1) Rollback + replace file content (FULL REPLACE)
+File: src/components/Form/MarkdownTextView.tsx
+
+OLD CODE TO REMOVE:
+(Whatever current content is in this file)
+
+NEW CODE TO ADD (FULL FILE CONTENT):
+"use client";
+
+import DOMPurify from "isomorphic-dompurify";
+import {
+    ATTR_BLOCK_RE_FRAGMENT,
+    createMarkdownTextView,
+    getPreferredIso3LangFromDom,
+    getStringFromMultiLangValueByLang,
+    isLanguageRTL,
+    parseAttrBlock,
+    parseMLAttr,
+    resolveMediaSrc,
+} from "@nextjs-shared/shared";
+import {fallbackLng, languages} from "@/config/localizationConfig";
+
+const sanitizeHtml = (html: string): string => {
+    return DOMPurify.sanitize(html, {
+        ALLOW_DATA_ATTR: true,
+        ADD_TAGS: ["figure", "figcaption"],
+        ADD_ATTR: ["referrerpolicy"],
+    });
+};
+
+const MarkdownTextView = createMarkdownTextView({
+    sanitizeHtml,
+    fallbackLng,
+    languages,
+
+    ATTR_BLOCK_RE_FRAGMENT,
+    parseAttrBlock,
+    parseMLAttr,
+
+    getPreferredIso3LangFromDom,
+    getStringFromMultiLangValueByLang,
+    isLanguageRTL,
+
+    resolveMediaSrc,
+});
+
+export default MarkdownTextView;
+
+--------------------------------------------------
+
+DONE CRITERIA:
+- File is exactly the thin wrapper above (no casts).
+- TS2322 is gone after upgrading shared.
+- Behavior unchanged and component path remains stable.

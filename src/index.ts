@@ -130,6 +130,10 @@ export {default as ModalTemplateCore} from "./components/Modal/ModalTemplateCore
 export * from "./components/Modal/ModalTemplateCore";
 export {default as ValidationErrorsList} from "./components/Modals/ValidationErrorsList";
 export * from "./components/Modals/ValidationErrorsList";
+export type {MarkdownTextViewDeps} from "./components/Form/MarkdownTextView";
+export {createMarkdownTextView} from "./components/Form/MarkdownTextView";
+export type {MarkdownControlsDeps, MarkdownControlsProps} from "./components/Form/MarkdownTextArea/MarkdownControls";
+export {createMarkdownControls} from "./components/Form/MarkdownTextArea/MarkdownControls";
 
 export {default as TableFilters} from "./components/Tables/TableFilters";
 export type {
