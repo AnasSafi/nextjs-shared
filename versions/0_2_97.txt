@@ -8,14 +8,7 @@ This wrapper wires:
 - useTranslation (t)
 Then re-exports a ready-to-use ListPage for the app.
 
-1) Update dependency:
-Ensure:
-"@nextjs-shared/shared": "^0.2.97"
-
-Run:
-npm install
-
-2) Create file:
+1) Create file:
 src/custom_components/Tables/ListPage.tsx
 
 NEW FILE CONTENT (copy/paste):

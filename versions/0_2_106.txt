@@ -4,14 +4,7 @@ Goal:
 Keep a local wrapper to avoid passing fetchPage everywhere, since fetchPage depends on consumer fetchUtil.
 All logic stays in shared; consumer only binds fetchPage.
 
-1) Update dependency:
-Ensure:
-"@nextjs-shared/shared": "^0.2.106"
-
-Run:
-npm install
-
-2) Create file:
+1) Create file:
 src/custom_utils/Form/Helpers/useComboCore.ts
 
 NEW FILE CONTENT (copy/paste):
@@ -31,13 +24,13 @@ export function useComboCore(
     });
 }
 
-3) Delete old file:
+2) Delete old file:
 src/components/Form/Helpers/useComboCore.ts
 
 OLD FILE CONTENT TO DELETE:
 (the current full implementation)
 
-4) Replace imports across the consumer project:
+3) Replace imports across the consumer project:
 
 OLD:
 import {useComboCore} from "@/components/Form/Helpers/useComboCore";

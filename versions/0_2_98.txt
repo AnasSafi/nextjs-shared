@@ -3,17 +3,10 @@ CONSUMER TASK – Replace local TabScope with shared component
 Goal:
 Delete the local TabScope file and import it from shared.
 
-1) Update dependency:
-Ensure:
-"@nextjs-shared/shared": "^0.2.98"
-
-Run:
-npm install
-
-2) Delete local file:
+1) Delete local file:
 src/components/Form/TabScope.tsx
 
-3) Replace imports across project:
+2) Replace imports across project:
 
 OLD:
 import {TabScope} from "@/components/Form/TabScope";

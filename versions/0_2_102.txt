@@ -6,16 +6,7 @@ zeecapital-front-end (and any consumer)
 Goal:
 Make the migration unambiguous so you do NOT end up with mixed imports (some from local "@/models/..." and some from "@nextjs-shared/shared"), which causes build/type errors.
 
-1) Update dependency
-package.json
-
-Set:
-"@nextjs-shared/shared": "^0.2.102"
-
-Run:
-npm install
-
-2) Decide your strategy (pick ONE, not both)
+1) Decide your strategy (pick ONE, not both)
 
 OPTION A (Recommended): Remove local modules completely
 - You will import everything directly from "@nextjs-shared/shared"
@@ -31,7 +22,7 @@ OPTION B: Keep local markdownImage.ts ONLY as a compatibility re-export
 - But markdownImage.ts must import + re-export ONLY from "@nextjs-shared/shared"
   (no local "@/models/core/..." imports remain)
 
-3) Apply the safe change that avoids “mixed sources”
+2) Apply the safe change that avoids “mixed sources”
 
 A) Update ALL imports across the project that reference markdownTokens
 

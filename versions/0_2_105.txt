@@ -1,20 +1,10 @@
 CONSUMER TASK – Keep ComboboxFetch wrapper under custom_utils and delegate to shared (v0.2.105)
 
-Project:
-club_next_js
-
 Goal:
 Keep a small local wrapper because fetchUtil import path differs between consumers.
 Place the wrapper under custom_utils (stable location) and delete the old component helper file.
 
-1) Update dependency:
-Ensure:
-"@nextjs-shared/shared": "^0.2.105"
-
-Run:
-npm install
-
-2) Create file:
+1) Create file:
 src/custom_utils/Form/Helpers/ComboboxFetch.ts
 
 NEW FILE CONTENT (copy/paste):
@@ -31,10 +21,10 @@ export async function fetchPage(
     return fetchComboboxPage(fetchUtil, {pagination, page, search});
 }
 
-3) Delete file:
+2) Delete file:
 src/components/Form/Helpers/ComboboxFetch.ts
 
-4) Replace imports across the consumer project:
+3) Replace imports across the consumer project:
 
 OLD:
 import {fetchPage} from "@/components/Form/Helpers/ComboboxFetch";

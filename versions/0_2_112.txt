@@ -3,14 +3,7 @@ CONSUMER TASK – Keep wrapper FileIconPreview in consumer and inject icon paths
 Goal:
 Keep consumer-level asset paths (icons) inside the consumer, and use shared FileIconPreviewCore.
 
-1) Update dependency:
-Ensure:
-"@nextjs-shared/shared": "^0.2.112"
-
-Run:
-npm install
-
-2) Create file:
+1) Create file:
 src/custom_components/Helper/FileIconPreview.tsx
 
 NEW FILE CONTENT (copy/paste):
@@ -38,10 +31,10 @@ export default function FileIconPreview({file}: { file: FileState }) {
     );
 }
 
-3) Delete old file:
+2) Delete old file:
 src/components/Helper/FileIconPreview.tsx
 
-4) Replace imports across consumer:
+3) Replace imports across consumer:
 
 OLD:
 import FileIconPreview from "@/components/Helper/FileIconPreview";

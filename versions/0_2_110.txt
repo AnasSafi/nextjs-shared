@@ -7,14 +7,7 @@ Replace the old MultiSelectComboBox implementation with a thin wrapper that call
 - useCreateOptionModal/useEditOptionModal
 - fetchUtil
 
-1) Update dependency:
-Ensure:
-"@nextjs-shared/shared": "^0.2.110"
-
-Run:
-npm install
-
-2) Create file:
+1) Create file:
 src/custom_components/Form/MultiSelectComboBox.tsx
 
 NEW FILE CONTENT (copy/paste):
@@ -65,10 +58,10 @@ export const MultiSelectComboBox = forwardRef(MultiSelectComboBoxInner) as <
 
 export default MultiSelectComboBox;
 
-3) Delete old file:
+2) Delete old file:
 src/components/Form/MultiSelectComboBox.tsx
 
-4) Replace imports across consumer:
+3) Replace imports across consumer:
 
 OLD:
 import MultiSelectComboBox from "@/components/Form/MultiSelectComboBox";

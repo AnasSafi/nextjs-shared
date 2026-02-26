@@ -4,18 +4,11 @@ Goal:
 Delete local modal helper files and use shared ones.
 Inject t from consumer i18n at call-site (useTranslation).
 
-1) Update dependency:
-Ensure:
-"@nextjs-shared/shared": "^0.2.116"
-
-Run:
-npm install
-
-2) Delete local files:
+1) Delete local files:
 src/components/Modals/ValidationErrorsList.tsx
 src/components/Modals/errorMessageModalActions.tsx
 
-3) Update file:
+2) Update file:
 src/hooks/core/modal/useModalActions.tsx
 
 A) REPLACE THIS OLD IMPORT (delete it):
@@ -32,7 +25,7 @@ const {openErrorMessageModal} = useErrorMessageModalActions();
 NEW:
 const {openErrorMessageModal} = useErrorMessageModalActions(t);
 
-4) If ValidationErrorsList is imported directly anywhere else in consumer, replace it:
+3) If ValidationErrorsList is imported directly anywhere else in consumer, replace it:
 
 OLD:
 import ValidationErrorsList from "@/components/Modals/ValidationErrorsList";

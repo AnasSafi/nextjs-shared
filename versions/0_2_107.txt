@@ -3,17 +3,10 @@ CONSUMER TASK – Replace local OptionList with shared component (v0.2.107)
 Goal:
 Delete local OptionList file and import from shared.
 
-1) Update dependency:
-Ensure:
-"@nextjs-shared/shared": "^0.2.107"
-
-Run:
-npm install
-
-2) Delete file:
+1) Delete file:
 src/components/Form/Helpers/OptionList.tsx
 
-3) Replace imports across project:
+2) Replace imports across project:
 
 OLD:
 import OptionList from "@/components/Form/Helpers/OptionList";

@@ -3,17 +3,10 @@ CONSUMER TASK – Replace local ComboboxShared with shared helpers (v0.2.104)
 Goal:
 Delete local ComboboxShared.ts and import everything from "@nextjs-shared/shared".
 
-1) Update dependency:
-Ensure:
-"@nextjs-shared/shared": "^0.2.104"
-
-Run:
-npm install
-
-2) Delete local file:
+1) Delete local file:
 src/components/Form/Helpers/ComboboxShared.ts
 
-3) Replace imports across project:
+2) Replace imports across project:
 
 OLD:
 import {...} from "@/components/Form/Helpers/ComboboxShared";
