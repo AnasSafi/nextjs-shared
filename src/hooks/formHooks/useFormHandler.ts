@@ -84,6 +84,46 @@ function normalizeDynamicArrayField<TValues extends FieldValues>(fieldPath: stri
     return fieldPath;
 }
 
+/** ===== Validation error items (for modal) ===== */
+type ValidationErrorItem = {
+    field?: string;
+    message: string;
+};
+
+function uniqValidationItems(items: ValidationErrorItem[]): ValidationErrorItem[] {
+    const seen = new Set<string>();
+    const out: ValidationErrorItem[] = [];
+    for (const it of items) {
+        const key = `${it.field ?? ""}::${it.message}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(it);
+    }
+    return out;
+}
+
+function safeCssEscape(value: string): string {
+    if (typeof CSS !== "undefined" && typeof CSS.escape === "function") return CSS.escape(value);
+    // Fallback: good enough for simple field names; avoids throwing on quotes/backslashes.
+    return value.replace(/["\\]/g, "\\$&");
+}
+
+function isFieldInDom(field?: string): boolean {
+    if (!field) return false;
+    if (typeof document === "undefined") return false;
+    try {
+        return Boolean(document.querySelector(`[name="${safeCssEscape(field)}"]`));
+    } catch {
+        return false;
+    }
+}
+
+function pickHiddenOrAll(items: ValidationErrorItem[]): ValidationErrorItem[] {
+    // Prefer errors that are not currently rendered in the DOM (hidden/unmounted fields)
+    const hidden = items.filter((it) => !isFieldInDom(it.field));
+    return hidden.length > 0 ? hidden : items;
+}
+
 /** Shallow diff for top-level keys */
 function diffTopLevelKeys<T extends Record<string, unknown>>(
     prevObj: T | null,
@@ -200,7 +240,7 @@ export function createUseFormHandler(args: {
 
         /** Full form validation (on submit) */
         const validateBodyData = useCallback(
-            async (data: TValues): Promise<boolean> => {
+            async (data: TValues): Promise<{ isValid: boolean; items: ValidationErrorItem[] }> => {
                 const start = performance.now();
                 dbg("validate:start", {firstSubmission, keys: Object.keys(data ?? {})});
                 try {
@@ -210,12 +250,23 @@ export function createUseFormHandler(args: {
                         abortEarly: false,
                     });
                     dbg("validate:end", {ok: true, durationMs: Math.round(performance.now() - start)});
-                    return true;
+                    return { isValid: true, items: [] };
                 } catch (error: unknown) {
+                    const items: ValidationErrorItem[] = [];
                     let setCount = 0;
                     if (error instanceof yup.ValidationError) {
+                        const pushItem = (path: string | undefined, message: string) => {
+                            const normalized = path ? normalizeDynamicArrayField(path, data) : "";
+                            const rootKey = normalized ? normalized.split(".")[0] : undefined;
+                            items.push({ field: rootKey, message });
+                        };
+
                         if (Array.isArray(error.inner) && error.inner.length > 0) {
                             for (const err of error.inner) {
+                                if (!err.message) continue;
+
+                                pushItem(err.path, err.message);
+
                                 let fieldName: string = err.path ?? "";
                                 if (!fieldName) continue;
                                 fieldName = normalizeDynamicArrayField(fieldName, data);
@@ -225,18 +276,20 @@ export function createUseFormHandler(args: {
                                 dbg("validate:field", {field: String(inputName), message: err.message});
                             }
                         } else if (error.path) {
+                            pushItem(error.path, error.message);
                             const rootKey = error.path.split(".")[0] as Path<TValues>;
                             setError(rootKey, {type: error.type ?? "manual", message: error.message});
                             setCount++;
                             dbg("validate:field", {field: String(rootKey), message: error.message});
                         }
                     }
+                    const uniqItems = uniqValidationItems(items);
                     dbg("validate:end", {
                         ok: false,
                         durationMs: Math.round(performance.now() - start),
                         setErrorCount: setCount,
                     });
-                    return false;
+                    return { isValid: false, items: uniqItems };
                 }
             },
             [validationSchema, setError, clearErrors, t, firstSubmission],
@@ -357,13 +410,15 @@ export function createUseFormHandler(args: {
                 submittingRef.current = true;
                 setFirstSubmission(true);
 
-                const isValid = await validateBodyData(bodyData);
-                dbg("submit:afterValidate", {isValid});
+                const validation = await validateBodyData(bodyData);
+                dbg("submit:afterValidate", {isValid: validation.isValid});
 
-                if (!isValid) {
+                if (!validation.isValid) {
+                    const itemsForModal = pickHiddenOrAll(validation.items);
                     openErrorMessageModal({
                         title: t("validationErrorTitle"),
                         message: t("formSubmissionErrorMessage"),
+                        validationErrors: itemsForModal.length > 0 ? itemsForModal : undefined,
                     });
                     submittingRef.current = false;
                     setInProgress(false);
@@ -439,13 +494,26 @@ export function createUseFormHandler(args: {
                                 hasValidation: Boolean(serverError.error.validationErrors),
                             });
 
+                            const validationErrors =
+                                serverError.error.validationErrors as ServerValidationErrors<TValues> | undefined;
+
+                            const serverItems: ValidationErrorItem[] = validationErrors
+                                ? uniqValidationItems(
+                                    Object.keys(validationErrors)
+                                        .map((fieldName) => {
+                                            const fieldErr = validationErrors[fieldName];
+                                            const root = fieldName.split(".")[0];
+                                            return { field: root, message: fieldErr?.message ?? "" };
+                                        })
+                                        .filter((x) => x.message && x.message.trim().length > 0),
+                                )
+                                : [];
+
                             openErrorMessageModal({
                                 title: serverError.error.title ?? "",
                                 message: serverError.error.message ?? "",
+                                validationErrors: serverItems.length > 0 ? pickHiddenOrAll(serverItems) : undefined,
                             });
-
-                            const validationErrors =
-                                serverError.error.validationErrors as ServerValidationErrors<TValues> | undefined;
 
                             if (validationErrors) {
                                 const keys = Object.keys(validationErrors);
