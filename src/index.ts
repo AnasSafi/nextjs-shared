@@ -134,6 +134,8 @@ export type {MarkdownTextViewDeps} from "./components/Form/MarkdownTextView";
 export {createMarkdownTextView} from "./components/Form/MarkdownTextView";
 export type {MarkdownControlsDeps, MarkdownControlsProps} from "./components/Form/MarkdownTextArea/MarkdownControls";
 export {createMarkdownControls} from "./components/Form/MarkdownTextArea/MarkdownControls";
+export type {MarkdownTextAreaDeps} from "./components/Form/MarkdownTextArea";
+export {createMarkdownTextArea} from "./components/Form/MarkdownTextArea";
 
 export {default as TableFilters} from "./components/Tables/TableFilters";
 export type {

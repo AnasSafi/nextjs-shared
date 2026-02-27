@@ -1,0 +1,484 @@
+CONSUMER TASK – Move MarkdownTextArea + MarkdownImageForm to custom_components (delete old paths) + refactor helpers
+Goal:
+- Delete old components under src/components/Form.
+- Recreate them under src/custom_components/Form with the new structure.
+- Update imports across project.
+- Keep MarkdownImageForm consumer-owned, but fix helper typings (toPagination + toLowerCamelCase).
+
+--------------------------------------------------
+
+1) Delete old files
+
+Delete:
+  src/components/Form/MarkdownTextArea.tsx
+
+Delete:
+  src/components/Form/MarkdownTextArea/MarkdownImageForm.tsx
+
+--------------------------------------------------
+
+2) Create new MarkdownTextArea wrapper (custom_components)
+
+Create file:
+  src/custom_components/Form/MarkdownTextArea.tsx
+
+FULL FILE CONTENT:
+"use client";
+
+import {createMarkdownTextArea} from "@nextjs-shared/shared";
+import {useTranslation} from "@/app/i18n/client_translation";
+import MarkdownTextView from "@/components/Form/MarkdownTextView";
+import MarkdownControls from "@/components/Form/MarkdownTextArea/MarkdownControls";
+
+const MarkdownTextArea = createMarkdownTextArea({
+    useTranslationHook: useTranslation,
+    MarkdownTextView,
+    MarkdownControls,
+});
+
+export default MarkdownTextArea;
+
+--------------------------------------------------
+
+3) Create new MarkdownImageForm (custom_components) (FULL FILE CONTENT)
+
+Create file:
+  src/custom_components/Form/MarkdownTextArea/MarkdownImageForm.tsx
+
+FULL FILE CONTENT:
+"use client";
+import React, {ForwardedRef, JSX, forwardRef, useMemo} from "react";
+import {
+    CInput,
+    FormPropsModel,
+    FormRefModel,
+    ServerSuccessModel,
+    toLowerCamelCase,
+    type SelectOptionModel,
+    type PaginationModel,
+    OpenMarkdownImageModel,
+    ResOfManageMarkdownImageFormData,
+    SaveMarkdownImageModel,
+    generateEmptyMultiLangValueFromLanguages,
+    InsertMarkdownImageResult,
+    IMAGE_OBJECT_FIT_VARIANTS,
+    IMAGE_SIZE_VARIANTS,
+} from "@nextjs-shared/shared";
+import {fetchUtil} from "@/custom_utils/fetchUtils/fetchUtil.client";
+import {languages} from "@/config/localizationConfig";
+import ComboBox from "@/custom_components/Form/ComboBox";
+import CMultiLangInput from "@/custom_components/Form/CMultiLangInput";
+import {defaultCaptionPosition, defaultSource} from "@/config/form/markdownMediaConfig";
+import SingleFileDropzone from "@/custom_components/Form/SingleFileDropzone";
+import {markdownImageAttachmentKey} from "@/config/mediaUploadProcessesConfig";
+import {useModalEntityForm} from "@/custom_hooks/formHooks/useModalEntityForm";
+import {useSaveMarkdownImageService} from "@/custom_services/form/markdown/saveMarkdownImageServices";
+
+/* Helpers */
+
+// Default state
+const emptyImageStateAction = (): SaveMarkdownImageModel => ({
+    source: defaultSource,
+    markdownImage: "",
+    httpUrl: "",
+    altText: generateEmptyMultiLangValueFromLanguages(languages),
+    alignment: null,
+    caption: generateEmptyMultiLangValueFromLanguages(languages),
+    captionPosition: defaultCaptionPosition,
+    linkUrl: "",
+    size: "md",
+    width: null,
+    height: null,
+    ratio: null,
+    fit: "contain",
+});
+
+// To PaginationModel (shared-compatible)
+const toPagination = (options: SelectOptionModel[]): PaginationModel => ({
+    data: options,
+    pagination: {
+        getMorePath: null,
+        page: 1,
+        pageSize: options.length,
+        totalCount: options.length,
+        sorts: [],
+        sortableFields: [],
+        filters: [],
+    },
+});
+
+// Build options using i18n keys
+const makeOptions = (
+    t: (k: string) => string,
+    entries: Array<{id: string; key: string}>,
+): SelectOptionModel[] => {
+    return entries.map(({id, key}) => {
+        const tKey = toLowerCamelCase(key);
+        return {
+            id,
+            name: {eng: t(tKey)},
+        };
+    });
+};
+
+// Fetcher including seed data
+function makeFetchImageFormDataAction(seed?: OpenMarkdownImageModel) {
+    return async (markdownImageId?: string): Promise<ResOfManageMarkdownImageFormData | null> => {
+        const body: OpenMarkdownImageModel = {
+            ...(seed ?? {}),
+            markdownImageId: markdownImageId ?? seed?.markdownImageId ?? null,
+        };
+
+        const res = await fetchUtil<ServerSuccessModel<ResOfManageMarkdownImageFormData>, OpenMarkdownImageModel>({
+            path: "api/addons/markdown/image/data",
+            method: "POST",
+            body,
+        });
+
+        return res.success?.data ?? null;
+    };
+}
+
+const mapServerToRequestAction = (server: ResOfManageMarkdownImageFormData | null): SaveMarkdownImageModel => {
+    const normalizeAlign = (a?: SaveMarkdownImageModel["alignment"]): SaveMarkdownImageModel["alignment"] => {
+        return a ?? null;
+    };
+
+    return {
+        ...emptyImageStateAction(),
+        source: server?.formData.source ?? emptyImageStateAction().source,
+        markdownImage: server?.formData.markdownImage ?? "",
+        httpUrl: server?.formData.httpUrl ?? "",
+        altText: server?.formData.altText ?? generateEmptyMultiLangValueFromLanguages(languages),
+        alignment: normalizeAlign(server?.formData.alignment),
+        caption: server?.formData.caption ?? generateEmptyMultiLangValueFromLanguages(languages),
+        captionPosition: server?.formData.captionPosition ?? defaultCaptionPosition,
+        linkUrl: server?.formData.linkUrl ?? "",
+        size: server?.formData.size ?? "md",
+        width: server?.formData.width ?? null,
+        height: server?.formData.height ?? null,
+        ratio: server?.formData.ratio ?? null,
+        fit: server?.formData.fit ?? "contain",
+    };
+};
+
+type Props = FormPropsModel<OpenMarkdownImageModel, InsertMarkdownImageResult>;
+
+const findOptionById = (pm?: PaginationModel | null, id?: string | null): SelectOptionModel | null => {
+    if (!pm || !pm.data || !Array.isArray(pm.data) || !id) return null;
+    return pm.data.find((opt: SelectOptionModel): boolean => opt.id === id) ?? null;
+};
+
+const MarkdownImageForm = forwardRef<FormRefModel, Props>((props: Props, ref: ForwardedRef<FormRefModel>): JSX.Element => {
+    const fetcherAction = useMemo(() => makeFetchImageFormDataAction(props.data), [props.data]);
+
+    const {
+        t,
+        inProgress,
+        errors,
+        onSubmit,
+        isRequired,
+        formLocale,
+        toggle,
+        handleInputChange,
+        data,
+        ready,
+        bodyData,
+    } = useModalEntityForm<
+        SaveMarkdownImageModel,
+        ResOfManageMarkdownImageFormData,
+        InsertMarkdownImageResult,
+        OpenMarkdownImageModel
+    >({
+        ref,
+        props,
+        emptyStateAction: emptyImageStateAction,
+        fetcherAction,
+        toRequestAction: mapServerToRequestAction,
+        saveHookAction: useSaveMarkdownImageService,
+        selectIdAction: (d?: OpenMarkdownImageModel) => d?.markdownImageId,
+    });
+
+    const sizeOptions = useMemo<Readonly<SelectOptionModel[]>>(
+        () => makeOptions(t, (IMAGE_SIZE_VARIANTS as readonly string[]).map((id) => ({id, key: `size_${id}`}))),
+        [t],
+    );
+
+    const fitOptions = useMemo<Readonly<SelectOptionModel[]>>(
+        () => makeOptions(t, (IMAGE_OBJECT_FIT_VARIANTS as readonly string[]).map((id) => ({id, key: `fit_${id}`}))),
+        [t],
+    );
+
+    const alignmentOptions = useMemo<Readonly<SelectOptionModel[]>>(
+        () =>
+            makeOptions(t, [
+                {id: "", key: "alignment_none"},
+                {id: "start", key: "alignment_start"},
+                {id: "center", key: "alignment_center"},
+                {id: "end", key: "alignment_end"},
+                {id: "left", key: "alignment_left"},
+                {id: "right", key: "alignment_right"},
+            ]),
+        [t],
+    );
+
+    const alignmentPagination = useMemo(() => toPagination(alignmentOptions as SelectOptionModel[]), [alignmentOptions]);
+    const sizePagination = useMemo(() => toPagination(sizeOptions as SelectOptionModel[]), [sizeOptions]);
+    const fitPagination = useMemo(() => toPagination(fitOptions as SelectOptionModel[]), [fitOptions]);
+
+    const normalizedAlignmentId = (() => {
+        const a = data?.formData.alignment ?? "";
+        return a || "";
+    })();
+
+    const sourceInitOption: SelectOptionModel | null = useMemo(() => {
+        const byCurrent = findOptionById(data?.lookups.sources ?? null, data?.formData.source ?? defaultSource);
+        return byCurrent ?? data?.formData.selectedSource ?? null;
+    }, [data?.lookups.sources, data?.formData.source, data?.formData.selectedSource]);
+
+    const captionPosInitOption: SelectOptionModel | null = useMemo(() => {
+        const byCurrent = findOptionById(
+            data?.lookups.captionPositions ?? null,
+            data?.formData.captionPosition ?? defaultCaptionPosition,
+        );
+        return byCurrent ?? data?.formData.selectedCaptionPosition ?? null;
+    }, [data?.lookups.captionPositions, data?.formData.captionPosition, data?.formData.selectedCaptionPosition]);
+
+    const alignmentInitOption: SelectOptionModel | null = useMemo(
+        () => (alignmentOptions as SelectOptionModel[]).find((o) => o.id === normalizedAlignmentId) ?? null,
+        [alignmentOptions, normalizedAlignmentId],
+    );
+
+    const sizeInitOption: SelectOptionModel | null = useMemo(
+        () => (sizeOptions as SelectOptionModel[]).find((o) => o.id === (data?.formData.size ?? "md")) ?? null,
+        [sizeOptions, data?.formData.size],
+    );
+
+    const fitInitOption: SelectOptionModel | null = useMemo(
+        () => (fitOptions as SelectOptionModel[]).find((o) => o.id === (data?.formData.fit ?? "contain")) ?? null,
+        [fitOptions, data?.formData.fit],
+    );
+
+    if (!ready) {
+        return (
+            <div className="p-6">
+                <span className="text-sm">Loading…</span>
+            </div>
+        );
+    }
+
+    return (
+        <div className="p-6 flex flex-col gap-4 md:gap-6 sm:p-8">
+            <form className="flex flex-col gap-4 md:gap-6" onSubmit={onSubmit}>
+                <ComboBox
+                    error={errors.source}
+                    label={t("source")}
+                    name="source"
+                    pagination={data?.lookups.sources ?? null}
+                    initValue={sourceInitOption}
+                    onChange={handleInputChange}
+                    isRequired={isRequired("source")}
+                    dropdownStrategy="inline"
+                />
+
+                {bodyData.source === "httpUrl" && (
+                    <CInput
+                        alwaysLTR
+                        type="httpUrl"
+                        name="httpUrl"
+                        id="httpUrl"
+                        placeholder={t("httpUrlPlaceholder")}
+                        label={t("httpUrl")}
+                        tipText={t("httpUrlTipText")}
+                        error={errors.httpUrl}
+                        disabled={inProgress}
+                        initValue={data?.formData.httpUrl}
+                        onChange={handleInputChange}
+                        isRequired={isRequired("httpUrl")}
+                    />
+                )}
+
+                {bodyData.source === "device" && (
+                    <SingleFileDropzone
+                        name="markdownImage"
+                        processKey={markdownImageAttachmentKey}
+                        label={t("image")}
+                        onChangeAction={handleInputChange}
+                        allowReplace
+                        initValue={data?.formData.markdownImageFile}
+                    />
+                )}
+
+                {(bodyData.source === "device" || bodyData.source === "httpUrl") && (
+                    <>
+                        <CMultiLangInput
+                            type="altText"
+                            name="altText"
+                            id="altText"
+                            tipText={t("imageAltTipText")}
+                            placeholder={t("altTextPlaceholder")}
+                            label={t("altText")}
+                            error={errors.altText}
+                            disabled={inProgress}
+                            initValue={data?.formData.altText}
+                            onChange={handleInputChange}
+                            formLocale={formLocale}
+                            toggleLocale={toggle}
+                            isRequired={isRequired("altText")}
+                        />
+
+                        <CMultiLangInput
+                            type="caption"
+                            name="caption"
+                            id="caption"
+                            tipText={t("imageCaptionTipText")}
+                            placeholder={t("captionPlaceholder")}
+                            label={t("caption")}
+                            error={errors.caption}
+                            disabled={inProgress}
+                            initValue={data?.formData.caption}
+                            onChange={handleInputChange}
+                            formLocale={formLocale}
+                            toggleLocale={toggle}
+                            isRequired={isRequired("caption")}
+                        />
+
+                        <ComboBox
+                            error={errors.captionPosition}
+                            label={t("captionPosition")}
+                            name="captionPosition"
+                            pagination={data?.lookups.captionPositions ?? null}
+                            initValue={captionPosInitOption}
+                            onChange={handleInputChange}
+                            isRequired={isRequired("captionPosition")}
+                            dropdownStrategy="inline"
+                        />
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <ComboBox
+                                error={errors.alignment}
+                                label={t("alignment")}
+                                name="alignment"
+                                pagination={alignmentPagination}
+                                initValue={alignmentInitOption}
+                                onChange={handleInputChange}
+                                dropdownStrategy="inline"
+                            />
+
+                            <CInput
+                                alwaysLTR
+                                type="url"
+                                name="linkUrl"
+                                id="linkUrl"
+                                placeholder={t("imageLinkPlaceholder")}
+                                label={t("imageLink")}
+                                tipText={t("imageLinkTipText")}
+                                error={errors.linkUrl}
+                                disabled={inProgress}
+                                initValue={data?.formData.linkUrl}
+                                onChange={handleInputChange}
+                                isRequired={isRequired("linkUrl")}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <ComboBox
+                                error={errors.size}
+                                label={t("imageSize")}
+                                name="size"
+                                pagination={sizePagination}
+                                initValue={sizeInitOption}
+                                onChange={handleInputChange}
+                                tipText={t("imageSizeTipText")}
+                                dropdownStrategy="inline"
+                            />
+                            <CInput
+                                alwaysLTR
+                                type="number"
+                                name="width"
+                                id="width"
+                                placeholder={t("widthPxPlaceholder")}
+                                label={t("widthPx")}
+                                tipText={t("widthPxTipText")}
+                                error={errors.width}
+                                disabled={inProgress}
+                                initValue={data?.formData.width ?? ""}
+                                onChange={handleInputChange}
+                            />
+                            <CInput
+                                alwaysLTR
+                                type="number"
+                                name="height"
+                                id="height"
+                                placeholder={t("heightPxPlaceholder")}
+                                label={t("heightPx")}
+                                tipText={t("heightPxTipText")}
+                                error={errors.height}
+                                disabled={inProgress}
+                                initValue={data?.formData.height ?? ""}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <CInput
+                                alwaysLTR
+                                type="text"
+                                name="ratio"
+                                id="ratio"
+                                placeholder={t("imageRatioPlaceholder")}
+                                label={t("imageRatio")}
+                                tipText={t("imageRatioTipText")}
+                                error={errors.ratio}
+                                disabled={inProgress}
+                                initValue={data?.formData.ratio ?? ""}
+                                onChange={handleInputChange}
+                            />
+
+                            <ComboBox
+                                error={errors.fit}
+                                label={t("objectFit")}
+                                name="fit"
+                                pagination={fitPagination}
+                                initValue={fitInitOption}
+                                onChange={handleInputChange}
+                                dropdownStrategy="inline"
+                                tipText={t("objectFitTipText")}
+                            />
+                        </div>
+                    </>
+                )}
+            </form>
+        </div>
+    );
+});
+
+MarkdownImageForm.displayName = "MarkdownImageForm";
+export default MarkdownImageForm;
+
+--------------------------------------------------
+
+4) Update imports across project
+
+A) MarkdownTextArea usage
+Search for:
+  from "@/components/Form/MarkdownTextArea"
+Replace with:
+  from "@/custom_components/Form/MarkdownTextArea"
+
+(or if you had default import from that path, update accordingly)
+
+B) MarkdownImageForm usage (likely used by the modal hook)
+Search for:
+  from "@/components/Form/MarkdownTextArea/MarkdownImageForm"
+Replace with:
+  from "@/custom_components/Form/MarkdownTextArea/MarkdownImageForm"
+
+--------------------------------------------------
+
+DONE CRITERIA:
+- Old component files are deleted under src/components/Form.
+- New equivalents exist under src/custom_components/Form.
+- All imports updated to the new paths.
+- MarkdownImageForm helpers are fixed (PaginationModel + toLowerCamelCase).
+- Project builds successfully.
