@@ -28,6 +28,18 @@ export * from "./utils/markdownUtils";
 export * from "./utils/comboboxFetchUtils";
 export * from "./utils/markdown/markdownImageHelpers";
 export * from "./utils/formUtils";
+export type {SearchPartVariants} from "./utils/multiLangSearchUtils";
+export {
+    normalizeDigitsToEnglish,
+    toArabicIndicDigits,
+    buildSearchPartVariants,
+    createMultiLangSearchUtils,
+} from "./utils/multiLangSearchUtils";
+export {
+    parseEnumValue,
+    getMatchedEnumValuesFromSearch,
+} from "./utils/enumSearchUtils";
+export {getGeneralSearchValue} from "./utils/paginationFilterUtils";
 export {extractRequiredFields, createGenerateMultiLangTextValidationSchema} from "./utils/validationUtils";
 export {translationInputName, createTranslationInputName} from "./utils/translationUtils";
 export {createJWTUtils} from "./utils/jwtUtils";

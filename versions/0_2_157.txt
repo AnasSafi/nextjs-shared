@@ -1,0 +1,76 @@
+CONSUMER TASK – Delete old utils, create one thin wrapper for multi-lang search, import the rest directly from shared
+
+Goal:
+- Remove local copies of the three utilities.
+- Keep only one wrapper where consumer languages must be injected.
+- Import enumSearchUtils and paginationFilterUtils directly from shared.
+
+1) Delete old files
+
+Delete file:
+  src/custom_utils/multiLangSearchUtils.ts
+
+Delete file:
+  src/custom_utils/enumSearchUtils.ts
+
+Delete file:
+  src/custom_utils/paginationFilterUtils.ts
+
+2) Create wrapper file for injected languages
+Create file:
+  src/custom_utils/multiLangSearchUtils.ts
+
+FULL FILE CONTENT:
+import {createMultiLangSearchUtils} from "@nextjs-shared/shared";
+import {languages} from "@/config/localizationConfig";
+
+export {normalizeDigitsToEnglish, toArabicIndicDigits, buildSearchPartVariants} from "@nextjs-shared/shared";
+
+export const {
+    getSearchLanguageCodes,
+    buildMultiLangJsonContainsFilter,
+} = createMultiLangSearchUtils(languages);
+
+3) Update imports across project
+
+A) multiLangSearchUtils imports
+Search for:
+  from "@/custom_utils/multiLangSearchUtils"
+
+Keep this path as-is.
+- The file still exists, but now it is only a thin wrapper around shared.
+
+B) enumSearchUtils imports
+Search for:
+  from "@/custom_utils/enumSearchUtils"
+
+Replace with:
+  from "@nextjs-shared/shared"
+
+Example:
+
+OLD:
+import {parseEnumValue, getMatchedEnumValuesFromSearch} from "@/custom_utils/enumSearchUtils";
+
+NEW:
+import {parseEnumValue, getMatchedEnumValuesFromSearch} from "@nextjs-shared/shared";
+
+C) paginationFilterUtils imports
+Search for:
+  from "@/custom_utils/paginationFilterUtils"
+
+Replace with:
+  from "@nextjs-shared/shared"
+
+Example:
+
+OLD:
+import {getGeneralSearchValue} from "@/custom_utils/paginationFilterUtils";
+
+NEW:
+import {getGeneralSearchValue} from "@nextjs-shared/shared";
+
+DONE CRITERIA:
+- Only src/custom_utils/multiLangSearchUtils.ts remains as a thin wrapper because it injects consumer languages.
+- enumSearchUtils and paginationFilterUtils are imported directly from shared.
+- Project builds successfully.
