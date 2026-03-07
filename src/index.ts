@@ -49,6 +49,7 @@ export {
     toIsoOrNull,
     mlToStrings,
     toStaticSelectPagination,
+    getStaticLabelFromDefs
 } from "./utils/formLookupUtils";
 export type {
     BackendOp,

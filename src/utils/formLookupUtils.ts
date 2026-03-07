@@ -43,3 +43,13 @@ export function toStaticSelectPagination<V extends string>(
         },
     };
 }
+
+/** Get label from static enum definitions */
+export function getStaticLabelFromDefs<V extends string>(
+    {defs, key}: {
+        defs: readonly { value: V; label: MultiLangValue }[],
+        key: V,
+    }
+): MultiLangValue | undefined {
+    return defs.find((item) => item.value === key)?.label;
+}
