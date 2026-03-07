@@ -133,6 +133,15 @@ export * from "./components/Form/CTextArea";
 export * from "./components/Form/DisplayMultiLang";
 export * from "./components/Form/TooltipIcon";
 export * from "./components/Form/RequiredAsterisk";
+export {default as MapLocationPicker} from "./components/Form/MapLocationPicker";
+export type {
+    MapLocationValue,
+    MapProvider,
+    GoogleMapProviderConfig,
+    OpenStreetMapProviderConfig,
+    MapLocationPickerProviderConfig,
+    MapLocationPickerProps,
+} from "./components/Form/MapLocationPicker";
 export * from "./components/Form/Helpers/FormError";
 export * from "./components/Form/Helpers/fieldShared";
 export {default as ViewInput} from "./components/Form/ViewInput";

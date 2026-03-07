@@ -1,0 +1,75 @@
+CONSUMER TASK – Use shared MapLocationPicker with provider keys from consumer config
+
+Goal:
+- Use the new shared map location picker from `@nextjs-shared/shared`.
+- Support both providers (`google`, `openstreetmap`) with provider keys/config coming from consumer.
+- Do not hardcode keys inside shared or component code.
+
+1) Import shared component
+
+Use:
+  import {MapLocationPicker} from "@nextjs-shared/shared";
+
+2) Keep provider keys in consumer env/config
+
+Examples:
+- `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
+- `NEXT_PUBLIC_MAP_PROVIDER` (google | openstreetmap)
+- Optional tile provider URL/token for OSM-based providers
+
+4) Create a thin consumer wrapper (recommended)
+
+Create file:
+  src/custom_components/Form/MapLocationPicker.tsx
+
+Suggested wrapper behavior:
+- Read provider + keys from consumer config/env.
+- Pass provider config into shared `MapLocationPicker`.
+- Re-export a stable component for app-wide use.
+
+Example shape:
+
+```tsx
+"use client";
+
+import {MapLocationPicker as SharedMapLocationPicker, type MapLocationPickerProps} from "@nextjs-shared/shared";
+
+const provider = (process.env.NEXT_PUBLIC_MAP_PROVIDER as "google" | "openstreetmap") || "openstreetmap";
+
+export function MapLocationPicker(props: MapLocationPickerProps) {
+  return (
+    <SharedMapLocationPicker
+      {...props}
+      provider={provider}
+      providerConfig={{
+        google: {
+          apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+        },
+        openstreetmap: {
+          // Optional: use custom tile endpoint from consumer env (with token if needed)
+          tileUrl: process.env.NEXT_PUBLIC_OSM_TILE_URL,
+          tileAttribution: process.env.NEXT_PUBLIC_OSM_TILE_ATTRIBUTION,
+        },
+      }}
+    />
+  );
+}
+```
+
+5) Replace old/local map picker usage
+
+If consumer has a local map picker, replace imports/usages with the wrapper from step 4.
+
+6) Verify behavior
+
+- Google mode: map loads and marker can be set by click/drag.
+- OpenStreetMap mode: map loads and marker can be set by click/drag.
+- `onChange` receives `{lat, lng, zoom}` updates.
+- Disabled mode prevents editing.
+- Build/type-check passes.
+
+DONE CRITERIA:
+- Consumer uses shared `MapLocationPicker`.
+- Provider keys/config are injected only from consumer.
+- Both providers are supported through config.
+- App builds and map selection works in forms.
