@@ -12,6 +12,7 @@ type YupContext = {
 declare module "yup" {
     interface StringSchema {
         notNull(): StringSchema;
+        oneOfValue(allowedValues: readonly string[]): StringSchema;
         emailAddress(): StringSchema;
         minLength(minLength: number): StringSchema;
         maxLength(maxLength: number): StringSchema;
@@ -138,6 +139,27 @@ export function applyYupSchemaExtensions(yup: typeof import("yup")): void {
                     fieldName: await fieldNameFromContext(ctx, this.path),
                 }),
             });
+        });
+    };
+
+    StringSchema.prototype.oneOfValue = function (allowedValues: readonly string[]) {
+        return this.test({
+            name: "oneOfValue",
+            test: async function (value) {
+                if (yup.string().oneOf(allowedValues as string[]).isValidSync(value as any)) return true;
+
+                const ctx = this.options.context as YupContext | undefined;
+                const t = tFromContext(ctx);
+
+                return this.createError({
+                    path: this.path,
+                    message: t("validationOneOfValue", {
+                        fieldName: await fieldNameFromContext(ctx, this.path),
+                        values: allowedValues.join(", "),
+                    }),
+                });
+            },
+            skipAbsent: true,
         });
     };
 

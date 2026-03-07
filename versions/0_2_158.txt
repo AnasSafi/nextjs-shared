@@ -1,0 +1,79 @@
+CONSUMER TASK – Replace yup oneOf(...) with translated oneOfValue(...)
+
+Goal:
+- Stop using raw yup `oneOf(...)` in consumer schemas when validating allowed string values.
+- Use shared translated validator `oneOfValue(...)` instead, so errors are localized via yup context `t`.
+
+1) Find current usage
+
+Search in consumer project for string-schema `oneOf(` usage, for example:
+  .oneOf([
+  yup.string().oneOf(
+
+2) Replace with oneOfValue
+
+For string enum-like validation, replace:
+
+OLD:
+  yup.string().oneOf(ALLOWED_VALUES)
+
+NEW:
+  yup.string().oneOfValue(ALLOWED_VALUES)
+
+Also replace chained cases:
+
+OLD:
+  yup.string().trim().oneOf(values).required()
+
+NEW:
+  yup.string().trim().oneOfValue(values).required()
+
+3) Keep non-string use cases unchanged
+
+Do NOT replace:
+- boolean checks like `yup.boolean().oneOf([true])`
+- array/object/number validations where `oneOf` is intentionally used
+
+Only replace string value-membership validation.
+
+4) Ensure shared yup extensions are applied
+
+Make sure consumer bootstrap initializes shared extensions (once):
+  applyYupSchemaExtensions(yup)
+
+Without this, `oneOfValue` will not be available at runtime.
+
+5) Add translation key in consumer locales
+
+Update:
+  src/app/i18n/locales/app.json
+
+Add `validationOneOfValue` using the same multilingual object style used by other validation keys, for example:
+
+```json
+"validationQuotientFraction": {
+  "ara": "نتيجة قسمة حقل ({{dividendFieldName}}) على حقل ({{divisorFieldName}}) يجب أن يكون بدون كسور.",
+  "eng": "The quotient of ({{dividendFieldName}}) on ({{divisorFieldName}}) must be without fractions.",
+  "heb": "תוצאת החלוקה של ({{dividendFieldName}}) ב-({{divisorFieldName}}) חייבת להיות ללא שברים."
+},
+```
+
+Recommended shape for the new key:
+
+```json
+"validationOneOfValue": {
+  "ara": "قيمة حقل ({{fieldName}}) يجب أن تكون واحدة من: {{values}}.",
+  "eng": "The value of ({{fieldName}}) must be one of: {{values}}.",
+  "heb": "הערך של ({{fieldName}}) חייב להיות אחד מהבאים: {{values}}."
+},
+```
+
+6) Build and verify
+
+- Run project build/type-check.
+- Validate a known invalid enum input and confirm translated message key/path resolves (e.g. `validationOneOfValue`).
+
+DONE CRITERIA:
+- Consumer string enum validations use `oneOfValue(...)` instead of `oneOf(...)`.
+- No runtime/type errors for `oneOfValue`.
+- Validation errors for enum membership are translation-aware.
