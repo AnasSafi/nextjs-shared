@@ -48,6 +48,7 @@ interface BaseCellConfig {
 export type CellConfig =
     | ({ kind: "date" } & BaseCellConfig)
     | ({ kind: "dateTime" } & BaseCellConfig)
+    | ({ kind: "multiLang" } & BaseCellConfig)
     | ({
         kind: "media";
         rounded?: boolean;

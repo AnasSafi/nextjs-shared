@@ -3,6 +3,7 @@ import React, {type JSX} from "react";
 import type {CellConfig, Column} from "../../models/ui/tableModels";
 import FormattedDate from "../Helper/FormattedDate";
 import type {MediaFileViewModel} from "../../models/core/mediaModels";
+import type {MultiLangValue} from "../../models/core/localeModels";
 import {getStringFromAny} from "../../utils/tableFormatUtils";
 import {ZoomableImage} from "./ZoomableImage";
 import {VideoModalTrigger} from "../media/VideoModalTrigger";
@@ -158,6 +159,22 @@ export function TableCellContent<T>(
 
             case "number":
                 return getStringFromAny(fieldValue, currentLng, cellCfg.decimals);
+
+            case "multiLang": {
+                const multiLangValue = fieldValue as MultiLangValue | null | undefined;
+                if (!multiLangValue || typeof multiLangValue !== "object") {
+                    return getStringFromAny(fieldValue, currentLng);
+                }
+
+                const currentLngValue = multiLangValue[currentLng];
+                if (typeof currentLngValue === "string" && currentLngValue.trim() !== "") {
+                    return currentLngValue;
+                }
+
+                const firstExistingValue = Object.values(multiLangValue)
+                    .find((value) => typeof value === "string" && value.trim() !== "");
+                return firstExistingValue ?? getStringFromAny(fieldValue, currentLng);
+            }
 
             case "date":
                 if (typeof fieldValue === "string" || fieldValue instanceof Date) {
