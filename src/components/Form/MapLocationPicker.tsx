@@ -49,6 +49,7 @@ export interface MapLocationPickerProps<TFormValues extends FieldValues = FieldV
 type MapAdapter = {
     setLocation: (next: MapLocationValue) => void;
     setDisabled: (disabled: boolean) => void;
+    refreshLayout?: () => void;
     destroy: () => void;
 };
 
@@ -80,6 +81,13 @@ const normalizeLocation = (
     const lng = isFiniteNumber(source.lng) ? source.lng : DEFAULT_LOCATION.lng;
     const zoom = isFiniteNumber(source.zoom) ? source.zoom : fallbackZoom;
     return {lat, lng, zoom};
+};
+
+const resetLeafletContainer = (container: HTMLDivElement): void => {
+    const stamped = container as HTMLDivElement & {_leaflet_id?: number};
+    if (stamped._leaflet_id !== undefined) {
+        delete stamped._leaflet_id;
+    }
 };
 
 const loadScript = (id: string, src: string): Promise<void> => {
@@ -261,6 +269,13 @@ const createGoogleAdapter = async ({
             marker.setDraggable(!nextDisabled);
             map.setOptions({draggableCursor: nextDisabled ? "default" : "crosshair"});
         },
+        refreshLayout: () => {
+            const center = marker.getPosition();
+            google.maps.event.trigger(map, "resize");
+            if (center) {
+                map.setCenter(center);
+            }
+        },
         destroy: () => {
             if (clickListener) google.maps.event.removeListener(clickListener);
             if (dragListener) google.maps.event.removeListener(dragListener);
@@ -283,6 +298,7 @@ const createOpenStreetMapAdapter = async ({
     onLocationChange: (location: MapLocationValue) => void;
 }): Promise<MapAdapter> => {
     const L = await loadLeaflet();
+    resetLeafletContainer(container);
 
     const map = L.map(container, {
         zoomControl: true,
@@ -359,6 +375,9 @@ const createOpenStreetMapAdapter = async ({
     setTimeout(() => {
         map.invalidateSize();
     }, 0);
+    setTimeout(() => {
+        map.invalidateSize();
+    }, 200);
 
     return {
         setLocation: (next: MapLocationValue) => {
@@ -367,6 +386,9 @@ const createOpenStreetMapAdapter = async ({
         },
         setDisabled: (nextDisabled: boolean) => {
             setInteractionsDisabled(nextDisabled);
+        },
+        refreshLayout: () => {
+            map.invalidateSize();
         },
         destroy: () => {
             map.off();
@@ -392,6 +414,7 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
 }: MapLocationPickerProps<TFormValues>): JSX.Element {
     const mapRef = useRef<HTMLDivElement | null>(null);
     const adapterRef = useRef<MapAdapter | null>(null);
+    const initRunRef = useRef<number>(0);
 
     const [internalLocation, setInternalLocation] = useState<MapLocationValue>(
         normalizeLocation(defaultValue, defaultZoom),
@@ -425,7 +448,26 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
     }, [disabled]);
 
     useEffect(() => {
+        if (!mapRef.current || !adapterRef.current?.refreshLayout) return;
+
+        const observer = new ResizeObserver(() => {
+            adapterRef.current?.refreshLayout?.();
+        });
+
+        observer.observe(mapRef.current);
+        const timeoutId = window.setTimeout(() => {
+            adapterRef.current?.refreshLayout?.();
+        }, 250);
+
+        return () => {
+            observer.disconnect();
+            window.clearTimeout(timeoutId);
+        };
+    }, []);
+
+    useEffect(() => {
         let isCancelled = false;
+        const runId = ++initRunRef.current;
 
         const initMap = async () => {
             if (!mapRef.current) return;
@@ -455,7 +497,7 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
                         onLocationChange: emitLocation,
                     });
 
-                if (isCancelled) {
+                if (isCancelled || runId !== initRunRef.current) {
                     adapter.destroy();
                     return;
                 }
