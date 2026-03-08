@@ -42,6 +42,7 @@ export interface MapLocationPickerProps<TFormValues extends FieldValues = FieldV
     disabled?: boolean;
     heightPx?: number;
     defaultZoom?: number;
+    enableScrollWheelZoom?: boolean;
     markerDraggable?: boolean;
     markerIconUrl?: string;
     markerIconSizePx?: number;
@@ -314,6 +315,7 @@ const createOpenStreetMapAdapter = async ({
     initialLocation,
     disabled,
     config,
+    enableScrollWheelZoom,
     markerDraggable,
     markerIconUrl,
     markerIconSizePx,
@@ -323,6 +325,7 @@ const createOpenStreetMapAdapter = async ({
     initialLocation: MapLocationValue;
     disabled: boolean;
     config?: OpenStreetMapProviderConfig;
+    enableScrollWheelZoom: boolean;
     markerDraggable: boolean;
     markerIconUrl?: string;
     markerIconSizePx: number;
@@ -334,6 +337,8 @@ const createOpenStreetMapAdapter = async ({
     const map = L.map(container, {
         zoomControl: true,
         attributionControl: true,
+        dragging: !disabled,
+        scrollWheelZoom: enableScrollWheelZoom && !disabled,
     }).setView([initialLocation.lat, initialLocation.lng], initialLocation.zoom);
 
     const tileLayer = L.tileLayer(config?.tileUrl ?? DEFAULT_OSM_TILE_URL, {
@@ -356,6 +361,11 @@ const createOpenStreetMapAdapter = async ({
         icon: markerIcon,
     }).addTo(map);
     let isDisabled = disabled;
+    let isPanning = false;
+    let lastDragEndedAtMs = 0;
+    let pointerDownXY: {x: number; y: number} | null = null;
+    let didPointerMove = false;
+    const clickMoveThresholdPx = 6;
 
     const setInteractionsDisabled = (nextDisabled: boolean) => {
         isDisabled = nextDisabled;
@@ -371,7 +381,11 @@ const createOpenStreetMapAdapter = async ({
             map.dragging.enable();
             map.touchZoom.enable();
             map.doubleClickZoom.enable();
-            map.scrollWheelZoom.enable();
+            if (enableScrollWheelZoom) {
+                map.scrollWheelZoom.enable();
+            } else {
+                map.scrollWheelZoom.disable();
+            }
             map.boxZoom.enable();
             map.keyboard.enable();
             if (markerDraggable) {
@@ -392,8 +406,46 @@ const createOpenStreetMapAdapter = async ({
         });
     };
 
+    const onPointerDown = (event: PointerEvent) => {
+        if (event.pointerType === "mouse" && event.button !== 0) return;
+        pointerDownXY = {x: event.clientX, y: event.clientY};
+        didPointerMove = false;
+    };
+
+    const onPointerMove = (event: PointerEvent) => {
+        if (!pointerDownXY) return;
+        const deltaX = Math.abs(event.clientX - pointerDownXY.x);
+        const deltaY = Math.abs(event.clientY - pointerDownXY.y);
+        if (deltaX >= clickMoveThresholdPx || deltaY >= clickMoveThresholdPx) {
+            didPointerMove = true;
+        }
+    };
+
+    const onPointerUpOrCancel = () => {
+        pointerDownXY = null;
+    };
+
+    container.addEventListener("pointerdown", onPointerDown);
+    container.addEventListener("pointermove", onPointerMove);
+    container.addEventListener("pointerup", onPointerUpOrCancel);
+    container.addEventListener("pointercancel", onPointerUpOrCancel);
+
+    map.on("dragstart", () => {
+        isPanning = true;
+    });
+
+    map.on("dragend", () => {
+        isPanning = false;
+        lastDragEndedAtMs = Date.now();
+    });
+
     map.on("click", (event: any) => {
         if (isDisabled) return;
+        const recentlyDragged = Date.now() - lastDragEndedAtMs < 160;
+        const shouldIgnoreAsDrag = didPointerMove || isPanning || recentlyDragged;
+        didPointerMove = false;
+        if (shouldIgnoreAsDrag) return;
+
         const lat = event?.latlng?.lat;
         const lng = event?.latlng?.lng;
         if (!isFiniteNumber(lat) || !isFiniteNumber(lng)) return;
@@ -429,6 +481,10 @@ const createOpenStreetMapAdapter = async ({
             map.invalidateSize();
         },
         destroy: () => {
+            container.removeEventListener("pointerdown", onPointerDown);
+            container.removeEventListener("pointermove", onPointerMove);
+            container.removeEventListener("pointerup", onPointerUpOrCancel);
+            container.removeEventListener("pointercancel", onPointerUpOrCancel);
             map.off();
             marker.remove();
             map.remove();
@@ -447,6 +503,7 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
     disabled = false,
     heightPx = 320,
     defaultZoom = 12,
+    enableScrollWheelZoom = false,
     markerDraggable = false,
     markerIconUrl,
     markerIconSizePx = 34,
@@ -542,6 +599,7 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
                         initialLocation: currentLocation,
                         disabled,
                         config: providerConfig?.openstreetmap,
+                        enableScrollWheelZoom,
                         markerDraggable,
                         markerIconUrl,
                         markerIconSizePx,
@@ -585,6 +643,7 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
         markerDraggable,
         markerIconUrl,
         markerIconSizePx,
+        enableScrollWheelZoom,
     ]);
 
     return (
@@ -601,7 +660,6 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
                     onMouseDown={stopPropagation}
                     onTouchStart={stopPropagation}
                     onPointerDown={stopPropagation}
-                    onWheel={stopPropagation}
                     style={{
                         height: `${heightPx}px`,
                         cursor: disabled ? "default" : "grab",
