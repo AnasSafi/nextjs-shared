@@ -75,8 +75,20 @@ const DEFAULT_MARKER_ICON_URL =
 
 const LEAFLET_SCRIPT_ID = "shared-map-picker-leaflet-script";
 const LEAFLET_CSS_ID = "shared-map-picker-leaflet-css";
+const MAP_DEBUG = false;
 
 let leafletLoaderPromise: Promise<any> | null = null;
+
+const debugMap = (...args: unknown[]): void => {
+    if (!MAP_DEBUG) return;
+    console.log("[MapLocationPicker]", ...args);
+};
+
+const getElementSummary = (element: EventTarget | null): string => {
+    if (!(element instanceof HTMLElement)) return "unknown";
+    const className = typeof element.className === "string" ? element.className : "";
+    return `${element.tagName.toLowerCase()}${className ? `.${className.replace(/\s+/g, ".")}` : ""}`;
+};
 
 const isFiniteNumber = (value: unknown): value is number =>
     typeof value === "number" && Number.isFinite(value);
@@ -100,6 +112,9 @@ const resetLeafletContainer = (container: HTMLDivElement): void => {
     if (stamped._leaflet_id !== undefined) {
         delete stamped._leaflet_id;
     }
+
+    // Clear any stale Leaflet DOM from previous instances (common in modal reopen cycles).
+    container.innerHTML = "";
 };
 
 const loadScript = (id: string, src: string): Promise<void> => {
@@ -203,12 +218,25 @@ const createOpenStreetMapAdapter = async (
 
     resetLeafletContainer(container);
 
+    debugMap("createOpenStreetMapAdapter:start", {
+        existingLeafletPanes: container.querySelectorAll(".leaflet-map-pane").length,
+        existingControlContainers: container.querySelectorAll(".leaflet-control-container").length,
+        existingMarkerPanes: container.querySelectorAll(".leaflet-marker-pane").length,
+        childCount: container.childElementCount,
+    });
+
     const map = L.map(container, {
         zoomControl: true,
         attributionControl: true,
         dragging: !disabled,
         scrollWheelZoom: enableScrollWheelZoom && !disabled,
     }).setView([initialLocation.lat, initialLocation.lng], initialLocation.zoom);
+
+    debugMap("createOpenStreetMapAdapter:after-map-init", {
+        leafletPanes: container.querySelectorAll(".leaflet-map-pane").length,
+        controlContainers: container.querySelectorAll(".leaflet-control-container").length,
+        markerPanes: container.querySelectorAll(".leaflet-marker-pane").length,
+    });
 
     const tileLayer = L.tileLayer(config?.tileUrl ?? DEFAULT_OSM_TILE_URL, {
         attribution: config?.tileAttribution ?? DEFAULT_OSM_ATTRIBUTION,
@@ -231,6 +259,8 @@ const createOpenStreetMapAdapter = async (
     }).addTo(map);
 
     let isDisabled = disabled;
+    let isDraggingMap = false;
+    let lastDragEndedAtMs = 0;
 
     const emit = (lat: number, lng: number) => {
         onLocationChange({
@@ -256,15 +286,25 @@ const createOpenStreetMapAdapter = async (
 
     let pointerDownPosition: { x: number; y: number } | null = null;
     let didMove = false;
-
     const MOVE_THRESHOLD = 5;
 
     const onPointerDown = (event: PointerEvent) => {
+        if (event.pointerType === "mouse" && event.button !== 0) return;
+
         pointerDownPosition = {
             x: event.clientX,
             y: event.clientY,
         };
+
         didMove = false;
+
+        debugMap("pointerdown", {
+            x: event.clientX,
+            y: event.clientY,
+            button: event.button,
+            pointerType: event.pointerType,
+            target: getElementSummary(event.target),
+        });
     };
 
     const onPointerMove = (event: PointerEvent) => {
@@ -276,23 +316,108 @@ const createOpenStreetMapAdapter = async (
         if (dx > MOVE_THRESHOLD || dy > MOVE_THRESHOLD) {
             didMove = true;
         }
+
+        if (MAP_DEBUG) {
+            debugMap("pointermove", {
+                x: event.clientX,
+                y: event.clientY,
+                dx,
+                dy,
+                didMove,
+                target: getElementSummary(event.target),
+            });
+        }
     };
 
-    const onPointerUp = () => {
+    const onPointerUp = (event: PointerEvent) => {
+        debugMap("pointerup", {
+            x: event.clientX,
+            y: event.clientY,
+            didMove,
+            target: getElementSummary(event.target),
+        });
+
         pointerDownPosition = null;
     };
 
-    container.addEventListener("pointerdown", onPointerDown);
-    container.addEventListener("pointermove", onPointerMove);
-    container.addEventListener("pointerup", onPointerUp);
-    container.addEventListener("pointercancel", onPointerUp);
+    const onPointerCancel = (event: PointerEvent) => {
+        debugMap("pointercancel", {
+            x: event.clientX,
+            y: event.clientY,
+            target: getElementSummary(event.target),
+        });
+        pointerDownPosition = null;
+    };
+
+    container.addEventListener("pointerdown", onPointerDown, true);
+    window.addEventListener("pointermove", onPointerMove, true);
+    window.addEventListener("pointerup", onPointerUp, true);
+    window.addEventListener("pointercancel", onPointerCancel, true);
+
+    map.on("dragstart", () => {
+        isDraggingMap = true;
+        debugMap("leaflet:dragstart");
+    });
+
+    map.on("drag", () => {
+        if (MAP_DEBUG) debugMap("leaflet:drag");
+    });
+
+    map.on("dragend", () => {
+        isDraggingMap = false;
+        lastDragEndedAtMs = Date.now();
+        debugMap("leaflet:dragend");
+    });
+
+    if (MAP_DEBUG) {
+        map.on("mousedown", (event: any) => {
+            debugMap("leaflet:mousedown", {
+                latlng: event?.latlng,
+                originalTarget: getElementSummary(event?.originalEvent?.target ?? null),
+            });
+        });
+
+        map.on("movestart", () => {
+            debugMap("leaflet:movestart");
+        });
+
+        map.on("move", () => {
+            const center = map.getCenter();
+            debugMap("leaflet:move", {
+                lat: center.lat,
+                lng: center.lng,
+                zoom: map.getZoom(),
+            });
+        });
+
+        map.on("moveend", () => {
+            const center = map.getCenter();
+            debugMap("leaflet:moveend", {
+                lat: center.lat,
+                lng: center.lng,
+                zoom: map.getZoom(),
+            });
+        });
+    }
 
     map.on("click", (event: any) => {
 
         if (isDisabled) return;
+        const recentlyDragged = Date.now() - lastDragEndedAtMs < 150;
+        const shouldIgnoreAsDrag = didMove || isDraggingMap || recentlyDragged;
 
-        // Ignore click if pointer movement indicates a drag
-        if (didMove) return;
+        debugMap("leaflet:click", {
+            latlng: event?.latlng,
+            didMove,
+            isDraggingMap,
+            recentlyDragged,
+            originalTarget: getElementSummary(event?.originalEvent?.target ?? null),
+        });
+
+        // Reset movement flag for the next pointer cycle.
+        didMove = false;
+
+        if (shouldIgnoreAsDrag) return;
 
         const lat = event?.latlng?.lat;
         const lng = event?.latlng?.lng;
@@ -305,16 +430,31 @@ const createOpenStreetMapAdapter = async (
     });
 
     if (markerDraggable) {
+        if (MAP_DEBUG) {
+            marker.on("mousedown", (event: any) => {
+                debugMap("marker:mousedown", {
+                    latlng: event?.latlng,
+                    originalTarget: getElementSummary(event?.originalEvent?.target ?? null),
+                });
+            });
+
+            marker.on("dragstart", () => {
+                debugMap("marker:dragstart");
+            });
+        }
+
         marker.on("dragend", () => {
             if (isDisabled) return;
 
             const point = marker.getLatLng();
+            debugMap("marker:dragend", point);
 
             emit(point.lat, point.lng);
         });
     }
 
     setTimeout(() => map.invalidateSize(), 0);
+    setTimeout(() => map.invalidateSize(), 200);
 
     return {
         setLocation: (next: MapLocationValue) => {
@@ -330,9 +470,23 @@ const createOpenStreetMapAdapter = async (
 
             if (nextDisabled) {
                 map.dragging.disable();
+                map.touchZoom.disable();
+                map.doubleClickZoom.disable();
+                map.scrollWheelZoom.disable();
+                map.boxZoom.disable();
+                map.keyboard.disable();
                 marker.dragging?.disable();
             } else {
                 map.dragging.enable();
+                map.touchZoom.enable();
+                map.doubleClickZoom.enable();
+                if (enableScrollWheelZoom) {
+                    map.scrollWheelZoom.enable();
+                } else {
+                    map.scrollWheelZoom.disable();
+                }
+                map.boxZoom.enable();
+                map.keyboard.enable();
                 if (markerDraggable) marker.dragging?.enable();
             }
         },
@@ -342,14 +496,30 @@ const createOpenStreetMapAdapter = async (
         },
 
         destroy: () => {
-            container.removeEventListener("pointerdown", onPointerDown);
-            container.removeEventListener("pointermove", onPointerMove);
-            container.removeEventListener("pointerup", onPointerUp);
-            container.removeEventListener("pointercancel", onPointerUp);
+            debugMap("createOpenStreetMapAdapter:destroy:before", {
+                leafletPanes: container.querySelectorAll(".leaflet-map-pane").length,
+                controlContainers: container.querySelectorAll(".leaflet-control-container").length,
+                markerPanes: container.querySelectorAll(".leaflet-marker-pane").length,
+                childCount: container.childElementCount,
+            });
+
+            container.removeEventListener("pointerdown", onPointerDown, true);
+            window.removeEventListener("pointermove", onPointerMove, true);
+            window.removeEventListener("pointerup", onPointerUp, true);
+            window.removeEventListener("pointercancel", onPointerCancel, true);
 
             map.off();
             marker.remove();
             map.remove();
+
+            resetLeafletContainer(container);
+
+            debugMap("createOpenStreetMapAdapter:destroy:after", {
+                leafletPanes: container.querySelectorAll(".leaflet-map-pane").length,
+                controlContainers: container.querySelectorAll(".leaflet-control-container").length,
+                markerPanes: container.querySelectorAll(".leaflet-marker-pane").length,
+                childCount: container.childElementCount,
+            });
         },
     };
 };
@@ -376,6 +546,7 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
 
     const mapRef = useRef<HTMLDivElement | null>(null);
     const adapterRef = useRef<MapAdapter | null>(null);
+    const initRunRef = useRef<number>(0);
 
     const [internalLocation, setInternalLocation] = useState<MapLocationValue>(
         normalizeLocation(defaultValue, defaultZoom),
@@ -392,34 +563,87 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
     };
 
     useEffect(() => {
-
+        if (provider !== "openstreetmap") return;
         if (!mapRef.current) return;
 
+        let isCancelled = false;
+        const runId = ++initRunRef.current;
+        const container = mapRef.current;
+
+        debugMap("initMap:start", {
+            provider,
+            disabled,
+            markerDraggable,
+            enableScrollWheelZoom,
+            runId,
+        });
+
         const init = async () => {
+            try {
+                const adapter = await createOpenStreetMapAdapter({
+                    container,
+                    initialLocation: currentLocation,
+                    disabled,
+                    config: providerConfig?.openstreetmap,
+                    enableScrollWheelZoom,
+                    markerDraggable,
+                    markerIconUrl,
+                    markerIconSizePx,
+                    onLocationChange: emitLocation,
+                });
 
-            const adapter = await createOpenStreetMapAdapter({
-                container: mapRef.current!,
-                initialLocation: currentLocation,
-                disabled,
-                config: providerConfig?.openstreetmap,
-                enableScrollWheelZoom,
-                markerDraggable,
-                markerIconUrl,
-                markerIconSizePx,
-                onLocationChange: emitLocation,
-            });
+                if (isCancelled || runId !== initRunRef.current) {
+                    adapter.destroy();
+                    return;
+                }
 
-            adapterRef.current = adapter;
+                adapterRef.current = adapter;
+                adapter.setLocation(currentLocation);
+                adapter.setDisabled(disabled);
+
+                debugMap("initMap:success", {
+                    provider,
+                    runId,
+                });
+            } catch (error: unknown) {
+                debugMap("initMap:error", {
+                    provider,
+                    runId,
+                    error,
+                });
+            }
         };
 
-        init();
+        void init();
 
         return () => {
+            isCancelled = true;
+            debugMap("initMap:cleanup", {
+                provider,
+                runId,
+            });
             adapterRef.current?.destroy();
             adapterRef.current = null;
         };
 
-    }, []);
+    }, [
+        provider,
+        providerConfig?.openstreetmap?.tileUrl,
+        providerConfig?.openstreetmap?.tileAttribution,
+        providerConfig?.openstreetmap?.maxZoom,
+        markerDraggable,
+        markerIconUrl,
+        markerIconSizePx,
+        enableScrollWheelZoom,
+    ]);
+
+    useEffect(() => {
+        adapterRef.current?.setLocation(currentLocation);
+    }, [currentLocation.lat, currentLocation.lng, currentLocation.zoom]);
+
+    useEffect(() => {
+        adapterRef.current?.setDisabled(disabled);
+    }, [disabled]);
 
     return (
         <div className={className}>
