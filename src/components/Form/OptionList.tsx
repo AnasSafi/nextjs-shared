@@ -1,6 +1,7 @@
 "use client";
 
-import type {JSX, CSSProperties, RefObject, UIEvent, MouseEvent} from "react";
+import {type JSX, type CSSProperties, type RefObject, type UIEvent, type MouseEvent, useEffect, useState} from "react";
+import {createPortal} from "react-dom";
 import clsx from "clsx";
 import Image from "next/image";
 import {
@@ -85,6 +86,13 @@ export function OptionList(
         onMouseDownInside,
     }: OptionListProps,
 ): JSX.Element | null {
+    const [isClient, setIsClient] = useState<boolean>(false);
+
+    useEffect(() => {
+        setIsClient(true);
+        return () => setIsClient(false);
+    }, []);
+
     const baseMenuClasses =
         "max-h-56 overflow-auto rounded-md bg-gray-50 dark:bg-gray-700 py-1 text-base shadow-lg ring-1 ring-black/5 sm:text-sm";
 
@@ -256,18 +264,21 @@ export function OptionList(
 
     if (strategy === "inline") {
         return (
-            <div className={clsx(isOpen ? "block" : "hidden", "absolute z-20 mt-1 w-full rounded-md")}>
+            <div className={clsx(isOpen ? "block" : "hidden", "absolute z-[1200] mt-1 w-full rounded-md")}>
                 {UL}
             </div>
         );
     }
 
     if (!isOpen) return null;
+    if (!isClient) return null;
+    if (!fixedStyle) return null;
 
-    return (
-        <div className="fixed z-70" style={fixedStyle}>
+    return createPortal(
+        <div className="fixed z-[1200]" style={fixedStyle}>
             {UL}
-        </div>
+        </div>,
+        document.body,
     );
 }
 

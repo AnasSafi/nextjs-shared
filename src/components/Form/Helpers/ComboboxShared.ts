@@ -166,7 +166,7 @@ export function useFixedDropdownPosition(
     strategy: DropdownStrategy,
     anchorRef: RefObject<HTMLDivElement | null>,
     maxHeightPx: number = 224,
-    zIndex: number = 70
+    zIndex: number = 1200
 ): CSSProperties | undefined {
     const [style, setStyle] = useState<CSSProperties | undefined>(undefined);
 
@@ -200,12 +200,13 @@ export function useFixedDropdownPosition(
         };
 
         update();
-        const opts: AddEventListenerOptions = {passive: true};
-        window.addEventListener("resize", update, opts);
-        window.addEventListener("scroll", update, opts);
+        const resizeOpts: AddEventListenerOptions = {passive: true};
+        const scrollOpts: AddEventListenerOptions = {passive: true, capture: true};
+        window.addEventListener("resize", update, resizeOpts);
+        window.addEventListener("scroll", update, scrollOpts);
         return () => {
             window.removeEventListener("resize", update);
-            window.removeEventListener("scroll", update);
+            window.removeEventListener("scroll", update, true);
         };
     }, [isOpen, strategy, anchorRef, maxHeightPx, zIndex]);
 

@@ -768,7 +768,7 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
                             height: `${heightPx}px`,
                             cursor: disabled ? "default" : "grab",
                         }}
-                        className="w-full overflow-hidden rounded-md active:cursor-grabbing"
+                        className="relative z-0 w-full overflow-hidden rounded-md active:cursor-grabbing"
                     />
 
                     {showMyLocationButton && (

@@ -192,7 +192,7 @@ function BaseComboBoxCoreInner<TFormValues extends FieldValues = FieldValues>(
         pagination = null,
         imageForSelectedOnly = false,
         refreshCompoList,
-        dropdownStrategy = "inline",
+        dropdownStrategy = "fixed",
         createApiPath,
         createActionLabel,
         createMapSuccessToOption,

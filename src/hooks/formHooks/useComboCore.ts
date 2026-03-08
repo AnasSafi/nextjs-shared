@@ -91,7 +91,7 @@ export function useComboCore(
         initialData = [],
         getLabel,
         setParentInProgress,
-        dropdownStrategy = "inline",
+        dropdownStrategy = "fixed",
         disabled = false,
         autoOpenOnType = true,
         fetchPage,
