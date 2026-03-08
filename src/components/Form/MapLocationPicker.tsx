@@ -476,6 +476,10 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
         onChange?.(next);
     };
 
+    const stopPropagation = (event: React.SyntheticEvent): void => {
+        event.stopPropagation();
+    };
+
     useEffect(() => {
         const adapter = adapterRef.current;
         if (!adapter) return;
@@ -594,8 +598,18 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
             <div className="rounded-lg border border-gray-300 bg-gray-50 p-2 dark:border-gray-600 dark:bg-gray-700">
                 <div
                     ref={mapRef}
-                    style={{height: `${heightPx}px`, cursor: disabled ? "default" : "grab"}}
-                    className="w-full overflow-hidden rounded-md"
+                    onMouseDown={stopPropagation}
+                    onTouchStart={stopPropagation}
+                    onPointerDown={stopPropagation}
+                    onWheel={stopPropagation}
+                    style={{
+                        height: `${heightPx}px`,
+                        cursor: disabled ? "default" : "grab",
+                        touchAction: "none",
+                        userSelect: "none",
+                        WebkitUserSelect: "none",
+                    }}
+                    className="w-full overflow-hidden rounded-md active:cursor-grabbing"
                 />
             </div>
 
