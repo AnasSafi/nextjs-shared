@@ -1,6 +1,6 @@
 "use client";
 
-import React, {type JSX, useEffect, useMemo, useRef, useState} from "react";
+import {type JSX, useEffect, useMemo, useRef, useState} from "react";
 import type {FieldValues} from "react-hook-form";
 import type {RHFErrorCompat} from "../../models/core/formModels";
 import {FormError} from "./Helpers/FormError";
@@ -361,11 +361,6 @@ const createOpenStreetMapAdapter = async ({
         icon: markerIcon,
     }).addTo(map);
     let isDisabled = disabled;
-    let isPanning = false;
-    let lastDragEndedAtMs = 0;
-    let pointerDownXY: {x: number; y: number} | null = null;
-    let didPointerMove = false;
-    const clickMoveThresholdPx = 6;
 
     const setInteractionsDisabled = (nextDisabled: boolean) => {
         isDisabled = nextDisabled;
@@ -406,45 +401,8 @@ const createOpenStreetMapAdapter = async ({
         });
     };
 
-    const onPointerDown = (event: PointerEvent) => {
-        if (event.pointerType === "mouse" && event.button !== 0) return;
-        pointerDownXY = {x: event.clientX, y: event.clientY};
-        didPointerMove = false;
-    };
-
-    const onPointerMove = (event: PointerEvent) => {
-        if (!pointerDownXY) return;
-        const deltaX = Math.abs(event.clientX - pointerDownXY.x);
-        const deltaY = Math.abs(event.clientY - pointerDownXY.y);
-        if (deltaX >= clickMoveThresholdPx || deltaY >= clickMoveThresholdPx) {
-            didPointerMove = true;
-        }
-    };
-
-    const onPointerUpOrCancel = () => {
-        pointerDownXY = null;
-    };
-
-    container.addEventListener("pointerdown", onPointerDown);
-    container.addEventListener("pointermove", onPointerMove);
-    container.addEventListener("pointerup", onPointerUpOrCancel);
-    container.addEventListener("pointercancel", onPointerUpOrCancel);
-
-    map.on("dragstart", () => {
-        isPanning = true;
-    });
-
-    map.on("dragend", () => {
-        isPanning = false;
-        lastDragEndedAtMs = Date.now();
-    });
-
     map.on("click", (event: any) => {
         if (isDisabled) return;
-        const recentlyDragged = Date.now() - lastDragEndedAtMs < 160;
-        const shouldIgnoreAsDrag = didPointerMove || isPanning || recentlyDragged;
-        didPointerMove = false;
-        if (shouldIgnoreAsDrag) return;
 
         const lat = event?.latlng?.lat;
         const lng = event?.latlng?.lng;
@@ -481,10 +439,6 @@ const createOpenStreetMapAdapter = async ({
             map.invalidateSize();
         },
         destroy: () => {
-            container.removeEventListener("pointerdown", onPointerDown);
-            container.removeEventListener("pointermove", onPointerMove);
-            container.removeEventListener("pointerup", onPointerUpOrCancel);
-            container.removeEventListener("pointercancel", onPointerUpOrCancel);
             map.off();
             marker.remove();
             map.remove();
@@ -531,10 +485,6 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
             setInternalLocation(next);
         }
         onChange?.(next);
-    };
-
-    const stopPropagation = (event: React.SyntheticEvent): void => {
-        event.stopPropagation();
     };
 
     useEffect(() => {
@@ -657,13 +607,9 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
             <div className="rounded-lg border border-gray-300 bg-gray-50 p-2 dark:border-gray-600 dark:bg-gray-700">
                 <div
                     ref={mapRef}
-                    onMouseDown={stopPropagation}
-                    onTouchStart={stopPropagation}
-                    onPointerDown={stopPropagation}
                     style={{
                         height: `${heightPx}px`,
                         cursor: disabled ? "default" : "grab",
-                        touchAction: "none",
                         userSelect: "none",
                         WebkitUserSelect: "none",
                     }}
