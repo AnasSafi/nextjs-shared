@@ -1,6 +1,6 @@
 "use client";
 
-import {type JSX, useEffect, useMemo, useRef, useState} from "react";
+import {type JSX, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import type {FieldValues} from "react-hook-form";
 import type {RHFErrorCompat} from "../../models/core/formModels";
 import {FormError} from "./Helpers/FormError";
@@ -43,6 +43,11 @@ export interface MapLocationPickerProps<TFormValues extends FieldValues = FieldV
     heightPx?: number;
     defaultZoom?: number;
     enableScrollWheelZoom?: boolean;
+    autoLocateOnInit?: boolean;
+    showMyLocationButton?: boolean;
+    myLocationButtonText?: string;
+    myLocationZoom?: number;
+    geolocationOptions?: PositionOptions;
     markerDraggable?: boolean;
     markerIconUrl?: string;
     markerIconSizePx?: number;
@@ -76,6 +81,11 @@ const DEFAULT_MARKER_ICON_URL =
 const LEAFLET_SCRIPT_ID = "shared-map-picker-leaflet-script";
 const LEAFLET_CSS_ID = "shared-map-picker-leaflet-css";
 const MAP_DEBUG = false;
+const DEFAULT_GEOLOCATION_OPTIONS: PositionOptions = {
+    enableHighAccuracy: true,
+    timeout: 10000,
+    maximumAge: 60000,
+};
 
 let leafletLoaderPromise: Promise<any> | null = null;
 
@@ -89,6 +99,28 @@ const getElementSummary = (element: EventTarget | null): string => {
     const className = typeof element.className === "string" ? element.className : "";
     return `${element.tagName.toLowerCase()}${className ? `.${className.replace(/\s+/g, ".")}` : ""}`;
 };
+
+const getGeolocationErrorMessage = (error: GeolocationPositionError): string => {
+    if (error.code === error.PERMISSION_DENIED) {
+        return "Location permission denied.";
+    }
+    if (error.code === error.POSITION_UNAVAILABLE) {
+        return "Location is unavailable.";
+    }
+    if (error.code === error.TIMEOUT) {
+        return "Location request timed out.";
+    }
+    return "Unable to get current location.";
+};
+
+const requestCurrentPosition = (options?: PositionOptions): Promise<GeolocationPosition> =>
+    new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error("Geolocation is not supported by this browser."));
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(resolve, reject, options ?? DEFAULT_GEOLOCATION_OPTIONS);
+    });
 
 const isFiniteNumber = (value: unknown): value is number =>
     typeof value === "number" && Number.isFinite(value);
@@ -547,6 +579,11 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
         heightPx = 320,
         defaultZoom = 12,
         enableScrollWheelZoom = false,
+        autoLocateOnInit = true,
+        showMyLocationButton = true,
+        myLocationButtonText = "My location",
+        myLocationZoom,
+        geolocationOptions,
         markerDraggable = false,
         markerIconUrl,
         markerIconSizePx = 34,
@@ -557,20 +594,59 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
     const mapRef = useRef<HTMLDivElement | null>(null);
     const adapterRef = useRef<MapAdapter | null>(null);
     const initRunRef = useRef<number>(0);
+    const autoLocateRequestedRef = useRef<boolean>(false);
+    const currentLocationRef = useRef<MapLocationValue>(normalizeLocation(defaultValue, defaultZoom));
 
     const [internalLocation, setInternalLocation] = useState<MapLocationValue>(
         normalizeLocation(defaultValue, defaultZoom),
     );
+    const [isLocating, setIsLocating] = useState<boolean>(false);
+    const [locationError, setLocationError] = useState<string | null>(null);
 
     const currentLocation = useMemo(
         () => normalizeLocation(value ?? internalLocation, defaultZoom),
         [value, internalLocation, defaultZoom],
     );
 
-    const emitLocation = (next: MapLocationValue) => {
+    const emitLocation = useCallback((next: MapLocationValue) => {
         setInternalLocation(next);
         onChange?.(next);
-    };
+    }, [onChange]);
+
+    useEffect(() => {
+        currentLocationRef.current = currentLocation;
+    }, [currentLocation]);
+
+    const goToCurrentLocation = useCallback(async ({silent}: {silent?: boolean} = {}): Promise<void> => {
+        if (disabled) return;
+
+        if (!silent) {
+            setLocationError(null);
+        }
+        setIsLocating(true);
+
+        try {
+            const position = await requestCurrentPosition(geolocationOptions);
+            const next: MapLocationValue = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+                zoom: myLocationZoom ?? currentLocationRef.current.zoom ?? defaultZoom,
+            };
+            adapterRef.current?.setLocation(next);
+            emitLocation(next);
+            setLocationError(null);
+        } catch (error: unknown) {
+            if (!silent) {
+                const message = typeof (error as {code?: unknown})?.code === "number"
+                    ? getGeolocationErrorMessage(error as GeolocationPositionError)
+                    : "Unable to get current location.";
+                setLocationError(message);
+            }
+            debugMap("goToCurrentLocation:error", {error});
+        } finally {
+            setIsLocating(false);
+        }
+    }, [disabled, geolocationOptions, myLocationZoom, defaultZoom, emitLocation]);
 
     useEffect(() => {
         if (provider !== "openstreetmap") return;
@@ -616,6 +692,11 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
                     provider,
                     runId,
                 });
+
+                if (autoLocateOnInit && !autoLocateRequestedRef.current) {
+                    autoLocateRequestedRef.current = true;
+                    void goToCurrentLocation({silent: true});
+                }
             } catch (error: unknown) {
                 debugMap("initMap:error", {
                     provider,
@@ -646,6 +727,7 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
         markerIconUrl,
         markerIconSizePx,
         enableScrollWheelZoom,
+        autoLocateOnInit,
     ]);
 
     useEffect(() => {
@@ -667,16 +749,37 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
 
             <div className="rounded-lg border border-gray-300 bg-gray-50 p-2 dark:border-gray-600 dark:bg-gray-700">
 
-                <div
-                    ref={mapRef}
-                    style={{
-                        height: `${heightPx}px`,
-                        cursor: disabled ? "default" : "grab",
-                    }}
-                    className="w-full overflow-hidden rounded-md active:cursor-grabbing"
-                />
+                <div className="relative">
+                    <div
+                        ref={mapRef}
+                        style={{
+                            height: `${heightPx}px`,
+                            cursor: disabled ? "default" : "grab",
+                        }}
+                        className="w-full overflow-hidden rounded-md active:cursor-grabbing"
+                    />
+
+                    {showMyLocationButton && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                void goToCurrentLocation();
+                            }}
+                            disabled={disabled || isLocating}
+                            className="absolute top-2 ltr:right-2 rtl:left-2 rounded-md border border-gray-300 bg-white px-3 py-1 text-xs font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                        >
+                            {isLocating ? "Locating..." : myLocationButtonText}
+                        </button>
+                    )}
+                </div>
 
             </div>
+
+            {locationError && (
+                <p className="mt-2 text-xs text-red-600">
+                    {locationError}
+                </p>
+            )}
 
             {showCoordinates && (
                 <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">
