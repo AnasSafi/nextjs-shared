@@ -138,6 +138,9 @@ const normalizeLocation = (
     return {lat, lng, zoom};
 };
 
+const hasLocationValue = (location: MapLocationValue | null | undefined): boolean =>
+    !!location && isFiniteNumber(location.lat) && isFiniteNumber(location.lng);
+
 const resetLeafletContainer = (container: HTMLDivElement): void => {
     const stamped = container as HTMLDivElement & { _leaflet_id?: number };
 
@@ -607,6 +610,10 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
         () => normalizeLocation(value ?? internalLocation, defaultZoom),
         [value, internalLocation, defaultZoom],
     );
+    const hasInitialProvidedLocation = useMemo(
+        () => hasLocationValue(value) || hasLocationValue(defaultValue),
+        [value, defaultValue],
+    );
 
     const emitLocation = useCallback((next: MapLocationValue) => {
         setInternalLocation(next);
@@ -693,7 +700,11 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
                     runId,
                 });
 
-                if (autoLocateOnInit && !autoLocateRequestedRef.current) {
+                if (
+                    autoLocateOnInit &&
+                    !hasInitialProvidedLocation &&
+                    !autoLocateRequestedRef.current
+                ) {
                     autoLocateRequestedRef.current = true;
                     void goToCurrentLocation({silent: true});
                 }
@@ -728,6 +739,7 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
         markerIconSizePx,
         enableScrollWheelZoom,
         autoLocateOnInit,
+        hasInitialProvidedLocation,
     ]);
 
     useEffect(() => {
