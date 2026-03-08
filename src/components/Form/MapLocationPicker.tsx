@@ -202,6 +202,7 @@ const createOpenStreetMapAdapter = async (
         markerIconUrl,
         markerIconSizePx,
         onLocationChange,
+        canInitialize,
     }: {
         container: HTMLDivElement;
         initialLocation: MapLocationValue;
@@ -212,9 +213,13 @@ const createOpenStreetMapAdapter = async (
         markerIconUrl?: string;
         markerIconSizePx: number;
         onLocationChange: (location: MapLocationValue) => void;
+        canInitialize?: () => boolean;
     }): Promise<MapAdapter> => {
 
     const L = await loadLeaflet();
+    if (canInitialize && !canInitialize()) {
+        throw new Error("OpenStreetMap initialization canceled");
+    }
 
     resetLeafletContainer(container);
 
@@ -231,6 +236,11 @@ const createOpenStreetMapAdapter = async (
         dragging: !disabled,
         scrollWheelZoom: enableScrollWheelZoom && !disabled,
     }).setView([initialLocation.lat, initialLocation.lng], initialLocation.zoom);
+    if (canInitialize && !canInitialize()) {
+        map.remove();
+        resetLeafletContainer(container);
+        throw new Error("OpenStreetMap initialization canceled");
+    }
 
     debugMap("createOpenStreetMapAdapter:after-map-init", {
         leafletPanes: container.querySelectorAll(".leaflet-map-pane").length,
@@ -590,6 +600,7 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
                     markerIconUrl,
                     markerIconSizePx,
                     onLocationChange: emitLocation,
+                    canInitialize: () => !isCancelled && runId === initRunRef.current,
                 });
 
                 if (isCancelled || runId !== initRunRef.current) {
