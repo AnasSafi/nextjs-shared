@@ -42,6 +42,9 @@ export interface MapLocationPickerProps<TFormValues extends FieldValues = FieldV
     disabled?: boolean;
     heightPx?: number;
     defaultZoom?: number;
+    markerDraggable?: boolean;
+    markerIconUrl?: string;
+    markerIconSizePx?: number;
     error?: RHFErrorCompat<TFormValues>;
     showCoordinates?: boolean;
 }
@@ -61,6 +64,8 @@ type WindowWithMaps = Window & {
 const DEFAULT_LOCATION: MapLocationValue = {lat: 24.7136, lng: 46.6753, zoom: 12};
 const DEFAULT_OSM_TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 const DEFAULT_OSM_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+const DEFAULT_MARKER_ICON_URL =
+    "data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2234%22%20height%3D%2234%22%20viewBox%3D%220%200%2034%2034%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M17%201.8C9.18%201.8%202.8%208.18%202.8%2016c0%2010.41%2012.41%2016.41%2013.05%2016.71a2.5%202.5%200%200%200%202.3%200C18.79%2032.41%2031.2%2026.41%2031.2%2016%2031.2%208.18%2024.82%201.8%2017%201.8Z%22%20fill%3D%22%232563EB%22/%3E%3Ccircle%20cx%3D%2217%22%20cy%3D%2216%22%20r%3D%226.2%22%20fill%3D%22white%22/%3E%3Ccircle%20cx%3D%2217%22%20cy%3D%2216%22%20r%3D%223.2%22%20fill%3D%22%232563EB%22/%3E%3C/svg%3E";
 
 const GOOGLE_SCRIPT_ID = "shared-map-picker-google-script";
 const LEAFLET_SCRIPT_ID = "shared-map-picker-leaflet-script";
@@ -198,12 +203,18 @@ const createGoogleAdapter = async ({
     initialLocation,
     disabled,
     config,
+    markerDraggable,
+    markerIconUrl,
+    markerIconSizePx,
     onLocationChange,
 }: {
     container: HTMLDivElement;
     initialLocation: MapLocationValue;
     disabled: boolean;
     config?: GoogleMapProviderConfig;
+    markerDraggable: boolean;
+    markerIconUrl?: string;
+    markerIconSizePx: number;
     onLocationChange: (location: MapLocationValue) => void;
 }): Promise<MapAdapter> => {
     if (!config) {
@@ -216,16 +227,25 @@ const createGoogleAdapter = async ({
         center: {lat: initialLocation.lat, lng: initialLocation.lng},
         zoom: initialLocation.zoom,
         mapId: config.mapId,
+        draggable: !disabled,
+        gestureHandling: "greedy",
         fullscreenControl: false,
         streetViewControl: false,
         mapTypeControl: true,
-        draggableCursor: disabled ? "default" : "crosshair",
+        draggableCursor: disabled ? "default" : "grab",
     });
 
+    const markerSize = Math.max(20, markerIconSizePx);
     const marker = new google.maps.Marker({
         map,
-        draggable: !disabled,
+        draggable: markerDraggable && !disabled,
+        clickable: markerDraggable,
         position: {lat: initialLocation.lat, lng: initialLocation.lng},
+        icon: {
+            url: markerIconUrl ?? DEFAULT_MARKER_ICON_URL,
+            scaledSize: new google.maps.Size(markerSize, markerSize),
+            anchor: new google.maps.Point(Math.round(markerSize / 2), markerSize),
+        },
     });
     let isDisabled = disabled;
 
@@ -248,13 +268,15 @@ const createGoogleAdapter = async ({
         emit(lat, lng);
     });
 
-    const dragListener = marker.addListener("dragend", (event: any) => {
-        if (isDisabled) return;
-        const lat = event?.latLng?.lat?.();
-        const lng = event?.latLng?.lng?.();
-        if (!isFiniteNumber(lat) || !isFiniteNumber(lng)) return;
-        emit(lat, lng);
-    });
+    const dragListener = markerDraggable
+        ? marker.addListener("dragend", (event: any) => {
+            if (isDisabled) return;
+            const lat = event?.latLng?.lat?.();
+            const lng = event?.latLng?.lng?.();
+            if (!isFiniteNumber(lat) || !isFiniteNumber(lng)) return;
+            emit(lat, lng);
+        })
+        : null;
 
     return {
         setLocation: (next: MapLocationValue) => {
@@ -266,8 +288,11 @@ const createGoogleAdapter = async ({
         },
         setDisabled: (nextDisabled: boolean) => {
             isDisabled = nextDisabled;
-            marker.setDraggable(!nextDisabled);
-            map.setOptions({draggableCursor: nextDisabled ? "default" : "crosshair"});
+            marker.setDraggable(markerDraggable && !nextDisabled);
+            map.setOptions({
+                draggable: !nextDisabled,
+                draggableCursor: nextDisabled ? "default" : "grab",
+            });
         },
         refreshLayout: () => {
             const center = marker.getPosition();
@@ -289,12 +314,18 @@ const createOpenStreetMapAdapter = async ({
     initialLocation,
     disabled,
     config,
+    markerDraggable,
+    markerIconUrl,
+    markerIconSizePx,
     onLocationChange,
 }: {
     container: HTMLDivElement;
     initialLocation: MapLocationValue;
     disabled: boolean;
     config?: OpenStreetMapProviderConfig;
+    markerDraggable: boolean;
+    markerIconUrl?: string;
+    markerIconSizePx: number;
     onLocationChange: (location: MapLocationValue) => void;
 }): Promise<MapAdapter> => {
     const L = await loadLeaflet();
@@ -312,15 +343,16 @@ const createOpenStreetMapAdapter = async ({
 
     tileLayer.addTo(map);
 
-    const markerIcon = L.divIcon({
-        className: "shared-map-location-pin",
-        html: '<div style="width:16px;height:16px;border-radius:9999px;background:#2563eb;border:2px solid #ffffff;box-shadow:0 0 0 2px rgba(37,99,235,0.5);"></div>',
-        iconSize: [16, 16],
-        iconAnchor: [8, 8],
+    const markerSize = Math.max(20, markerIconSizePx);
+    const markerIcon = L.icon({
+        iconUrl: markerIconUrl ?? DEFAULT_MARKER_ICON_URL,
+        iconSize: [markerSize, markerSize],
+        iconAnchor: [Math.round(markerSize / 2), markerSize],
     });
 
     const marker = L.marker([initialLocation.lat, initialLocation.lng], {
-        draggable: !disabled,
+        draggable: markerDraggable && !disabled,
+        interactive: markerDraggable,
         icon: markerIcon,
     }).addTo(map);
     let isDisabled = disabled;
@@ -342,7 +374,11 @@ const createOpenStreetMapAdapter = async ({
             map.scrollWheelZoom.enable();
             map.boxZoom.enable();
             map.keyboard.enable();
-            marker.dragging?.enable();
+            if (markerDraggable) {
+                marker.dragging?.enable();
+            } else {
+                marker.dragging?.disable();
+            }
         }
     };
 
@@ -365,11 +401,13 @@ const createOpenStreetMapAdapter = async ({
         emit(lat, lng);
     });
 
-    marker.on("dragend", () => {
-        if (isDisabled) return;
-        const point = marker.getLatLng();
-        emit(point.lat, point.lng);
-    });
+    if (markerDraggable) {
+        marker.on("dragend", () => {
+            if (isDisabled) return;
+            const point = marker.getLatLng();
+            emit(point.lat, point.lng);
+        });
+    }
 
     // Leaflet needs this after mounting in flex/hidden layouts.
     setTimeout(() => {
@@ -409,6 +447,9 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
     disabled = false,
     heightPx = 320,
     defaultZoom = 12,
+    markerDraggable = false,
+    markerIconUrl,
+    markerIconSizePx = 34,
     error,
     showCoordinates = true,
 }: MapLocationPickerProps<TFormValues>): JSX.Element {
@@ -487,6 +528,9 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
                         initialLocation: currentLocation,
                         disabled,
                         config: providerConfig?.google,
+                        markerDraggable,
+                        markerIconUrl,
+                        markerIconSizePx,
                         onLocationChange: emitLocation,
                     })
                     : await createOpenStreetMapAdapter({
@@ -494,6 +538,9 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
                         initialLocation: currentLocation,
                         disabled,
                         config: providerConfig?.openstreetmap,
+                        markerDraggable,
+                        markerIconUrl,
+                        markerIconSizePx,
                         onLocationChange: emitLocation,
                     });
 
@@ -531,6 +578,9 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
         providerConfig?.openstreetmap?.tileUrl,
         providerConfig?.openstreetmap?.tileAttribution,
         providerConfig?.openstreetmap?.maxZoom,
+        markerDraggable,
+        markerIconUrl,
+        markerIconSizePx,
     ]);
 
     return (
@@ -544,7 +594,7 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
             <div className="rounded-lg border border-gray-300 bg-gray-50 p-2 dark:border-gray-600 dark:bg-gray-700">
                 <div
                     ref={mapRef}
-                    style={{height: `${heightPx}px`}}
+                    style={{height: `${heightPx}px`, cursor: disabled ? "default" : "grab"}}
                     className="w-full overflow-hidden rounded-md"
                 />
             </div>
