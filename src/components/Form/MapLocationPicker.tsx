@@ -1,6 +1,6 @@
 "use client";
 
-import {type JSX, useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {type ChangeEvent, type JSX, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import type {FieldValues} from "react-hook-form";
 import type {RHFErrorCompat} from "../../models/core/formModels";
 import {FormError} from "./Helpers/FormError";
@@ -32,11 +32,13 @@ export type MapLocationPickerProviderConfig = {
 };
 
 export interface MapLocationPickerProps<TFormValues extends FieldValues = FieldValues> {
+    name?: string;
     provider: MapProvider;
     providerConfig?: MapLocationPickerProviderConfig;
     value?: MapLocationValue | null;
     defaultValue?: MapLocationValue;
-    onChange?: (location: MapLocationValue) => void;
+    onChange?: ((location: MapLocationValue) => void) | ((event: ChangeEvent<HTMLInputElement>) => void);
+    onLocationChange?: (location: MapLocationValue) => void;
     label?: string;
     className?: string;
     disabled?: boolean;
@@ -571,11 +573,13 @@ const createOpenStreetMapAdapter = async (
 
 export default function MapLocationPicker<TFormValues extends FieldValues = FieldValues>(
     {
+        name,
         provider,
         providerConfig,
         value,
         defaultValue,
         onChange,
+        onLocationChange,
         label,
         className,
         disabled = false,
@@ -617,8 +621,27 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
 
     const emitLocation = useCallback((next: MapLocationValue) => {
         setInternalLocation(next);
-        onChange?.(next);
-    }, [onChange]);
+        onLocationChange?.(next);
+
+        if (!onChange) return;
+
+        // Form mode: when `name` is provided, emit a synthetic input change event.
+        if (name && name.trim().length > 0) {
+            const syntheticEvent = {
+                target: {
+                    name,
+                    type: "text",
+                    value: next,
+                    checked: false,
+                },
+            } as unknown as ChangeEvent<HTMLInputElement>;
+            (onChange as (event: ChangeEvent<HTMLInputElement>) => void)(syntheticEvent);
+            return;
+        }
+
+        // Backward-compatible mode: no `name` => emit raw location value.
+        (onChange as (location: MapLocationValue) => void)(next);
+    }, [onLocationChange, onChange, name]);
 
     useEffect(() => {
         currentLocationRef.current = currentLocation;

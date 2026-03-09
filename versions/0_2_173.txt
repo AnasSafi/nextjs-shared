@@ -1,0 +1,80 @@
+CONSUMER TASK – Use MapLocationPicker as a standard form input (name + onChange)
+
+Goal:
+- Stop manually wrapping `MapLocationPicker` location updates into synthetic input events.
+- Use `MapLocationPicker` like other form components by passing `name` and `onChange={handleInputChange}`.
+- Keep compatibility for location side effects via `onLocationChange` when needed.
+
+1) Update shared package version
+
+Use shared version that includes `MapLocationPicker` form-style onChange support.
+
+2) Update consumer usage in forms
+
+Example file:
+  src/custom_components/admin/Venues/ManageVenueForm.tsx
+
+Replace this pattern:
+
+OLD:
+```tsx
+<MapLocationPicker
+  label={t("venueLocation")}
+  value={geoPointValue}
+  onChange={(location: MapLocationValue): void => {
+    handleInputChange({
+      target: {
+        name: "geoPoint",
+        value: location,
+        type: "text",
+        checked: false,
+      },
+    } as unknown as ChangeEvent<HTMLInputElement>);
+  }}
+  error={errors.geoPoint}
+  disabled={inProgress}
+  defaultZoom={12}
+  showCoordinates
+/>
+```
+
+NEW:
+```tsx
+<MapLocationPicker
+  name="geoPoint"
+  label={t("venueLocation")}
+  value={geoPointValue}
+  onChange={handleInputChange}
+  error={errors.geoPoint}
+  disabled={inProgress}
+  defaultZoom={12}
+  showCoordinates
+/>
+```
+
+3) Optional: keep raw location callback for side effects
+
+If you need extra behavior (analytics, reverse geocoding, etc.), use:
+  onLocationChange={(location) => { ... }}
+
+4) Wrapper compatibility check
+
+If you have a consumer wrapper at:
+  src/custom_components/Form/MapLocationPicker.tsx
+
+Ensure it forwards these props unchanged:
+- `name`
+- `onChange`
+- `onLocationChange` (optional)
+
+5) Verify
+
+- `geoPoint` updates through existing `handleInputChange` flow.
+- Validation/errors continue to work (`errors.geoPoint`).
+- Initial value still renders marker and zoom.
+- Build/type-check passes.
+
+DONE CRITERIA:
+- No manual synthetic-event conversion in consumer form for `MapLocationPicker`.
+- `MapLocationPicker` is used consistently with other shared form inputs.
+- Form save payload includes updated `geoPoint` correctly.
