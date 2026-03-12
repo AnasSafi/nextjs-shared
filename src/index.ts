@@ -134,7 +134,7 @@ export * from "./components/Form/DisplayMultiLang";
 export * from "./components/Form/TooltipIcon";
 export * from "./components/Form/RequiredAsterisk";
 export {default as MapLocationPicker} from "./components/Form/MapLocationPicker";
-export type {
+export {
     MapLocationValue,
     MapProvider,
     GoogleMapProviderConfig,

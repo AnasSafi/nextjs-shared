@@ -16,41 +16,128 @@ The goal is:
 - GitLab Package Registry enabled
 
 ---
+## Installation in a Consumer Project
 
-## Installation
+Follow these steps to install the package from the GitLab Package Registry.
 
-1. Create an `.npmrc` file in the root of your project with the following content:
+### 1. Configure the NPM registry
 
-   @nextjs-shared:registry=https://gitlab.homyt.dev/api/v4/projects/21/packages/npm/
-   //gitlab.homyt.dev/api/v4/projects/21/packages/npm/:_authToken=${NPM_TOKEN}
+Create an `.npmrc` file in the **root of your project** and add the following configuration.
+This tells `npm` where to download the `@nextjs-shared` packages from and how to authenticate.
 
-2. Generate a token from your GitLab project:
+```
+@nextjs-shared:registry=https://gitlab.homyt.dev/api/v4/projects/21/packages/npm/
+//gitlab.homyt.dev/api/v4/projects/21/packages/npm/:_authToken=${NPM_TOKEN}
+```
 
-   Navigate to:
+Alternatively, you can place the configuration in your **global npm configuration** so it works for all projects on your system.
 
-   Settings → Repository → Deploy Tokens
+Typical locations:
 
-   Create a new Deploy Token with the following permission:
+* **macOS / Linux**
 
-  - read_package_registry
+  ```
+  ~/.npmrc
+  ```
 
-3. Set the `NPM_TOKEN` environment variable before running npm commands.
+* **Windows**
 
-   Example (Windows PowerShell):
+  ```
+  C:\Users\<your-username>\.npmrc
+  ```
 
-       $env:NPM_TOKEN="your_token_here"
+Add the same configuration lines to that file if you prefer a global setup.
 
-   Example (Linux/macOS):
+---
 
-       export NPM_TOKEN="your_token_here"
+### 2. Generate a GitLab Deploy Token
 
-4. Install the package:
+Create a token that allows npm to download packages from your GitLab registry.
 
-       npm install @nextjs-shared/shared
+Navigate to your GitLab project:
 
-5. In the file `src/app/[lng]/globals.css`, add the following line:
+```
+Settings → Repository → Deploy Tokens
+```
 
-       @import "@nextjs-shared/shared/tailwind.css";
+Create a new **Deploy Token** with the following permission:
+
+* `read_package_registry`
+
+Copy the generated token value.
+
+---
+
+### 3. Set the `NPM_TOKEN` environment variable
+
+Before running any npm command, define the environment variable containing the token.
+
+**Windows (PowerShell)**
+
+```
+$env:NPM_TOKEN="your_token_here"
+```
+
+**Linux / macOS**
+
+```
+export NPM_TOKEN="your_token_here"
+```
+
+---
+
+### 4. Install the package
+
+Run the installation command inside your project:
+
+```
+npm install @nextjs-shared/shared
+```
+
+---
+
+### 5. Import the shared Tailwind styles
+
+In the file:
+
+```
+src/app/[lng]/globals.css
+```
+
+add the following line:
+
+```
+@import "@nextjs-shared/shared/tailwind.css";
+```
+---
+
+## Use the Package in Development Mode
+
+Follow these steps to test the package locally before publishing it.
+
+1. Build the package:
+
+```bash
+npm run build
+```
+
+2. Create a local tarball of the package:
+
+```bash
+npm pack
+```
+
+3. Install the generated package in the consumer project using the absolute path:
+
+```bash
+npm install [absolute-path]\nextjs-shared\nextjs-shared-shared-0.2.174.tgz
+```
+
+Example:
+
+```bash
+npm install D:\work\projects\nextjs-shared\nextjs-shared-shared-0.2.174.tgz
+```
 
 
 ## Project Structure (example)
