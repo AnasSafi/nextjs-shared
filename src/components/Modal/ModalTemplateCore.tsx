@@ -8,6 +8,7 @@ import {
     useLayoutEffect,
     useMemo,
     useRef,
+    useState,
 } from "react";
 import {
     BellIcon,
@@ -27,6 +28,11 @@ import type {
     ModalTemplateProps,
     OptionalModalTemplateProps,
 } from "../../models/ui/modalModels";
+import {
+    MAP_CANCEL_INTERACTION_EVENT,
+    MAP_INTERACTION_ACTIVE_ATTR,
+    MAP_INTERACTION_ROOT_ATTR,
+} from "../Form/mapInteractionConstants";
 
 const ICONS: Record<DialogType, any> = {
     info: InformationCircleIcon,
@@ -44,6 +50,28 @@ const ICON_STYLES: Record<DialogType, string> = {
     success: "bg-green-100 text-green-600",
 };
 
+const shouldIgnoreModalEnter = (target: EventTarget | null): boolean => {
+    if (!(target instanceof HTMLElement)) return false;
+    if (target instanceof HTMLTextAreaElement) return true;
+    if (target.isContentEditable) return true;
+
+    return Boolean(
+        target.closest(
+            [
+                "input",
+                "textarea",
+                "select",
+                "button",
+                "a[href]",
+                '[role="combobox"]',
+                '[role="textbox"]',
+                '[role="listbox"]',
+                '[contenteditable="true"]',
+            ].join(","),
+        ),
+    );
+};
+
 export const ModalTemplateCore: FC<ModalTemplateProps> = (
     {id, children, t}: ModalTemplateProps,
 ): JSX.Element => {
@@ -51,6 +79,9 @@ export const ModalTemplateCore: FC<ModalTemplateProps> = (
     const modal: ModalModel = useModalStore((s: ModalStateModel): ModalModel => s.modals[id]);
     const closeModal = useModalStore((s: ModalStateModel) => s.closeModal);
     const scrollableRef = useRef<HTMLDivElement | null>(null);
+    const modalContentRef = useRef<HTMLDivElement | null>(null);
+    const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState<boolean>(false);
+    const [pendingCloseMode, setPendingCloseMode] = useState<"dismiss" | "cancel">("dismiss");
 
     const config: Required<OptionalModalTemplateProps> =
         useMemo<Required<OptionalModalTemplateProps>>(
@@ -73,45 +104,138 @@ export const ModalTemplateCore: FC<ModalTemplateProps> = (
                 cancelButtonText: "close",
                 cancelButtonOnClick: null,
                 showCancelButton: true,
+                hasUnsavedChanges: null,
+                unsavedChangesTitle: "Unsaved changes",
+                unsavedChangesMessage: "You have unsaved changes. Are you sure you want to close?",
+                unsavedChangesCloseButtonText: "Close",
+                unsavedChangesCancelButtonText: "Cancel",
                 ...modal?.config,
             }),
             [modal?.config],
         );
 
-    const handleClose = useCallback(() => {
-        if (config.preventCloseOutside) return;
+    const closeModalNow = useCallback(() => {
         closeModal(id);
         config.onCloseModal?.();
     }, [closeModal, id, config]);
 
+    const requestClose = useCallback((
+        {
+            mode,
+            respectPreventCloseOutside = false,
+        }: {
+            mode: "dismiss" | "cancel";
+            respectPreventCloseOutside?: boolean;
+        },
+    ): void => {
+        if (respectPreventCloseOutside && config.preventCloseOutside) return;
+
+        if (config.hasUnsavedChanges?.()) {
+            setPendingCloseMode(mode);
+            setIsCloseConfirmOpen(true);
+            return;
+        }
+
+        if (mode === "cancel") {
+            config.cancelButtonOnClick?.();
+        }
+
+        closeModalNow();
+    }, [closeModalNow, config]);
+
+    const confirmClose = useCallback((): void => {
+        if (pendingCloseMode === "cancel") {
+            config.cancelButtonOnClick?.();
+        }
+
+        setIsCloseConfirmOpen(false);
+        setPendingCloseMode("dismiss");
+        closeModalNow();
+    }, [closeModalNow, config, pendingCloseMode]);
+
+    const keepModalOpen = useCallback((): void => {
+        setIsCloseConfirmOpen(false);
+        setPendingCloseMode("dismiss");
+    }, []);
+
+    const handleClose = useCallback(() => {
+        requestClose({mode: "dismiss", respectPreventCloseOutside: true});
+    }, [requestClose]);
+
     const handleCancel = useCallback(() => {
-        config.cancelButtonOnClick?.();
-        closeModal(id);
-        config.onCloseModal?.();
-    }, [config, closeModal, id]);
+        requestClose({mode: "cancel"});
+    }, [requestClose]);
 
     const handleAccept = useCallback(() => {
         config.acceptButtonOnClick?.();
     }, [config]);
 
+    const cancelActiveMapInteraction = useCallback((): boolean => {
+        const root = modalContentRef.current;
+        if (!root) return false;
+
+        const activeMapRoot = root.querySelector<HTMLElement>(
+            `[${MAP_INTERACTION_ROOT_ATTR}="true"][${MAP_INTERACTION_ACTIVE_ATTR}="true"]`,
+        );
+
+        if (!activeMapRoot) return false;
+
+        activeMapRoot.dispatchEvent(new CustomEvent(MAP_CANCEL_INTERACTION_EVENT));
+        return true;
+    }, []);
+
     useEffect(() => {
         const onKeyDown = (e: KeyboardEvent): void => {
             if (lastOpenModalId !== id) return;
-            if (e.target instanceof HTMLTextAreaElement) return;
 
             if (e.key === "Enter") {
+                if (e.defaultPrevented) return;
+                if (isCloseConfirmOpen) return;
+                if (shouldIgnoreModalEnter(e.target)) return;
+
                 e.preventDefault();
                 handleAccept();
+                return;
             }
-            if (e.key === "Escape") {
-                closeModal(id);
-                config.onCloseModal?.();
+
+            if (e.key !== "Escape") return;
+
+            if (isCloseConfirmOpen) {
+                e.preventDefault();
+                e.stopPropagation();
+                keepModalOpen();
+                return;
             }
+
+            // Escape priority: cancel active map interaction first, then close modal.
+            if (cancelActiveMapInteraction()) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+
+            e.preventDefault();
+            e.stopPropagation();
+            requestClose({mode: "dismiss"});
         };
 
         document.addEventListener("keydown", onKeyDown as EventListener);
         return () => document.removeEventListener("keydown", onKeyDown as EventListener);
-    }, [id, lastOpenModalId, closeModal, handleAccept, config]);
+    }, [
+        cancelActiveMapInteraction,
+        handleAccept,
+        id,
+        isCloseConfirmOpen,
+        keepModalOpen,
+        lastOpenModalId,
+        requestClose,
+    ]);
+
+    useEffect(() => {
+        if (modal?.isOpen) return;
+        setIsCloseConfirmOpen(false);
+        setPendingCloseMode("dismiss");
+    }, [modal?.isOpen]);
 
     useEffect(() => {
         if (modal?.isOpen) {
@@ -150,6 +274,10 @@ export const ModalTemplateCore: FC<ModalTemplateProps> = (
         button2OnClick,
         cancelButtonText,
         showCancelButton,
+        unsavedChangesTitle,
+        unsavedChangesMessage,
+        unsavedChangesCloseButtonText,
+        unsavedChangesCancelButtonText,
     } = config;
 
     const Icon = showIcon && dialogType ? ICONS[dialogType] : null;
@@ -177,6 +305,7 @@ export const ModalTemplateCore: FC<ModalTemplateProps> = (
                     aria-modal="true"
                 >
                     <div
+                        ref={modalContentRef}
                         className={clsx(
                             "relative flex flex-col rounded-lg bg-white dark:bg-gray-900 shadow-xl transition overflow-hidden",
                             fullHeightScreen
@@ -185,7 +314,7 @@ export const ModalTemplateCore: FC<ModalTemplateProps> = (
                             dialogMaxWidthClass,
                         )}
                     >
-                        {!inProgress && (
+                        {!inProgress && !isCloseConfirmOpen && (
                             <button
                                 aria-label="Close"
                                 onClick={handleCancel}
@@ -232,37 +361,64 @@ export const ModalTemplateCore: FC<ModalTemplateProps> = (
                             {children}
                         </div>
 
-                        <div className="shrink-0 mt-4 flex flex-wrap gap-3 px-5 pb-5">
-                            {acceptButtonOnClick && (
-                                <CButton
-                                    text={t(acceptButtonText ?? "submit")}
-                                    onClick={handleAccept}
-                                    loading={inProgress}
-                                    className="bg-gray-700 dark:bg-gray-900 text-white hover:bg-gray-500"
-                                />
-                            )}
-                            {button1OnClick && (
-                                <CButton
-                                    text={t(button1Text ?? "Button 1")}
-                                    onClick={button1OnClick}
-                                    className="bg-gray-700 text-white hover:bg-gray-500"
-                                />
-                            )}
-                            {button2OnClick && button2Text && (
-                                <CButton
-                                    text={t(button2Text)}
-                                    onClick={button2OnClick}
-                                    className="bg-red-600 text-white hover:bg-red-500"
-                                />
-                            )}
-                            {showCancelButton && !inProgress && (
-                                <CButton
-                                    text={cancelButtonText ? t(cancelButtonText) : t("close")}
-                                    onClick={handleCancel}
-                                    className="bg-gray-200 text-gray-900 hover:bg-gray-300"
-                                />
-                            )}
-                        </div>
+                        {!isCloseConfirmOpen && (
+                            <div className="shrink-0 mt-4 flex flex-wrap gap-3 px-5 pb-5">
+                                {acceptButtonOnClick && (
+                                    <CButton
+                                        text={t(acceptButtonText ?? "submit")}
+                                        onClick={handleAccept}
+                                        loading={inProgress}
+                                        className="bg-gray-700 dark:bg-gray-900 text-white hover:bg-gray-500"
+                                    />
+                                )}
+                                {button1OnClick && (
+                                    <CButton
+                                        text={t(button1Text ?? "Button 1")}
+                                        onClick={button1OnClick}
+                                        className="bg-gray-700 text-white hover:bg-gray-500"
+                                    />
+                                )}
+                                {button2OnClick && button2Text && (
+                                    <CButton
+                                        text={t(button2Text)}
+                                        onClick={button2OnClick}
+                                        className="bg-red-600 text-white hover:bg-red-500"
+                                    />
+                                )}
+                                {showCancelButton && !inProgress && (
+                                    <CButton
+                                        text={cancelButtonText ? t(cancelButtonText) : t("close")}
+                                        onClick={handleCancel}
+                                        className="bg-gray-200 text-gray-900 hover:bg-gray-300"
+                                    />
+                                )}
+                            </div>
+                        )}
+
+                        {isCloseConfirmOpen && (
+                            <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 p-4">
+                                <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-2xl dark:bg-gray-800">
+                                    <h4 className="text-base font-semibold text-gray-900 dark:text-white">
+                                        {unsavedChangesTitle}
+                                    </h4>
+                                    <p className="mt-2 text-sm text-gray-700 dark:text-gray-200">
+                                        {unsavedChangesMessage}
+                                    </p>
+                                    <div className="mt-5 flex flex-wrap gap-3">
+                                        <CButton
+                                            text={unsavedChangesCancelButtonText}
+                                            onClick={keepModalOpen}
+                                            className="bg-gray-200 text-gray-900 hover:bg-gray-300"
+                                        />
+                                        <CButton
+                                            text={unsavedChangesCloseButtonText}
+                                            onClick={confirmClose}
+                                            className="bg-red-600 text-white hover:bg-red-500"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

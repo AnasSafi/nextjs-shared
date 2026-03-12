@@ -13,6 +13,11 @@ import {
 import type {FieldValues} from "react-hook-form";
 import type {RHFErrorCompat} from "../../models/core/formModels";
 import {FormError} from "./Helpers/FormError";
+import {
+    MAP_CANCEL_INTERACTION_EVENT,
+    MAP_INTERACTION_ACTIVE_ATTR,
+    MAP_INTERACTION_ROOT_ATTR,
+} from "./mapInteractionConstants";
 
 export type MapLocationValue = {
     lat: number;
@@ -848,6 +853,7 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
     const pickerRootRef = useRef<HTMLDivElement | null>(null);
     const interactionFrameRef = useRef<HTMLDivElement | null>(null);
     const mapRef = useRef<HTMLDivElement | null>(null);
+    const searchInputRef = useRef<HTMLInputElement | null>(null);
     const adapterRef = useRef<MapAdapter | null>(null);
     const searchAbortRef = useRef<AbortController | null>(null);
     const initRunRef = useRef<number>(0);
@@ -867,6 +873,7 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
     const [searchResults, setSearchResults] = useState<MapSearchResult[]>([]);
     const [isSearching, setIsSearching] = useState<boolean>(false);
     const [searchError, setSearchError] = useState<string | null>(null);
+    const [isSearchInputFocused, setIsSearchInputFocused] = useState<boolean>(false);
 
     const currentLocation = useMemo(
         () => normalizeLocation(value ?? internalLocation, defaultZoom),
@@ -887,6 +894,7 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
     const searchButtonLabel = isSearching
         ? `${searchButtonText}...`
         : searchButtonText;
+    const isMapInteractionActive = isMapInteractionEnabled || isSearchInputFocused || searchResults.length > 0;
 
     const emitLocation = useCallback((next: MapLocationValue) => {
         setInternalLocation(next);
@@ -942,6 +950,21 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
     const deactivateMapInteraction = useCallback((): void => {
         setIsMapInteractionEnabled(false);
     }, []);
+
+    const cancelMapInteraction = useCallback((): void => {
+        // Keep Escape behavior local to the map before modal-level dismissal.
+        setSearchResults([]);
+        setIsSearchInputFocused(false);
+        deactivateMapInteraction();
+        searchInputRef.current?.blur();
+
+        const root = pickerRootRef.current;
+        const activeElement = document.activeElement;
+
+        if (root && activeElement instanceof HTMLElement && root.contains(activeElement)) {
+            activeElement.blur();
+        }
+    }, [deactivateMapInteraction]);
 
     const handleMapFrameBlur = useCallback((event: FocusEvent<HTMLDivElement>): void => {
         const nextTarget = event.relatedTarget;
@@ -1087,7 +1110,7 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
     ]);
 
     useEffect(() => {
-        if (!isMapInteractionEnabled) return;
+        if (!isMapInteractionActive) return;
 
         const handlePointerDown = (event: PointerEvent): void => {
             const target = event.target;
@@ -1096,25 +1119,16 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
             if (!(target instanceof Node) || !root) return;
 
             if (!root.contains(target)) {
-                deactivateMapInteraction();
+                cancelMapInteraction();
             }
         };
 
-        const handleKeyDown = (event: KeyboardEvent): void => {
-            if (event.key !== "Escape") return;
-
-            deactivateMapInteraction();
-            interactionFrameRef.current?.blur();
-        };
-
         document.addEventListener("pointerdown", handlePointerDown, true);
-        document.addEventListener("keydown", handleKeyDown);
 
         return () => {
             document.removeEventListener("pointerdown", handlePointerDown, true);
-            document.removeEventListener("keydown", handleKeyDown);
         };
-    }, [isMapInteractionEnabled, deactivateMapInteraction]);
+    }, [isMapInteractionActive, cancelMapInteraction]);
 
     useEffect(() => {
         if (searchResults.length === 0) return;
@@ -1130,20 +1144,27 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
             }
         };
 
-        const handleKeyDown = (event: KeyboardEvent): void => {
-            if (event.key === "Escape") {
-                setSearchResults([]);
-            }
-        };
-
         document.addEventListener("pointerdown", handlePointerDown, true);
-        document.addEventListener("keydown", handleKeyDown);
 
         return () => {
             document.removeEventListener("pointerdown", handlePointerDown, true);
-            document.removeEventListener("keydown", handleKeyDown);
         };
     }, [searchResults.length]);
+
+    useEffect(() => {
+        const root = pickerRootRef.current;
+        if (!root) return;
+
+        const handleCancelInteraction = (): void => {
+            cancelMapInteraction();
+        };
+
+        root.addEventListener(MAP_CANCEL_INTERACTION_EVENT, handleCancelInteraction);
+
+        return () => {
+            root.removeEventListener(MAP_CANCEL_INTERACTION_EVENT, handleCancelInteraction);
+        };
+    }, [cancelMapInteraction]);
 
     useEffect(() => {
         if (!mapRef.current || typeof ResizeObserver === "undefined") return;
@@ -1161,8 +1182,8 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
 
     useEffect(() => {
         if (!disabled) return;
-        deactivateMapInteraction();
-    }, [disabled, deactivateMapInteraction]);
+        cancelMapInteraction();
+    }, [disabled, cancelMapInteraction]);
 
     useEffect(() => {
         if (provider !== "openstreetmap") return;
@@ -1279,6 +1300,10 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
 
             <div
                 ref={pickerRootRef}
+                {...{
+                    [MAP_INTERACTION_ROOT_ATTR]: "true",
+                    [MAP_INTERACTION_ACTIVE_ATTR]: isMapInteractionActive ? "true" : "false",
+                }}
                 className="rounded-lg border border-gray-300 bg-gray-50 p-2 dark:border-gray-600 dark:bg-gray-700"
             >
                 {(canShowSearchInput || showMyLocationButton) && (
@@ -1286,6 +1311,7 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
                         {canShowSearchInput && (
                             <div className="flex min-w-0 flex-1 items-center gap-2">
                                 <input
+                                    ref={searchInputRef}
                                     type="text"
                                     value={searchQuery}
                                     onChange={(event) => {
@@ -1307,11 +1333,18 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
                                             return;
                                         }
 
-                                        if (event.key === "Escape" && searchResults.length > 0) {
+                                        if (event.key === "Escape") {
                                             event.preventDefault();
                                             event.stopPropagation();
-                                            setSearchResults([]);
+                                            cancelMapInteraction();
                                         }
+                                    }}
+                                    onFocus={() => {
+                                        setIsSearchInputFocused(true);
+                                        activateMapInteraction();
+                                    }}
+                                    onBlur={() => {
+                                        setIsSearchInputFocused(false);
                                     }}
                                     disabled={disabled || isSearching}
                                     placeholder={searchPlaceholder}
@@ -1387,6 +1420,13 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
                     }}
                     onFocus={(event) => {
                         activateMapInteraction(event.currentTarget);
+                    }}
+                    onKeyDownCapture={(event) => {
+                        if (event.key !== "Escape") return;
+
+                        event.preventDefault();
+                        event.stopPropagation();
+                        cancelMapInteraction();
                     }}
                     onBlur={handleMapFrameBlur}
                     className={[

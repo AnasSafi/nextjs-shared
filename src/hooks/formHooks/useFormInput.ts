@@ -1,5 +1,6 @@
-import {useCallback, useRef, useState} from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 import type {ChangeEvent} from "react";
+import isEqual from "fast-deep-equal";
 import type {MultiLangValue} from "../../models/core/localeModels";
 import type {RepeaterRowModel, WithRowId} from "../../models/core/repeaterModels";
 import {LanguageConfig} from "../../i18n/languageConfigUtils";
@@ -35,6 +36,7 @@ export function createUseFormInput(languages: LanguageConfig[]) {
     return function useFormInput<T extends object>(initialState: T, locale: string) {
         const initialRef = useRef<T>(initialState);
         const [state, setState] = useState<T>(initialState);
+        const [isDirty, setIsDirty] = useState<boolean>(false);
 
         const handleInputChange = useCallback(
             (event: ChangeEvent<FormControlEl>, shouldDelete = false) => {
@@ -268,13 +270,19 @@ export function createUseFormInput(languages: LanguageConfig[]) {
         );
 
         const setBodyData = useCallback((data: T) => {
+            initialRef.current = deepClone(data);
             setState(data);
         }, []);
 
         const reset = useCallback(() => {
             setState(initialRef.current);
+            setIsDirty(false);
         }, []);
 
-        return {state, handleInputChange, setBodyData, reset};
+        useEffect(() => {
+            setIsDirty(!isEqual(state, initialRef.current));
+        }, [state]);
+
+        return {state, handleInputChange, setBodyData, reset, isDirty};
     };
 }

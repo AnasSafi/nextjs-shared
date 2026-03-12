@@ -82,6 +82,7 @@ export function useModalActions<TIn, TOut = TIn>(
                                 formRef.current?.submitForm();
                             }
                             : undefined,
+                        hasUnsavedChanges: () => Boolean(formRef.current?.hasUnsavedChanges?.()),
                         withMinHeight,
                         fullHeightScreen,
                     },

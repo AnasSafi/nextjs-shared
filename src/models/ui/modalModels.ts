@@ -36,6 +36,11 @@ export interface OptionalModalTemplateProps {
     cancelButtonOnClick?: (() => void) | null;
 
     showCancelButton?: boolean;
+    hasUnsavedChanges?: (() => boolean) | null;
+    unsavedChangesTitle?: string;
+    unsavedChangesMessage?: string;
+    unsavedChangesCloseButtonText?: string;
+    unsavedChangesCancelButtonText?: string;
 }
 
 export interface ModalTemplateProps {

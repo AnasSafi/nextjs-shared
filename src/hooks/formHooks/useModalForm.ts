@@ -33,12 +33,14 @@ export function createUseModalForm<TTranslation extends TranslationLike>(
             ref,
             props,
             bodyData,
+            isDirty = false,
             closeModalWithData,
             useFormFunction,
         }: {
             ref: React.ForwardedRef<FormRefModel | null>;
             props: FormPropsModel<TIn, TClose>;
             bodyData: TFieldValues;
+            isDirty?: boolean;
             closeModalWithData: (value: TClose) => void;
             useFormFunction?: UseFormFunctionModel<TFieldValues, TIn, TClose> | null;
         },
@@ -64,8 +66,11 @@ export function createUseModalForm<TTranslation extends TranslationLike>(
 
         useImperativeHandle(
             ref,
-            () => ({submitForm: () => onSubmit()}),
-            [onSubmit],
+            () => ({
+                submitForm: () => onSubmit(),
+                hasUnsavedChanges: () => isDirty,
+            }),
+            [isDirty, onSubmit],
         );
 
         return {t, inProgress, setInProgress, register, errors, onSubmit, requiredFields};

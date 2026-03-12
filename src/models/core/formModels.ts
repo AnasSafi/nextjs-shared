@@ -157,4 +157,5 @@ export interface RegularFormPropsModel<TData = unknown> {
 
 export interface FormRefModel {
     submitForm: () => void;
+    hasUnsavedChanges?: () => boolean;
 }

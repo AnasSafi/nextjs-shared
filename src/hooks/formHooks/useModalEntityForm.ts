@@ -94,7 +94,7 @@ export function createUseModalEntityForm(args: {
         }, [pickId, props?.data]);
 
         const {formLocale, toggle} = useFormLocale();
-        const {state: bodyData, handleInputChange, setBodyData} = useFormInput<Req>(
+        const {state: bodyData, handleInputChange, setBodyData, isDirty} = useFormInput<Req>(
             emptyStateAction(),
             formLocale,
         );
@@ -116,6 +116,7 @@ export function createUseModalEntityForm(args: {
             ref,
             props,
             bodyData,
+            isDirty,
             closeModalWithData: closeWithData,
             useFormFunction: saveHookAction,
         });
