@@ -1,0 +1,53 @@
+CONSUMER TASK – Add missing i18n keys for unsaved-changes modal text
+
+Goal:
+- Ensure localization keys used by shared `ModalTemplateCore` exist in consumer dictionaries.
+- Add keys only if they are missing.
+
+Context:
+- Shared modal now uses translation keys (instead of hardcoded English) for unsaved-changes confirmation.
+- Newly expected keys:
+  - `unsavedChangesTitle`
+  - `unsavedChangesMessage`
+- Existing/common keys usually already present:
+  - `close`
+  - `cancel`
+
+1) Inspect consumer translation files
+
+Check all locale dictionaries used by your app (for example: `en`, `ar`, etc.) and verify whether:
+- `unsavedChangesTitle`
+- `unsavedChangesMessage`
+already exist.
+
+2) Add missing keys only
+
+If key is missing in a locale, add it.
+
+Suggested English values:
+- `unsavedChangesTitle`: `Unsaved changes`
+- `unsavedChangesMessage`: `You have unsaved changes. Are you sure you want to close?`
+
+Suggested Arabic values:
+- `unsavedChangesTitle`: `تغييرات غير محفوظة`
+- `unsavedChangesMessage`: `لديك تغييرات غير محفوظة. هل أنت متأكد أنك تريد الإغلاق؟`
+
+3) Keep existing `close` and `cancel`
+
+Do not rename/remove existing keys.
+`ModalTemplateCore` uses:
+- `close` for confirm-close button text
+- `cancel` for keep-editing button text
+
+4) Verify
+
+- Open any modal form that can become dirty.
+- Press `Esc` when form has unsaved changes.
+- Confirm dialog should display translated:
+  - title (`unsavedChangesTitle`)
+  - message (`unsavedChangesMessage`)
+  - buttons (`close`, `cancel`)
+
+DONE CRITERIA:
+- Missing keys were added in all active consumer locales.
+- Unsaved-changes confirmation renders translated text (no raw key shown).

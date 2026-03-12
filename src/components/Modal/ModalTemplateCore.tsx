@@ -105,10 +105,10 @@ export const ModalTemplateCore: FC<ModalTemplateProps> = (
                 cancelButtonOnClick: null,
                 showCancelButton: true,
                 hasUnsavedChanges: null,
-                unsavedChangesTitle: "Unsaved changes",
-                unsavedChangesMessage: "You have unsaved changes. Are you sure you want to close?",
-                unsavedChangesCloseButtonText: "Close",
-                unsavedChangesCancelButtonText: "Cancel",
+                unsavedChangesTitle: "unsavedChangesTitle",
+                unsavedChangesMessage: "unsavedChangesMessage",
+                unsavedChangesCloseButtonText: "close",
+                unsavedChangesCancelButtonText: "cancel",
                 ...modal?.config,
             }),
             [modal?.config],
@@ -400,19 +400,19 @@ export const ModalTemplateCore: FC<ModalTemplateProps> = (
                             <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 p-4">
                                 <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-2xl dark:bg-gray-800">
                                     <h4 className="text-base font-semibold text-gray-900 dark:text-white">
-                                        {unsavedChangesTitle}
+                                        {t(unsavedChangesTitle)}
                                     </h4>
                                     <p className="mt-2 text-sm text-gray-700 dark:text-gray-200">
-                                        {unsavedChangesMessage}
+                                        {t(unsavedChangesMessage)}
                                     </p>
                                     <div className="mt-5 flex flex-wrap gap-3">
                                         <CButton
-                                            text={unsavedChangesCancelButtonText}
+                                            text={t(unsavedChangesCancelButtonText)}
                                             onClick={keepModalOpen}
                                             className="bg-gray-200 text-gray-900 hover:bg-gray-300"
                                         />
                                         <CButton
-                                            text={unsavedChangesCloseButtonText}
+                                            text={t(unsavedChangesCloseButtonText)}
                                             onClick={confirmClose}
                                             className="bg-red-600 text-white hover:bg-red-500"
                                         />
