@@ -187,6 +187,7 @@ export const ModalTemplateCore: FC<ModalTemplateProps> = (
     useEffect(() => {
         const onKeyDown = (e: KeyboardEvent): void => {
             if (lastOpenModalId !== id) return;
+            if (e.defaultPrevented) return;
 
             if (e.key === "Enter") {
                 if (e.defaultPrevented) return;

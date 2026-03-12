@@ -508,6 +508,45 @@ function BaseComboBoxCoreInner<TFormValues extends FieldValues = FieldValues>(
         }
     };
 
+    const closeDropdownFromEscape = (focusTarget?: HTMLInputElement | null): void => {
+        close();
+        (focusTarget ?? inputRef.current)?.focus({preventScroll: true});
+    };
+
+    const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>): void => {
+        if (event.key !== "Escape") return;
+
+        // ESC priority:
+        // 1) If dropdown is open, close it locally and stop propagation.
+        // 2) If dropdown is already closed, let ESC bubble to parent handlers (e.g. modal).
+        if (!isOpen) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        event.nativeEvent.stopImmediatePropagation?.();
+        closeDropdownFromEscape(event.currentTarget);
+    };
+
+    useEffect(() => {
+        if (!isOpen || disabled) return;
+
+        const handleDocumentEscCapture = (event: KeyboardEvent): void => {
+            if (event.key !== "Escape") return;
+
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation?.();
+            closeDropdownFromEscape();
+        };
+
+        // Capture-phase guard so ESC closes combobox before modal-level ESC listeners.
+        document.addEventListener("keydown", handleDocumentEscCapture, true);
+
+        return () => {
+            document.removeEventListener("keydown", handleDocumentEscCapture, true);
+        };
+    }, [close, closeDropdownFromEscape, disabled, isOpen]);
+
     const hasVisibleOptions = options.length > 0;
     const allVisibleSelected = useMemo((): boolean => {
         if (!hasVisibleOptions) return false;
@@ -581,6 +620,7 @@ function BaseComboBoxCoreInner<TFormValues extends FieldValues = FieldValues>(
                     onChange={onInputChange}
                     onFocus={handleOpen}
                     onClick={handleOpen}
+                    onKeyDown={handleInputKeyDown}
                     onBlur={handleBlurCommit}
                     role="combobox"
                     aria-controls={listboxId}
