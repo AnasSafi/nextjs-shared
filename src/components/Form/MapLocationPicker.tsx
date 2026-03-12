@@ -114,7 +114,7 @@ type WindowWithMaps = Window & {
     L?: any;
 };
 
-const DEFAULT_LOCATION: MapLocationValue = {lat: 24.7136, lng: 46.6753, zoom: 12};
+const DEFAULT_LOCATION: MapLocationValue = {lat: 24.7136, lng: 46.6753};
 
 const DEFAULT_OSM_TILE_URL =
     "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
@@ -224,6 +224,9 @@ const normalizeLocation = (
 
     const lat = isFiniteNumber(source.lat) ? source.lat : DEFAULT_LOCATION.lat;
     const lng = isFiniteNumber(source.lng) ? source.lng : DEFAULT_LOCATION.lng;
+    // Zoom priority:
+    // 1) location.zoom (when provided from parent value/defaultValue)
+    // 2) defaultZoom prop fallback
     const zoom = isFiniteNumber(source.zoom) ? source.zoom : fallbackZoom;
 
     return {lat, lng, zoom};
