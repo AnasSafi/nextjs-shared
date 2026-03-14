@@ -97,8 +97,8 @@ export interface MapLocationPickerProps<TFormValues extends FieldValues = FieldV
     error?: RHFErrorCompat<TFormValues>;
     showCoordinates?: boolean;
     showSearchInput?: boolean;
-    searchPlaceholder: string;
-    searchButtonText: string;
+    searchPlaceholder?: string;
+    searchButtonText?: string;
     searchMinLength?: number;
     searchZoom?: number;
     searchLocations?: MapLocationSearchHandler;
@@ -1352,10 +1352,21 @@ const createOpenStreetMapAdapter = async (
         icon: markerIcon,
     }).addTo(map);
 
+    let isDestroyed = false;
     let isDisabled = disabled;
     let isDraggingMap = false;
     let isInteractionEnabled = false;
     let lastDragEndedAtMs = 0;
+
+    const safeInvalidateSize = (): void => {
+        if (isDestroyed || !container.isConnected) return;
+
+        try {
+            map.invalidateSize({pan: false});
+        } catch (error: unknown) {
+            debugMap("leaflet:invalidateSize:error", {error});
+        }
+    };
 
     const emit = (lat: number, lng: number) => {
         onLocationChange({
@@ -1542,11 +1553,16 @@ const createOpenStreetMapAdapter = async (
 
     syncInteractionState();
 
-    setTimeout(() => map.invalidateSize(), 0);
-    setTimeout(() => map.invalidateSize(), 200);
+    const invalidateTimeoutId0 = setTimeout(() => {
+        safeInvalidateSize();
+    }, 0);
+    const invalidateTimeoutId200 = setTimeout(() => {
+        safeInvalidateSize();
+    }, 200);
 
     return {
         setLocation: (next: MapLocationValue) => {
+            if (isDestroyed) return;
             marker.setLatLng([next.lat, next.lng]);
             map.setView(
                 [next.lat, next.lng],
@@ -1555,6 +1571,7 @@ const createOpenStreetMapAdapter = async (
         },
 
         flyToLocation: (next: MapLocationValue) => {
+            if (isDestroyed) return;
             const nextZoom = isFiniteNumber(next.zoom) ? next.zoom : map.getZoom();
 
             marker.setLatLng([next.lat, next.lng]);
@@ -1565,6 +1582,16 @@ const createOpenStreetMapAdapter = async (
         },
 
         getViewport: () => {
+            if (isDestroyed) {
+                return {
+                    center: initialLocation,
+                    north: initialLocation.lat,
+                    south: initialLocation.lat,
+                    east: initialLocation.lng,
+                    west: initialLocation.lng,
+                };
+            }
+
             const bounds = map.getBounds();
             const center = map.getCenter();
 
@@ -1582,20 +1609,28 @@ const createOpenStreetMapAdapter = async (
         },
 
         setDisabled: (nextDisabled: boolean) => {
+            if (isDestroyed) return;
             isDisabled = nextDisabled;
             syncInteractionState();
         },
 
         setInteractionEnabled: (enabled: boolean) => {
+            if (isDestroyed) return;
             isInteractionEnabled = enabled;
             syncInteractionState();
         },
 
         refreshLayout: () => {
-            map.invalidateSize();
+            safeInvalidateSize();
         },
 
         destroy: () => {
+            if (isDestroyed) return;
+            isDestroyed = true;
+
+            clearTimeout(invalidateTimeoutId0);
+            clearTimeout(invalidateTimeoutId200);
+
             container.removeEventListener("pointerdown", onPointerDown, true);
             container.removeEventListener("wheel", onWheel, true);
             window.removeEventListener("pointermove", onPointerMove, true);
