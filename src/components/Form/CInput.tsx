@@ -6,6 +6,7 @@ import React, {
     InputHTMLAttributes,
     useEffect,
     useMemo,
+    useRef,
     useState,
 } from "react";
 import {EyeIcon, EyeSlashIcon} from "@heroicons/react/20/solid";
@@ -41,6 +42,35 @@ const readInitForLocale = (init: unknown, anyCode: string): string => {
     const pick = (k?: string): string =>
         k && typeof bag[k] === "string" ? (bag[k] as string) : "";
     return pick(three) || pick(two) || pick(anyCode);
+};
+
+const buildInitialValuesByLocale = (
+    initValue: TextInputProps["initValue"],
+    formLocale?: string,
+): Record<string, string> => {
+    const map: Record<string, string> = {};
+    const key = formLocale ?? "default";
+
+    if (isLocaleObject(initValue)) {
+        Object.entries(initValue as Record<string, unknown>).forEach(([loc, val]) => {
+            map[loc] = (val ?? "").toString();
+        });
+        return map;
+    }
+
+    if (initValue === undefined || initValue === null) {
+        map[key] = "";
+        return map;
+    }
+
+    if (typeof initValue === "object" && initValue !== null) {
+        map[key] = initValue.toString();
+        return map;
+    }
+
+    map[key] = initValue.toString();
+
+    return map;
 };
 
 /* ------------------------------------------------------------------ */
@@ -121,18 +151,22 @@ const CInputInner = forwardRef<HTMLInputElement, TextInputProps>(
 
         const phoneLike = sanitizeAs === "phone";
         const lockLTR = alwaysLTR || phoneLike;
+        const currentLocale = formLocale ?? "default";
 
         /* ===================== single-field (default) ===================== */
         const [isVisible, setIsVisible] = useState(false);
         const inputType = isVisible && type === "password" ? "text" : type;
-
-        const [inputValue, setInputValue] = useState<string>("");
+        const [valuesByLocale, setValuesByLocale] = useState<Record<string, string>>(
+            () => buildInitialValuesByLocale(initValue, currentLocale),
+        );
+        const prevInitSnapshotRef = useRef<string>("");
 
         const [dir, setDir] = useState<"ltr" | "rtl">(() => {
             if (!languages || !formLocale) return "ltr";
             const three = toThree(formLocale);
             return three ? (isLanguageRTL(three) ? "rtl" : "ltr") : "ltr";
         });
+        const inputValue = readInitForLocale(valuesByLocale, currentLocale);
 
         const handleKeyUp = (event: React.KeyboardEvent<HTMLInputElement>) => {
             if (lockLTR) {
@@ -169,20 +203,24 @@ const CInputInner = forwardRef<HTMLInputElement, TextInputProps>(
 
         const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
             const nextVal = sanitizeIfNeeded(event);
-            setInputValue(nextVal);
+            setValuesByLocale((prev) => ({
+                ...prev,
+                [currentLocale]: nextVal,
+            }));
             onChange?.(event);
         };
 
         useEffect(() => {
             if (stackedLocaleView) return;
-            if (isLocaleObject(initValue) && formLocale) {
-                setInputValue(readInitForLocale(initValue, formLocale) || "");
-            } else if (typeof initValue === "object" && initValue !== null) {
-                setInputValue(initValue.toString() || "");
-            } else {
-                setInputValue(initValue?.toString() || "");
-            }
-        }, [formLocale, initValue, stackedLocaleView]);
+            const snapshot = JSON.stringify(initValue ?? null);
+            if (snapshot === prevInitSnapshotRef.current) return;
+            prevInitSnapshotRef.current = snapshot;
+
+            setValuesByLocale((prev) => ({
+                ...prev,
+                ...buildInitialValuesByLocale(initValue, currentLocale),
+            }));
+        }, [initValue, currentLocale, stackedLocaleView]);
 
         useEffect(() => {
             if (!stackedLocaleView && formLocale) {

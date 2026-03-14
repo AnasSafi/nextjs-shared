@@ -3,10 +3,13 @@
 import React, {
     forwardRef,
     InputHTMLAttributes,
+    useEffect,
+    useRef,
     useState,
 } from "react";
 import type {LanguageConfig} from "../../i18n/languageConfigUtils";
 import {isLanguageRTL} from "../../i18n/languageConfigUtils";
+import {convertToThreeCharLocale, convertToTwoCharLocale} from "../../i18n/localeMaps";
 import type {RHFErrorInput} from "../../models/core/formModels";
 import {FormError} from "./Helpers/FormError";
 import {RequiredAsterisk} from "./RequiredAsterisk";
@@ -45,6 +48,7 @@ const buildInitialValuesByLocale = (
     formLocale?: string,
 ): Record<string, string> => {
     const map: Record<string, string> = {};
+    const key = formLocale ?? "default";
 
     if (isLocaleObject(initValue)) {
         Object.entries(initValue as Record<string, unknown>).forEach(
@@ -52,12 +56,32 @@ const buildInitialValuesByLocale = (
                 map[loc] = toStr(val);
             },
         );
-    } else if (initValue !== undefined && initValue !== null) {
-        const key = formLocale ?? "default";
-        map[key] = toStr(initValue);
+        return map;
     }
 
+    if (initValue === undefined || initValue === null) {
+        map[key] = "";
+        return map;
+    }
+
+    map[key] = toStr(initValue);
     return map;
+};
+
+const toTwo = (code: string | undefined): string => {
+    if (!code) return "";
+    return convertToTwoCharLocale(code) ?? code.toLowerCase().replace("_", "-").split("-")[0];
+};
+
+const toThree = (code: string | undefined): string => {
+    if (!code) return "";
+    return convertToThreeCharLocale(code) ?? code.toLowerCase();
+};
+
+const readValueForLocale = (values: Record<string, string>, anyCode: string): string => {
+    const three = toThree(anyCode);
+    const two = toTwo(anyCode);
+    return values[three] ?? values[two] ?? values[anyCode] ?? "";
 };
 
 const firstNonSpace = (s: string): string | undefined => {
@@ -117,8 +141,20 @@ const CTextAreaInner = forwardRef<HTMLTextAreaElement, TextAreaProps>(
         const [valuesByLocale, setValuesByLocale] = useState<Record<string, string>>(
             () => buildInitialValuesByLocale(initValue, formLocale),
         );
+        const prevInitSnapshotRef = useRef<string>("");
 
-        const value = valuesByLocale[currentLocale] ?? "";
+        useEffect(() => {
+            const snapshot = JSON.stringify(initValue ?? null);
+            if (snapshot === prevInitSnapshotRef.current) return;
+            prevInitSnapshotRef.current = snapshot;
+
+            setValuesByLocale((prev) => ({
+                ...prev,
+                ...buildInitialValuesByLocale(initValue, currentLocale),
+            }));
+        }, [initValue, currentLocale]);
+
+        const value = readValueForLocale(valuesByLocale, currentLocale);
         const dir = computeDir(value, formLocale, alwaysLTR, languages);
 
         const textAreaClassName =

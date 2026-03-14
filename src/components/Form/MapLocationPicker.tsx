@@ -32,9 +32,19 @@ export type MapSearchResult = {
     lng: number;
 };
 
+export type MapViewport = {
+    center: MapLocationValue;
+    north: number;
+    south: number;
+    east: number;
+    west: number;
+};
+
 export type MapLocationSearchHandler = (params: {
     query: string;
     signal?: AbortSignal;
+    viewport?: MapViewport;
+    currentLocation?: MapLocationValue;
 }) => Promise<MapSearchResult[]>;
 
 export type MapProvider = "google" | "openstreetmap";
@@ -54,6 +64,7 @@ export type OpenStreetMapProviderConfig = {
     searchResultLimit?: number;
     searchLanguage?: string;
     searchCountryCodes?: string[];
+    boundedSearchEnabled?: boolean;
 };
 
 export type MapLocationPickerProviderConfig = {
@@ -86,8 +97,8 @@ export interface MapLocationPickerProps<TFormValues extends FieldValues = FieldV
     error?: RHFErrorCompat<TFormValues>;
     showCoordinates?: boolean;
     showSearchInput?: boolean;
-    searchPlaceholder?: string;
-    searchButtonText?: string;
+    searchPlaceholder: string;
+    searchButtonText: string;
     searchMinLength?: number;
     searchZoom?: number;
     searchLocations?: MapLocationSearchHandler;
@@ -98,15 +109,38 @@ type MapAdapter = {
     setDisabled: (disabled: boolean) => void;
     setInteractionEnabled?: (enabled: boolean) => void;
     flyToLocation?: (next: MapLocationValue) => void;
+    getViewport?: () => MapViewport;
     refreshLayout?: () => void;
     destroy: () => void;
+};
+
+type RankedMapSearchCandidate = MapSearchResult & {
+    score: number;
+    distanceKm: number;
+    source: "bounded" | "global";
+};
+
+type ReverseGeocodeSearchContext = {
+    district?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    countryCode?: string;
 };
 
 type NominatimSearchResponseItem = {
     place_id?: number | string;
     display_name?: string;
+    name?: string;
     lat?: string;
     lon?: string;
+    importance?: number | string;
+    namedetails?: Record<string, string>;
+    address?: Record<string, string>;
+};
+
+type NominatimReverseResponse = {
+    address?: Record<string, string>;
 };
 
 type WindowWithMaps = Window & {
@@ -114,7 +148,7 @@ type WindowWithMaps = Window & {
     L?: any;
 };
 
-const DEFAULT_LOCATION: MapLocationValue = {lat: 24.7136, lng: 46.6753};
+const DEFAULT_LOCATION: MapLocationValue = {lat: 24.7136, lng: 46.6753, zoom: 12};
 
 const DEFAULT_OSM_TILE_URL =
     "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
@@ -125,7 +159,12 @@ const DEFAULT_OSM_ATTRIBUTION =
 const DEFAULT_OSM_SEARCH_URL =
     "https://nominatim.openstreetmap.org/search";
 
+const DEFAULT_OSM_REVERSE_URL =
+    "https://nominatim.openstreetmap.org/reverse";
+
 const DEFAULT_OSM_SEARCH_RESULT_LIMIT = 5;
+const DEFAULT_SEARCH_TIMEOUT_MS = 2800;
+const DEFAULT_REVERSE_TIMEOUT_MS = 1200;
 
 const DEFAULT_MARKER_ICON_URL =
     "data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2234%22%20height%3D%2234%22%20viewBox%3D%220%200%2034%2034%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M17%201.8C9.18%201.8%202.8%208.18%202.8%2016c0%2010.41%2012.41%2016.41%2013.05%2016.71a2.5%202.5%200%200%200%202.3%200C18.79%2032.41%2031.2%2026.41%2031.2%2016%2031.2%208.18%2024.82%201.8%2017%201.8Z%22%20fill%3D%22%232563EB%22/%3E%3Ccircle%20cx%3D%2217%22%20cy%3D%2216%22%20r%3D%226.2%22%20fill%3D%22white%22/%3E%3Ccircle%20cx%3D%2217%22%20cy%3D%2216%22%20r%3D%223.2%22%20fill%3D%22%232563EB%22/%3E%3C/svg%3E";
@@ -133,11 +172,42 @@ const DEFAULT_MARKER_ICON_URL =
 const LEAFLET_SCRIPT_ID = "shared-map-picker-leaflet-script";
 const LEAFLET_CSS_ID = "shared-map-picker-leaflet-css";
 const MAP_DEBUG = false;
+
 const DEFAULT_GEOLOCATION_OPTIONS: PositionOptions = {
     enableHighAccuracy: true,
     timeout: 10000,
     maximumAge: 60000,
 };
+
+const GENERIC_SEARCH_TERMS = new Set<string>([
+    "دوار",
+    "دواره",
+    "شارع",
+    "طريق",
+    "جاده",
+    "جادة",
+    "حي",
+    "منطقه",
+    "منطقة",
+    "ساحه",
+    "ساحة",
+    "ميدان",
+    "مفرق",
+    "مجمع",
+    "دوار",
+    "roundabout",
+    "circle",
+    "street",
+    "st",
+    "road",
+    "rd",
+    "avenue",
+    "ave",
+    "district",
+    "area",
+    "square",
+    "junction",
+]);
 
 let leafletLoaderPromise: Promise<any> | null = null;
 
@@ -210,11 +280,27 @@ const requestCurrentPosition = (options?: PositionOptions): Promise<GeolocationP
             reject(new Error("Geolocation is not supported by this browser."));
             return;
         }
+
         navigator.geolocation.getCurrentPosition(resolve, reject, options ?? DEFAULT_GEOLOCATION_OPTIONS);
     });
 
 const isFiniteNumber = (value: unknown): value is number =>
     typeof value === "number" && Number.isFinite(value);
+
+const isAbortError = (error: unknown): boolean =>
+    typeof error === "object"
+    && error !== null
+    && "name" in error
+    && (error as {name?: string}).name === "AbortError";
+
+const firstNonEmpty = (values: Array<string | undefined>): string | undefined => {
+    for (const value of values) {
+        const trimmed = value?.trim();
+        if (trimmed) return trimmed;
+    }
+
+    return undefined;
+};
 
 const normalizeLocation = (
     location: MapLocationValue | null | undefined,
@@ -224,9 +310,6 @@ const normalizeLocation = (
 
     const lat = isFiniteNumber(source.lat) ? source.lat : DEFAULT_LOCATION.lat;
     const lng = isFiniteNumber(source.lng) ? source.lng : DEFAULT_LOCATION.lng;
-    // Zoom priority:
-    // 1) location.zoom (when provided from parent value/defaultValue)
-    // 2) defaultZoom prop fallback
     const zoom = isFiniteNumber(source.zoom) ? source.zoom : fallbackZoom;
 
     return {lat, lng, zoom};
@@ -240,7 +323,28 @@ const clampSearchResultLimit = (value: number | undefined): number => {
     return Math.min(Math.max(Math.round(value), 1), 10);
 };
 
+const getSearchDisplayLimit = (value: number | undefined): number =>
+    clampSearchResultLimit(value);
+
+const getSearchFetchLimit = (value: number | undefined): number => {
+    const displayLimit = getSearchDisplayLimit(value);
+    return Math.min(Math.max(displayLimit * 2, 8), 16);
+};
+
 const getPreferredSearchLanguage = (): string => {
+    if (typeof document !== "undefined") {
+        const htmlLang = document.documentElement.lang?.trim().toLowerCase();
+        const htmlDir = document.documentElement.dir?.trim().toLowerCase();
+
+        if (htmlLang.startsWith("ar") || htmlDir === "rtl") {
+            return "ar,en";
+        }
+
+        if (htmlLang) {
+            return `${htmlLang},en`;
+        }
+    }
+
     if (typeof navigator !== "undefined") {
         if (Array.isArray(navigator.languages) && navigator.languages.length > 0) {
             return navigator.languages.join(",");
@@ -251,45 +355,652 @@ const getPreferredSearchLanguage = (): string => {
         }
     }
 
-    if (typeof document !== "undefined") {
-        const documentLanguage = document.documentElement.lang?.trim();
+    return "ar,en";
+};
 
-        if (documentLanguage) {
-            return documentLanguage;
+const hasArabicCharacters = (value: string): boolean =>
+    /[\u0600-\u06FF]/.test(value);
+
+const normalizeLanguageTokens = (acceptLanguage: string): string[] => {
+    return acceptLanguage
+        .split(",")
+        .map((token) => token.split(";")[0]?.trim().toLowerCase())
+        .filter(Boolean)
+        .flatMap((token) => {
+            const baseToken = token.split("-")[0];
+            return baseToken && baseToken !== token ? [token, baseToken] : [token];
+        })
+        .filter((token, index, array) => array.indexOf(token) === index);
+};
+
+const getEffectiveSearchLanguage = (
+    query: string,
+    configuredLanguage?: string,
+): string => {
+    const explicitLanguage = configuredLanguage?.trim();
+
+    if (explicitLanguage) {
+        return explicitLanguage;
+    }
+
+    const preferredLanguage = getPreferredSearchLanguage();
+
+    if (!hasArabicCharacters(query)) {
+        return preferredLanguage;
+    }
+
+    const languageTokens = normalizeLanguageTokens(preferredLanguage);
+
+    if (languageTokens.includes("ar")) {
+        return preferredLanguage;
+    }
+
+    return `ar,${preferredLanguage}`;
+};
+
+const getLocalizedNameFromNamedetails = (
+    namedetails: Record<string, string> | undefined,
+    acceptLanguage: string,
+): string | null => {
+    if (!namedetails) return null;
+
+    const languages = normalizeLanguageTokens(acceptLanguage);
+    const keyPrefixes = ["name", "official_name", "short_name", "alt_name"];
+
+    for (const language of languages) {
+        for (const keyPrefix of keyPrefixes) {
+            const value = namedetails[`${keyPrefix}:${language}`]?.trim();
+
+            if (value) {
+                return value;
+            }
         }
     }
 
-    return "en";
+    return null;
 };
 
-const searchOpenStreetMapLocations = async (
+const buildLocalizedResultLabel = (
+    item: NominatimSearchResponseItem,
     {
-        query,
+        acceptLanguage,
+        lat,
+        lng,
+    }: {
+        acceptLanguage: string;
+        lat: number;
+        lng: number;
+    },
+): string => {
+    const localizedName = getLocalizedNameFromNamedetails(item.namedetails, acceptLanguage);
+    const rawName = item.name?.trim();
+    const displayName = item.display_name?.trim();
+    const displayPrimaryPart = displayName?.split(/[،,]/)[0]?.trim();
+    const address = item.address ?? {};
+
+    const primaryName = firstNonEmpty([
+        localizedName ?? undefined,
+        rawName && hasArabicCharacters(rawName) ? rawName : undefined,
+        displayPrimaryPart && hasArabicCharacters(displayPrimaryPart) ? displayPrimaryPart : undefined,
+        rawName,
+        displayPrimaryPart,
+        displayName,
+    ]);
+
+    const localizedAddressParts = [
+        address.road,
+        address.neighbourhood,
+        address.suburb,
+        address.city_district,
+        address.city,
+        address.town,
+        address.village,
+        address.state,
+        address.country,
+    ]
+        .map((part) => part?.trim())
+        .filter((part): part is string => !!part)
+        .filter((part) => hasArabicCharacters(part))
+        .filter((part, index, array) => {
+            const normalizedPart = normalizeSearchText(part);
+            return array.findIndex((candidate) => normalizeSearchText(candidate) === normalizedPart) === index;
+        })
+        .filter((part) => normalizeSearchText(part) !== normalizeSearchText(primaryName ?? ""));
+
+    if (primaryName && localizedAddressParts.length > 0) {
+        return [primaryName, ...localizedAddressParts.slice(0, 3)].join("، ");
+    }
+
+    return primaryName ?? `${lat}, ${lng}`;
+};
+
+const normalizeSearchText = (value: string): string => {
+    return value
+        .normalize("NFKC")
+        .toLowerCase()
+        .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, "")
+        .replace(/ـ/g, "")
+        .replace(/[أإآٱ]/g, "ا")
+        .replace(/ى/g, "ي")
+        .replace(/ؤ/g, "و")
+        .replace(/ئ/g, "ي")
+        .replace(/ة/g, "ه")
+        .replace(/[^\p{L}\p{N}\s]/gu, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+};
+
+const splitQueryWords = (value: string): string[] =>
+    value
+        .trim()
+        .split(/[\s,،/\\|_-]+/)
+        .map((word) => word.trim())
+        .filter(Boolean);
+
+const shouldUseGlobalSearchFallback = (query: string): boolean => {
+    const normalizedQuery = normalizeSearchText(query);
+
+    if (!normalizedQuery) {
+        return false;
+    }
+
+    if (/[0-9٠-٩]/.test(query)) {
+        return true;
+    }
+
+    if (query.includes(",") || query.includes("،")) {
+        return true;
+    }
+
+    const tokens = splitQueryWords(normalizedQuery);
+    const meaningfulTokens = tokens.filter((token) =>
+        token.length > 1 && !GENERIC_SEARCH_TERMS.has(token),
+    );
+
+    if (meaningfulTokens.length >= 2) {
+        return true;
+    }
+
+    return normalizedQuery.length >= 18;
+};
+
+const toRadians = (value: number): number =>
+    value * (Math.PI / 180);
+
+const getDistanceKm = (
+    firstLat: number,
+    firstLng: number,
+    secondLat: number,
+    secondLng: number,
+): number => {
+    const earthRadiusKm = 6371;
+    const deltaLat = toRadians(secondLat - firstLat);
+    const deltaLng = toRadians(secondLng - firstLng);
+    const lat1 = toRadians(firstLat);
+    const lat2 = toRadians(secondLat);
+
+    const a =
+        Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2)
+        + Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return earthRadiusKm * c;
+};
+
+const scoreSearchResult = (
+    {
+        normalizedQuery,
+        matchText,
+        lat,
+        lng,
+        searchCenter,
+        importance,
+    }: {
+        normalizedQuery: string;
+        matchText: string;
+        lat: number;
+        lng: number;
+        searchCenter?: MapLocationValue;
+        importance?: number;
+    },
+): number => {
+    const normalizedMatchText = normalizeSearchText(matchText);
+    const queryTokens = normalizedQuery.split(" ").filter(Boolean);
+    const matchTokens = new Set(normalizedMatchText.split(" ").filter(Boolean));
+
+    let score = 0;
+
+    if (normalizedMatchText === normalizedQuery) {
+        score += 1000;
+    }
+
+    if (normalizedMatchText.startsWith(normalizedQuery)) {
+        score += 650;
+    }
+
+    if (normalizedMatchText.includes(normalizedQuery)) {
+        score += 350;
+    }
+
+    const exactTokenHits = queryTokens.filter((token) => matchTokens.has(token)).length;
+    const partialTokenHits = queryTokens.filter((token) => normalizedMatchText.includes(token)).length;
+
+    score += exactTokenHits * 120;
+    score += Math.max(partialTokenHits - exactTokenHits, 0) * 40;
+
+    if (queryTokens.length > 0) {
+        score += (partialTokenHits / queryTokens.length) * 180;
+    }
+
+    if (searchCenter) {
+        const distanceKm = getDistanceKm(
+            searchCenter.lat,
+            searchCenter.lng,
+            lat,
+            lng,
+        );
+
+        if (distanceKm <= 0.5) score += 420;
+        else if (distanceKm <= 1) score += 330;
+        else if (distanceKm <= 3) score += 240;
+        else if (distanceKm <= 8) score += 150;
+        else if (distanceKm <= 20) score += 70;
+
+        score -= Math.min(distanceKm, 250) * 4;
+    }
+
+    score += Math.max(importance ?? 0, 0) * 25;
+
+    return score;
+};
+
+const getSearchCandidatePrimaryLabel = (label: string): string => {
+    const primaryPart = label.split(/[،,]/)[0] ?? label;
+    return normalizeSearchText(primaryPart);
+};
+
+const dedupeRankedCandidates = (candidates: RankedMapSearchCandidate[]): RankedMapSearchCandidate[] => {
+    const sorted = [...candidates].sort((first, second) => {
+        if (second.score !== first.score) {
+            return second.score - first.score;
+        }
+
+        return first.distanceKm - second.distanceKm;
+    });
+
+    const deduped: RankedMapSearchCandidate[] = [];
+
+    for (const candidate of sorted) {
+        const candidatePrimaryLabel = getSearchCandidatePrimaryLabel(candidate.label);
+
+        const alreadyExists = deduped.some((existing) => {
+            const existingPrimaryLabel = getSearchCandidatePrimaryLabel(existing.label);
+            const isCloseEnough =
+                getDistanceKm(existing.lat, existing.lng, candidate.lat, candidate.lng) <= 0.15;
+
+            if (!isCloseEnough) return false;
+
+            if (existingPrimaryLabel === candidatePrimaryLabel) {
+                return true;
+            }
+
+            return existingPrimaryLabel.includes(candidatePrimaryLabel)
+                || candidatePrimaryLabel.includes(existingPrimaryLabel);
+        });
+
+        if (!alreadyExists) {
+            deduped.push(candidate);
+        }
+    }
+
+    return deduped;
+};
+
+const toPlainSearchResults = (candidates: RankedMapSearchCandidate[]): MapSearchResult[] =>
+    candidates.map(({id, label, lat, lng}) => ({
+        id,
+        label,
+        lat,
+        lng,
+    }));
+
+const normalizeCountryCodes = (countryCodes?: string[]): string[] | undefined => {
+    const normalized = (countryCodes ?? [])
+        .map((countryCode) => countryCode.trim().toLowerCase())
+        .filter((countryCode) => countryCode.length === 2);
+
+    return normalized.length > 0 ? Array.from(new Set(normalized)) : undefined;
+};
+
+const getValidViewboxString = (viewport?: MapViewport): string | null => {
+    if (!viewport) return null;
+
+    if (
+        !isFiniteNumber(viewport.west)
+        || !isFiniteNumber(viewport.north)
+        || !isFiniteNumber(viewport.east)
+        || !isFiniteNumber(viewport.south)
+    ) {
+        return null;
+    }
+
+    if (viewport.east <= viewport.west || viewport.north <= viewport.south) {
+        return null;
+    }
+
+    return `${viewport.west},${viewport.north},${viewport.east},${viewport.south}`;
+};
+
+const clampLatitude = (value: number): number =>
+    Math.min(90, Math.max(-90, value));
+
+const clampLongitude = (value: number): number =>
+    Math.min(180, Math.max(-180, value));
+
+const expandViewport = (viewport: MapViewport, factor = 1.7): MapViewport => {
+    const center = viewport.center;
+    const halfLat = ((viewport.north - viewport.south) / 2) * factor;
+    const halfLng = ((viewport.east - viewport.west) / 2) * factor;
+
+    return {
+        center,
+        north: clampLatitude(center.lat + halfLat),
+        south: clampLatitude(center.lat - halfLat),
+        east: clampLongitude(center.lng + halfLng),
+        west: clampLongitude(center.lng - halfLng),
+    };
+};
+
+const appendUniqueQueryPart = (parts: string[], value?: string): void => {
+    const trimmed = value?.trim();
+
+    if (!trimmed) return;
+
+    const normalizedValue = normalizeSearchText(trimmed);
+
+    if (!normalizedValue) return;
+
+    const alreadyExists = parts.some((part) => {
+        const normalizedPart = normalizeSearchText(part);
+
+        return normalizedPart === normalizedValue
+            || normalizedPart.includes(normalizedValue)
+            || normalizedValue.includes(normalizedPart);
+    });
+
+    if (!alreadyExists) {
+        parts.push(trimmed);
+    }
+};
+
+const buildContextualQuery = (
+    query: string,
+    context?: ReverseGeocodeSearchContext | null,
+): string => {
+    const parts: string[] = [];
+
+    appendUniqueQueryPart(parts, query);
+    appendUniqueQueryPart(parts, context?.city ?? context?.district);
+    appendUniqueQueryPart(parts, context?.state);
+    appendUniqueQueryPart(parts, context?.country);
+
+    return parts.join(", ");
+};
+
+const buildSearchRequestQueries = (
+    query: string,
+    context?: ReverseGeocodeSearchContext | null,
+): string[] => {
+    const rawQuery = query.trim();
+
+    if (!rawQuery) return [];
+
+    const contextualQuery = buildContextualQuery(rawQuery, context);
+    const uniqueQueries = new Map<string, string>();
+
+    for (const candidateQuery of [contextualQuery, rawQuery]) {
+        const normalizedCandidate = normalizeSearchText(candidateQuery);
+
+        if (!normalizedCandidate) continue;
+
+        if (!uniqueQueries.has(normalizedCandidate)) {
+            uniqueQueries.set(normalizedCandidate, candidateQuery);
+        }
+    }
+
+    return Array.from(uniqueQueries.values());
+};
+
+const fetchWithTimeout = async (
+    input: RequestInfo | URL,
+    {
+        timeoutMs,
+        signal,
+        ...init
+    }: RequestInit & {
+        timeoutMs: number;
+    },
+): Promise<Response> => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+        controller.abort();
+    }, timeoutMs);
+
+    const handleAbort = (): void => {
+        controller.abort();
+    };
+
+    if (signal) {
+        if (signal.aborted) {
+            controller.abort();
+        } else {
+            signal.addEventListener("abort", handleAbort, {once: true});
+        }
+    }
+
+    try {
+        return await fetch(input, {
+            ...init,
+            signal: controller.signal,
+        });
+    } finally {
+        clearTimeout(timeoutId);
+        signal?.removeEventListener("abort", handleAbort);
+    }
+};
+
+const reverseGeocodeSearchContext = async (
+    {
+        location,
         config,
         signal,
     }: {
-        query: string;
+        location: MapLocationValue;
         config?: OpenStreetMapProviderConfig;
         signal?: AbortSignal;
     },
-): Promise<MapSearchResult[]> => {
+): Promise<ReverseGeocodeSearchContext | null> => {
     const searchParams = new URLSearchParams();
 
-    searchParams.set("q", query);
     searchParams.set("format", "jsonv2");
-    searchParams.set("limit", String(clampSearchResultLimit(config?.searchResultLimit)));
+    searchParams.set("lat", String(location.lat));
+    searchParams.set("lon", String(location.lng));
     searchParams.set("addressdetails", "1");
+    searchParams.set("zoom", "10");
+    searchParams.set("layer", "address");
     searchParams.set("accept-language", config?.searchLanguage ?? getPreferredSearchLanguage());
 
-    if (config?.searchCountryCodes && config.searchCountryCodes.length > 0) {
-        searchParams.set("countrycodes", config.searchCountryCodes.join(","));
+    const response = await fetchWithTimeout(
+        `${DEFAULT_OSM_REVERSE_URL}?${searchParams.toString()}`,
+        {
+            method: "GET",
+            signal,
+            timeoutMs: DEFAULT_REVERSE_TIMEOUT_MS,
+            headers: {
+                Accept: "application/json",
+            },
+        },
+    );
+
+    if (!response.ok) {
+        throw new Error(`Reverse geocoding failed with status ${response.status}`);
     }
 
-    const response = await fetch(
+    const payload = (await response.json()) as NominatimReverseResponse;
+    const address = payload.address ?? {};
+
+    const district = firstNonEmpty([
+        address.suburb,
+        address.neighbourhood,
+        address.quarter,
+        address.city_district,
+        address.state_district,
+    ]);
+
+    const city = firstNonEmpty([
+        address.city,
+        address.town,
+        address.village,
+        address.municipality,
+        address.county,
+    ]);
+
+    const state = firstNonEmpty([
+        address.state,
+        address.province,
+        address.region,
+        address.county,
+    ]);
+
+    const country = firstNonEmpty([address.country]);
+    const countryCode = address.country_code?.trim().toLowerCase();
+
+    if (!district && !city && !state && !country && !countryCode) {
+        return null;
+    }
+
+    return {
+        district,
+        city,
+        state,
+        country,
+        countryCode,
+    };
+};
+
+const buildRankedCandidate = (
+    {
+        id,
+        label,
+        matchText,
+        lat,
+        lng,
+        normalizedQuery,
+        searchCenter,
+        importance,
+        source,
+    }: {
+        id: string;
+        label: string;
+        matchText: string;
+        lat: number;
+        lng: number;
+        normalizedQuery: string;
+        searchCenter?: MapLocationValue;
+        importance?: number;
+        source: RankedMapSearchCandidate["source"];
+    },
+): RankedMapSearchCandidate => {
+    const baseScore = scoreSearchResult({
+        normalizedQuery,
+        matchText,
+        lat,
+        lng,
+        searchCenter,
+        importance,
+    });
+
+    const sourceBoost = source === "bounded" ? 240 : 0;
+    const distanceKm = searchCenter
+        ? getDistanceKm(searchCenter.lat, searchCenter.lng, lat, lng)
+        : Number.POSITIVE_INFINITY;
+
+    return {
+        id,
+        label,
+        lat,
+        lng,
+        score: baseScore + sourceBoost,
+        distanceKm,
+        source,
+    };
+};
+
+const searchNominatimLocations = async (
+    {
+        requestQuery,
+        scoreQuery,
+        config,
+        signal,
+        viewport,
+        fallbackLocation,
+        bounded,
+        countryCodes,
+    }: {
+        requestQuery: string;
+        scoreQuery: string;
+        config?: OpenStreetMapProviderConfig;
+        signal?: AbortSignal;
+        viewport?: MapViewport;
+        fallbackLocation?: MapLocationValue;
+        bounded: boolean;
+        countryCodes?: string[];
+    },
+): Promise<RankedMapSearchCandidate[]> => {
+    const searchCenter = viewport?.center ?? fallbackLocation;
+    const viewbox = getValidViewboxString(viewport);
+    const normalizedQuery = normalizeSearchText(scoreQuery);
+    const acceptLanguage = getEffectiveSearchLanguage(scoreQuery, config?.searchLanguage);
+
+    if (!normalizedQuery) {
+        return [];
+    }
+
+    if (bounded && !viewbox) {
+        return [];
+    }
+
+    const searchParams = new URLSearchParams();
+
+    searchParams.set("q", requestQuery);
+    searchParams.set("format", "jsonv2");
+    searchParams.set("limit", String(getSearchFetchLimit(config?.searchResultLimit)));
+    searchParams.set("addressdetails", "1");
+    searchParams.set("namedetails", "1");
+    searchParams.set("dedupe", "1");
+    searchParams.set("accept-language", acceptLanguage);
+
+    const normalizedCountryCodes = normalizeCountryCodes(countryCodes);
+
+    if (normalizedCountryCodes && normalizedCountryCodes.length > 0) {
+        searchParams.set("countrycodes", normalizedCountryCodes.join(","));
+    }
+
+    if (viewbox) {
+        searchParams.set("viewbox", viewbox);
+
+        if (bounded) {
+            searchParams.set("bounded", "1");
+        }
+    }
+
+    const response = await fetchWithTimeout(
         `${config?.searchUrl ?? DEFAULT_OSM_SEARCH_URL}?${searchParams.toString()}`,
         {
             method: "GET",
             signal,
+            timeoutMs: bounded ? DEFAULT_SEARCH_TIMEOUT_MS : DEFAULT_SEARCH_TIMEOUT_MS + 700,
             headers: {
                 Accept: "application/json",
             },
@@ -302,23 +1013,163 @@ const searchOpenStreetMapLocations = async (
 
     const payload = (await response.json()) as NominatimSearchResponseItem[];
 
-    return payload
-        .map((item) => {
-            const lat = Number(item.lat);
-            const lng = Number(item.lon);
+    return dedupeRankedCandidates(
+        payload
+            .map((item) => {
+                const lat = Number(item.lat);
+                const lng = Number(item.lon);
 
-            if (!isFiniteNumber(lat) || !isFiniteNumber(lng)) {
-                return null;
-            }
+                if (!isFiniteNumber(lat) || !isFiniteNumber(lng)) {
+                    return null;
+                }
 
-            return {
-                id: String(item.place_id ?? `${item.display_name ?? "result"}-${lat}-${lng}`),
-                label: item.display_name?.trim() || `${lat}, ${lng}`,
-                lat,
-                lng,
-            } satisfies MapSearchResult;
-        })
-        .filter((item): item is MapSearchResult => item !== null);
+                const label = buildLocalizedResultLabel(item, {
+                    acceptLanguage,
+                    lat,
+                    lng,
+                });
+
+                const localizedPrimaryName = getLocalizedNameFromNamedetails(
+                    item.namedetails,
+                    acceptLanguage,
+                );
+
+                const matchText = [
+                    localizedPrimaryName,
+                    item.name?.trim(),
+                    item.display_name?.trim(),
+                    label,
+                ]
+                    .filter(Boolean)
+                    .join(" ");
+                const importance = Number(item.importance);
+
+                return buildRankedCandidate({
+                    id: String(item.place_id ?? `${label}-${lat}-${lng}`),
+                    label,
+                    matchText,
+                    lat,
+                    lng,
+                    normalizedQuery,
+                    searchCenter,
+                    importance: Number.isFinite(importance) ? importance : 0,
+                    source: bounded ? "bounded" : "global",
+                });
+            })
+            .filter((item): item is RankedMapSearchCandidate => item !== null),
+    );
+};
+
+const safeSearch = async <T,>(factory: () => Promise<T>, fallback: T): Promise<T> => {
+    try {
+        return await factory();
+    } catch (error: unknown) {
+        if (isAbortError(error)) {
+            throw error;
+        }
+
+        debugMap("safeSearch:error", {error});
+        return fallback;
+    }
+};
+
+const searchOpenStreetMapLocations = async (
+    {
+        query,
+        config,
+        signal,
+        viewport,
+        fallbackLocation,
+        cachedSearchContext,
+        resolveSearchContext,
+    }: {
+        query: string;
+        config?: OpenStreetMapProviderConfig;
+        signal?: AbortSignal;
+        viewport?: MapViewport;
+        fallbackLocation?: MapLocationValue;
+        cachedSearchContext?: ReverseGeocodeSearchContext | null;
+        resolveSearchContext?: (signal?: AbortSignal) => Promise<ReverseGeocodeSearchContext | null>;
+    },
+): Promise<MapSearchResult[]> => {
+    const displayLimit = getSearchDisplayLimit(config?.searchResultLimit);
+    const rawQuery = query.trim();
+
+    if (!rawQuery) {
+        return [];
+    }
+
+    const searchViewport = viewport
+        ? expandViewport(viewport, 1.8)
+        : undefined;
+
+    const strictQueries = buildSearchRequestQueries(rawQuery, cachedSearchContext);
+
+    if ((config?.boundedSearchEnabled ?? true) && searchViewport) {
+        const boundedResponses = await Promise.all(
+            strictQueries.map((requestQuery) =>
+                safeSearch(
+                    () => searchNominatimLocations({
+                        requestQuery,
+                        scoreQuery: rawQuery,
+                        config,
+                        signal,
+                        viewport: searchViewport,
+                        fallbackLocation,
+                        bounded: true,
+                    }),
+                    [] as RankedMapSearchCandidate[],
+                ),
+            ),
+        );
+
+        const boundedCandidates = dedupeRankedCandidates(boundedResponses.flat());
+
+        if (boundedCandidates.length > 0) {
+            return toPlainSearchResults(boundedCandidates.slice(0, displayLimit));
+        }
+    }
+
+    if (!shouldUseGlobalSearchFallback(rawQuery)) {
+        return [];
+    }
+
+    const resolvedSearchContext = cachedSearchContext ?? await safeSearch(
+        () => resolveSearchContext?.(signal) ?? Promise.resolve(null),
+        null,
+    );
+
+    const countryCodes = normalizeCountryCodes(
+        config?.searchCountryCodes && config.searchCountryCodes.length > 0
+            ? config.searchCountryCodes
+            : resolvedSearchContext?.countryCode
+                ? [resolvedSearchContext.countryCode]
+                : undefined,
+    );
+
+    const fallbackQueries = buildSearchRequestQueries(rawQuery, resolvedSearchContext);
+
+    const globalResponses = await Promise.all(
+        fallbackQueries.map((requestQuery) =>
+            safeSearch(
+                () => searchNominatimLocations({
+                    requestQuery,
+                    scoreQuery: rawQuery,
+                    config,
+                    signal,
+                    viewport: searchViewport,
+                    fallbackLocation,
+                    bounded: false,
+                    countryCodes,
+                }),
+                [] as RankedMapSearchCandidate[],
+            ),
+        ),
+    );
+
+    const globalCandidates = dedupeRankedCandidates(globalResponses.flat());
+
+    return toPlainSearchResults(globalCandidates.slice(0, displayLimit));
 };
 
 const resetLeafletContainer = (container: HTMLDivElement): void => {
@@ -446,8 +1297,8 @@ const createOpenStreetMapAdapter = async (
         onLocationChange: (location: MapLocationValue) => void;
         canInitialize?: () => boolean;
     }): Promise<MapAdapter> => {
-
     const L = await loadLeaflet();
+
     if (canInitialize && !canInitialize()) {
         throw new Error("OpenStreetMap initialization canceled");
     }
@@ -546,20 +1397,6 @@ const createOpenStreetMapAdapter = async (
         }
     };
 
-    /* ------------------------------------------------------------------
-       CLICK vs DRAG DETECTION
-       ------------------------------------------------------------------
-
-       The bug occurred because Leaflet fires a "click" event after
-       a drag operation finishes.
-
-       We detect whether the pointer moved more than a few pixels.
-       If movement occurred we treat the action as a drag and ignore
-       the click event.
-
-       This allows smooth panning while preventing marker placement.
-    ------------------------------------------------------------------ */
-
     let pointerDownPosition: {x: number; y: number} | null = null;
     let didMove = false;
     const MOVE_THRESHOLD = 5;
@@ -622,6 +1459,7 @@ const createOpenStreetMapAdapter = async (
             y: event.clientY,
             target: getElementSummary(event.target),
         });
+
         pointerDownPosition = null;
     };
 
@@ -631,7 +1469,6 @@ const createOpenStreetMapAdapter = async (
         const referenceSizePx = Math.max(container.clientWidth, container.clientHeight, 1);
         const {x: deltaX, y: deltaY} = normalizeWheelDeltas(event, referenceSizePx);
 
-        // Support horizontal wheel / tilt wheel and Shift + wheel fallback.
         const shouldPanHorizontally =
             (Math.abs(deltaX) > 0.5 && Math.abs(deltaX) >= Math.abs(deltaY))
             || (event.shiftKey && Math.abs(deltaY) > 0.5 && Math.abs(deltaX) < 0.5);
@@ -659,46 +1496,11 @@ const createOpenStreetMapAdapter = async (
         debugMap("leaflet:dragstart");
     });
 
-    map.on("drag", () => {
-        if (MAP_DEBUG) debugMap("leaflet:drag");
-    });
-
     map.on("dragend", () => {
         isDraggingMap = false;
         lastDragEndedAtMs = Date.now();
         debugMap("leaflet:dragend");
     });
-
-    if (MAP_DEBUG) {
-        map.on("mousedown", (event: any) => {
-            debugMap("leaflet:mousedown", {
-                latlng: event?.latlng,
-                originalTarget: getElementSummary(event?.originalEvent?.target ?? null),
-            });
-        });
-
-        map.on("movestart", () => {
-            debugMap("leaflet:movestart");
-        });
-
-        map.on("move", () => {
-            const center = map.getCenter();
-            debugMap("leaflet:move", {
-                lat: center.lat,
-                lng: center.lng,
-                zoom: map.getZoom(),
-            });
-        });
-
-        map.on("moveend", () => {
-            const center = map.getCenter();
-            debugMap("leaflet:moveend", {
-                lat: center.lat,
-                lng: center.lng,
-                zoom: map.getZoom(),
-            });
-        });
-    }
 
     map.on("click", (event: any) => {
         if (isDisabled) return;
@@ -714,7 +1516,6 @@ const createOpenStreetMapAdapter = async (
             originalTarget: getElementSummary(event?.originalEvent?.target ?? null),
         });
 
-        // Reset movement flag for the next pointer cycle.
         didMove = false;
 
         if (shouldIgnoreAsDrag) return;
@@ -729,19 +1530,6 @@ const createOpenStreetMapAdapter = async (
     });
 
     if (markerDraggable) {
-        if (MAP_DEBUG) {
-            marker.on("mousedown", (event: any) => {
-                debugMap("marker:mousedown", {
-                    latlng: event?.latlng,
-                    originalTarget: getElementSummary(event?.originalEvent?.target ?? null),
-                });
-            });
-
-            marker.on("dragstart", () => {
-                debugMap("marker:dragstart");
-            });
-        }
-
         marker.on("dragend", () => {
             if (isDisabled) return;
 
@@ -776,6 +1564,23 @@ const createOpenStreetMapAdapter = async (
             });
         },
 
+        getViewport: () => {
+            const bounds = map.getBounds();
+            const center = map.getCenter();
+
+            return {
+                center: {
+                    lat: center.lat,
+                    lng: center.lng,
+                    zoom: map.getZoom(),
+                },
+                north: bounds.getNorth(),
+                south: bounds.getSouth(),
+                east: bounds.getEast(),
+                west: bounds.getWest(),
+            };
+        },
+
         setDisabled: (nextDisabled: boolean) => {
             isDisabled = nextDisabled;
             syncInteractionState();
@@ -791,13 +1596,6 @@ const createOpenStreetMapAdapter = async (
         },
 
         destroy: () => {
-            debugMap("createOpenStreetMapAdapter:destroy:before", {
-                leafletPanes: container.querySelectorAll(".leaflet-map-pane").length,
-                controlContainers: container.querySelectorAll(".leaflet-control-container").length,
-                markerPanes: container.querySelectorAll(".leaflet-marker-pane").length,
-                childCount: container.childElementCount,
-            });
-
             container.removeEventListener("pointerdown", onPointerDown, true);
             container.removeEventListener("wheel", onWheel, true);
             window.removeEventListener("pointermove", onPointerMove, true);
@@ -809,13 +1607,6 @@ const createOpenStreetMapAdapter = async (
             map.remove();
 
             resetLeafletContainer(container);
-
-            debugMap("createOpenStreetMapAdapter:destroy:after", {
-                leafletPanes: container.querySelectorAll(".leaflet-map-pane").length,
-                controlContainers: container.querySelectorAll(".leaflet-control-container").length,
-                markerPanes: container.querySelectorAll(".leaflet-marker-pane").length,
-                childCount: container.childElementCount,
-            });
         },
     };
 };
@@ -846,8 +1637,8 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
         error,
         showCoordinates = true,
         showSearchInput = true,
-        searchPlaceholder = "Search for a city, district, or address",
-        searchButtonText = "Search",
+        searchPlaceholder,
+        searchButtonText,
         searchMinLength = 2,
         searchZoom = 15,
         searchLocations,
@@ -859,6 +1650,10 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
     const searchInputRef = useRef<HTMLInputElement | null>(null);
     const adapterRef = useRef<MapAdapter | null>(null);
     const searchAbortRef = useRef<AbortController | null>(null);
+    const searchContextCacheRef = useRef<{
+        key: string;
+        value: ReverseGeocodeSearchContext | null;
+    } | null>(null);
     const initRunRef = useRef<number>(0);
     const autoLocateRequestedRef = useRef<boolean>(false);
     const currentLocationRef = useRef<MapLocationValue>(normalizeLocation(defaultValue, defaultZoom));
@@ -890,6 +1685,7 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
 
     const effectiveSearchMinLength = Math.max(1, Math.round(searchMinLength));
     const effectiveSearchZoom = isFiniteNumber(searchZoom) ? searchZoom : 15;
+    const effectiveSearchDisplayLimit = getSearchDisplayLimit(providerConfig?.openstreetmap?.searchResultLimit);
     const canShowSearchInput = provider === "openstreetmap" && showSearchInput;
     const myLocationButtonLabel = isLocating
         ? `${myLocationButtonText}...`
@@ -905,7 +1701,6 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
 
         if (!onChange) return;
 
-        // Form mode: when `name` is provided, emit a synthetic input change event.
         if (name && name.trim().length > 0) {
             const syntheticEvent = {
                 target: {
@@ -920,9 +1715,8 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
             return;
         }
 
-        // Backward-compatible mode: no `name` => emit raw location value.
         (onChange as (location: MapLocationValue) => void)(next);
-    }, [onLocationChange, onChange, name]);
+    }, [name, onChange, onLocationChange]);
 
     useEffect(() => {
         emitLocationRef.current = emitLocation;
@@ -955,7 +1749,9 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
     }, []);
 
     const cancelMapInteraction = useCallback((): void => {
-        // Keep Escape behavior local to the map before modal-level dismissal.
+        searchAbortRef.current?.abort();
+        searchAbortRef.current = null;
+        setIsSearching(false);
         setSearchResults([]);
         setIsSearchInputFocused(false);
         deactivateMapInteraction();
@@ -1028,6 +1824,39 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
         }
     }, [defaultZoom, disabled, geolocationOptions, moveMapToLocation, myLocationZoom]);
 
+    const getCachedSearchContext = useCallback((): ReverseGeocodeSearchContext | null => {
+        const current = currentLocationRef.current;
+        const key = `${current.lat.toFixed(2)}:${current.lng.toFixed(2)}`;
+
+        if (searchContextCacheRef.current?.key === key) {
+            return searchContextCacheRef.current.value;
+        }
+
+        return null;
+    }, []);
+
+    const getSearchContext = useCallback(async (signal?: AbortSignal): Promise<ReverseGeocodeSearchContext | null> => {
+        const current = currentLocationRef.current;
+        const key = `${current.lat.toFixed(2)}:${current.lng.toFixed(2)}`;
+
+        if (searchContextCacheRef.current?.key === key) {
+            return searchContextCacheRef.current.value;
+        }
+
+        const context = await reverseGeocodeSearchContext({
+            location: current,
+            config: providerConfig?.openstreetmap,
+            signal,
+        });
+
+        searchContextCacheRef.current = {
+            key,
+            value: context,
+        };
+
+        return context;
+    }, [providerConfig?.openstreetmap]);
+
     const moveToSearchResult = useCallback((result: MapSearchResult): void => {
         const next: MapLocationValue = {
             lat: result.lat,
@@ -1063,22 +1892,30 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
         setSearchError(null);
 
         try {
-            const results = searchLocations
+            const rawResults = searchLocations
                 ? await searchLocations({
                     query,
                     signal: abortController.signal,
+                    viewport: adapterRef.current?.getViewport?.(),
+                    currentLocation: currentLocationRef.current,
                 })
                 : await searchOpenStreetMapLocations({
                     query,
                     config: providerConfig?.openstreetmap,
                     signal: abortController.signal,
+                    viewport: adapterRef.current?.getViewport?.(),
+                    fallbackLocation: currentLocationRef.current,
+                    cachedSearchContext: getCachedSearchContext(),
+                    resolveSearchContext: getSearchContext,
                 });
 
             if (abortController.signal.aborted) return;
 
+            const results = rawResults.slice(0, effectiveSearchDisplayLimit);
+
             if (results.length === 0) {
                 setSearchResults([]);
-                setSearchError("No matching locations were found.");
+                setSearchError("No nearby matching locations were found.");
                 return;
             }
 
@@ -1089,7 +1926,7 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
 
             setSearchResults(results);
         } catch (error: unknown) {
-            if ((error as {name?: string})?.name === "AbortError") {
+            if (isAbortError(error)) {
                 return;
             }
 
@@ -1104,7 +1941,10 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
         }
     }, [
         disabled,
+        effectiveSearchDisplayLimit,
         effectiveSearchMinLength,
+        getCachedSearchContext,
+        getSearchContext,
         moveToSearchResult,
         provider,
         providerConfig?.openstreetmap,
@@ -1131,28 +1971,7 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
         return () => {
             document.removeEventListener("pointerdown", handlePointerDown, true);
         };
-    }, [isMapInteractionActive, cancelMapInteraction]);
-
-    useEffect(() => {
-        if (searchResults.length === 0) return;
-
-        const handlePointerDown = (event: PointerEvent): void => {
-            const target = event.target;
-            const root = pickerRootRef.current;
-
-            if (!(target instanceof Node) || !root) return;
-
-            if (!root.contains(target)) {
-                setSearchResults([]);
-            }
-        };
-
-        document.addEventListener("pointerdown", handlePointerDown, true);
-
-        return () => {
-            document.removeEventListener("pointerdown", handlePointerDown, true);
-        };
-    }, [searchResults.length]);
+    }, [cancelMapInteraction, isMapInteractionActive]);
 
     useEffect(() => {
         const root = pickerRootRef.current;
@@ -1186,7 +2005,7 @@ export default function MapLocationPicker<TFormValues extends FieldValues = Fiel
     useEffect(() => {
         if (!disabled) return;
         cancelMapInteraction();
-    }, [disabled, cancelMapInteraction]);
+    }, [cancelMapInteraction, disabled]);
 
     useEffect(() => {
         if (provider !== "openstreetmap") return;
