@@ -212,6 +212,8 @@ export function useComboCore(
         isOpen,
         dropdownStrategy,
         anchorRef,
+        inputRef,
+        listboxId,
     );
 
     useEffect(() => {

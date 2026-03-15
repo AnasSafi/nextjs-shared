@@ -165,52 +165,117 @@ export function useFixedDropdownPosition(
     isOpen: boolean,
     strategy: DropdownStrategy,
     anchorRef: RefObject<HTMLDivElement | null>,
+    triggerRef?: RefObject<HTMLElement | null>,
+    listboxId?: string,
     maxHeightPx: number = 224,
     zIndex: number = 1200
 ): CSSProperties | undefined {
     const [style, setStyle] = useState<CSSProperties | undefined>(undefined);
 
     useLayoutEffect(() => {
-        if (!isOpen || strategy !== "fixed") return;
-        const el = anchorRef.current;
-        if (!el) return;
+        if (!isOpen || strategy !== "fixed") {
+            setStyle(undefined);
+            return;
+        }
+
+        const target = resolveTriggerElement(triggerRef, anchorRef, listboxId);
+        if (!target) return;
 
         const update = (): void => {
-            const r = el.getBoundingClientRect();
+            const r = target.getBoundingClientRect();
             const gap = 4;
+            const viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
             const spaceBelow = window.innerHeight - (r.bottom + gap);
-            const spaceAbove = r.top - gap;
-
-            const openUp = spaceBelow < 160 && spaceAbove > spaceBelow;
-            const maxH = openUp
-                ? Math.min(maxHeightPx, spaceAbove)
-                : Math.min(maxHeightPx, spaceBelow);
+            const maxH = Math.max(0, Math.min(maxHeightPx, spaceBelow));
+            const width = Math.round(r.width);
+            const maxLeft = Math.max(0, viewportWidth - width);
+            const left = Math.round(Math.min(Math.max(0, r.left), maxLeft));
+            const top = Math.round(r.bottom + gap);
 
             setStyle({
                 position: "fixed",
-                left: Math.round(r.left),
-                top: openUp
-                    ? Math.round(r.top - maxH - gap)
-                    : Math.round(r.bottom + gap),
-                width: Math.round(r.width),
+                top,
+                left,
+                width,
                 maxHeight: maxH,
                 zIndex,
-                visibility: "visible",
+                visibility: maxH > 0 ? "visible" : "hidden",
             });
         };
 
         update();
+        requestAnimationFrame(update);
+
         const resizeOpts: AddEventListenerOptions = {passive: true};
         const scrollOpts: AddEventListenerOptions = {passive: true, capture: true};
+
+        const scrollableAncestors = getScrollableAncestors(target);
+
         window.addEventListener("resize", update, resizeOpts);
         window.addEventListener("scroll", update, scrollOpts);
+        for (const node of scrollableAncestors) {
+            node.addEventListener("scroll", update, {passive: true});
+        }
+
+        let resizeObserver: ResizeObserver | null = null;
+        if (typeof ResizeObserver !== "undefined") {
+            resizeObserver = new ResizeObserver(update);
+            resizeObserver.observe(target);
+            if (anchorRef.current && anchorRef.current !== target) {
+                resizeObserver.observe(anchorRef.current);
+            }
+        }
+
         return () => {
             window.removeEventListener("resize", update);
             window.removeEventListener("scroll", update, true);
+            for (const node of scrollableAncestors) {
+                node.removeEventListener("scroll", update);
+            }
+            resizeObserver?.disconnect();
         };
-    }, [isOpen, strategy, anchorRef, maxHeightPx, zIndex]);
+    }, [isOpen, strategy, anchorRef, triggerRef, listboxId, maxHeightPx, zIndex]);
 
     return style;
+}
+
+function resolveTriggerElement(
+    triggerRef: RefObject<HTMLElement | null> | undefined,
+    anchorRef: RefObject<HTMLDivElement | null>,
+    listboxId?: string,
+): HTMLElement | null {
+    const byRef = triggerRef?.current;
+    if (byRef) return byRef;
+
+    if (listboxId) {
+        const selector = `[role="combobox"][aria-controls="${listboxId}"]`;
+        const byAria = document.querySelector<HTMLElement>(selector);
+        if (byAria) return byAria;
+    }
+
+    return anchorRef.current;
+}
+
+function getScrollableAncestors(el: HTMLElement): HTMLElement[] {
+    const nodes: HTMLElement[] = [];
+    let node: HTMLElement | null = el.parentElement;
+
+    while (node && node !== document.body && node !== document.documentElement) {
+        const style = window.getComputedStyle(node);
+        const overflowY = style.overflowY;
+        const overflowX = style.overflowX;
+        const canScrollY =
+            (overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay") &&
+            node.scrollHeight > node.clientHeight;
+        const canScrollX =
+            (overflowX === "auto" || overflowX === "scroll" || overflowX === "overlay") &&
+            node.scrollWidth > node.clientWidth;
+
+        if (canScrollY || canScrollX) nodes.push(node);
+        node = node.parentElement;
+    }
+
+    return nodes;
 }
 
 /* Click outside */
