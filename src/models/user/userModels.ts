@@ -13,6 +13,7 @@ export interface UserStateModel {
 
 export interface UserSettingModel {
     incompleteProfile?: boolean;
+    timezone?: string;
 }
 
 export interface CompleteProfile {
