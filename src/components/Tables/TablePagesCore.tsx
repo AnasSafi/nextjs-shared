@@ -81,6 +81,8 @@ function TablePagesCoreInnerRef<R extends RowMeta<string | number, R>>(
         openFilterModal,
         generalSearchEnabled,
         scrollWithWindow,
+        autoScrollToTableOnPageChange = true,
+        autoScrollToTableOnFirstMount = false,
 
         t,
         currentLng,
@@ -113,6 +115,8 @@ function TablePagesCoreInnerRef<R extends RowMeta<string | number, R>>(
 
     const tableRef: React.RefObject<HTMLDivElement | null> =
         useRef<HTMLDivElement>(null);
+    const hasHandledInitialScrollRef = useRef<boolean>(false);
+    const previousPageRef = useRef<number>(1);
     const tableViewRef: React.RefObject<TableViewHandle | null> =
         useRef<TableViewHandle>(null);
     const cardViewRef: React.RefObject<CardViewHandle | null> =
@@ -371,10 +375,29 @@ function TablePagesCoreInnerRef<R extends RowMeta<string | number, R>>(
         refreshKey,
     ]);
 
-    /* scroll to top on page change */
+    /* scroll to table on initial mount/page change (configurable) */
     useEffect((): void => {
-        tableRef.current?.scrollIntoView({behavior: "smooth"});
-    }, [pagination.page]);
+        const isFirstMount: boolean = !hasHandledInitialScrollRef.current;
+        const hasPageChanged: boolean = previousPageRef.current !== currentPage;
+
+        hasHandledInitialScrollRef.current = true;
+        previousPageRef.current = currentPage;
+
+        if (isFirstMount) {
+            if (autoScrollToTableOnFirstMount) {
+                tableRef.current?.scrollIntoView({behavior: "smooth"});
+            }
+            return;
+        }
+
+        if (hasPageChanged && autoScrollToTableOnPageChange) {
+            tableRef.current?.scrollIntoView({behavior: "smooth"});
+        }
+    }, [
+        currentPage,
+        autoScrollToTableOnFirstMount,
+        autoScrollToTableOnPageChange,
+    ]);
 
     /* detect if rows have action column */
     useEffect((): void => {

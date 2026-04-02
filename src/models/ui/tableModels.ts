@@ -134,6 +134,8 @@ export interface TableProps<R extends RowMeta<string | number, R>> {
     openFilterModal?: OpenFilterModalFn;
     generalSearchEnabled?: boolean;
     scrollWithWindow?: boolean;
+    autoScrollToTableOnPageChange?: boolean;
+    autoScrollToTableOnFirstMount?: boolean;
     quickFilters?: (args: TableQuickFilterArgs) => JSX.Element;
     onMetaChange?: (meta: ListMeta) => void;
 }
@@ -168,6 +170,8 @@ export interface ListPageProps<R> {
     requiredPerms?: string[];
     generalSearchEnabled?: boolean;
     scrollWithWindow?: boolean;
+    autoScrollToTableOnPageChange?: boolean;
+    autoScrollToTableOnFirstMount?: boolean;
     requestBodyData?: Record<string, unknown>;
     toDoInTable?: "refresh" | null;
     nameOfSumKey?: string;
