@@ -3,8 +3,13 @@
 import React, {forwardRef, InputHTMLAttributes, JSX} from "react";
 import type {FieldError, DeepMap} from "react-hook-form";
 import {FormError} from "./Helpers/FormError";
-import {FieldHeader, baseInputClasses, coerceToDateTimeLocalString} from "./Helpers/fieldShared";
+import {FieldHeader, baseInputClasses, patchInputChangeEventValue} from "./Helpers/fieldShared";
 import {TranslateFn} from "../../models/core/localeModels";
+import {
+    convertDateTimeLocalInZoneToUtc,
+    convertUtcToDateTimeLocalInZone,
+    resolvePreferredTimeZone,
+} from "../../utils/dateUtils";
 
 export interface DateTimeInputProps extends InputHTMLAttributes<HTMLInputElement> {
     isRequired?: boolean;
@@ -18,6 +23,8 @@ export interface DateTimeInputProps extends InputHTMLAttributes<HTMLInputElement
     error?: FieldError | DeepMap<Record<string, unknown>, FieldError> | undefined;
     label?: string;
     tipText?: string;
+    timeZone?: string;
+    emitUTCOnChange?: boolean;
 
     // translation injection (for required tooltip only)
     t?: TranslateFn;
@@ -37,16 +44,34 @@ export const CDateTimeInput = forwardRef<HTMLInputElement, DateTimeInputProps>(
             error,
             label,
             tipText,
+            timeZone,
+            emitUTCOnChange = true,
+            onChange,
             t,
             ...props
         }: DateTimeInputProps,
         ref: React.ForwardedRef<HTMLInputElement>
     ): JSX.Element => {
         const inputClassName: string = baseInputClasses(className);
-        const formattedInitValue: string =
-            typeof initValue === "string"
-                ? coerceToDateTimeLocalString(initValue)
-                : coerceToDateTimeLocalString(initValue ?? null);
+        const resolvedTimeZone = resolvePreferredTimeZone(timeZone);
+        const formattedInitValue: string = convertUtcToDateTimeLocalInZone(
+            initValue ?? null,
+            resolvedTimeZone,
+        );
+
+        const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+            if (!onChange) return;
+            if (!emitUTCOnChange) {
+                onChange(e);
+                return;
+            }
+
+            const utcValue = convertDateTimeLocalInZoneToUtc(
+                e.target.value,
+                resolvedTimeZone,
+            );
+            onChange(patchInputChangeEventValue(e, utcValue));
+        };
 
         return (
             <div>
@@ -71,6 +96,7 @@ export const CDateTimeInput = forwardRef<HTMLInputElement, DateTimeInputProps>(
                         disabled={disabled}
                         defaultValue={formattedInitValue}
                         {...props}
+                        onChange={handleChange}
                     />
                 </div>
 

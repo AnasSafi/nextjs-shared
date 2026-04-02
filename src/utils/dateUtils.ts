@@ -1,4 +1,4 @@
-import { convertToTwoCharLocale } from "../index";
+import {convertToTwoCharLocale} from "../i18n/localeMaps";
 
 export type FmtOpts = {
     locale?: string;      // e.g. "ar", "en-US"
@@ -173,4 +173,222 @@ export function sameUpToMinute(a: Date, b: Date): boolean {
         a.getUTCHours() === b.getUTCHours() &&
         a.getUTCMinutes() === b.getUTCMinutes()
     );
+}
+
+type DateTimeLocalParts = {
+    year: number;
+    month: number;
+    day: number;
+    hour: number;
+    minute: number;
+    second: number;
+    millisecond: number;
+};
+
+function pad2(value: number): string {
+    return String(value).padStart(2, "0");
+}
+
+function isValidTimeZone(zone?: string): zone is string {
+    if (!zone) return false;
+    try {
+        new Intl.DateTimeFormat("en-US", {timeZone: zone}).format(new Date());
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function getBrowserTimeZone(): string | undefined {
+    try {
+        return Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch {
+        return undefined;
+    }
+}
+
+function parseDateTimeLocalValue(value: string): DateTimeLocalParts | null {
+    const m = value.trim().match(
+        /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/,
+    );
+    if (!m) return null;
+
+    const year = Number(m[1]);
+    const month = Number(m[2]);
+    const day = Number(m[3]);
+    const hour = Number(m[4]);
+    const minute = Number(m[5]);
+    const second = m[6] ? Number(m[6]) : 0;
+    const millisecond = m[7] ? Number(m[7].padEnd(3, "0")) : 0;
+
+    const test = new Date(Date.UTC(year, month - 1, day, hour, minute, second, millisecond));
+    if (
+        Number.isNaN(test.getTime()) ||
+        test.getUTCFullYear() !== year ||
+        test.getUTCMonth() !== month - 1 ||
+        test.getUTCDate() !== day ||
+        test.getUTCHours() !== hour ||
+        test.getUTCMinutes() !== minute ||
+        test.getUTCSeconds() !== second
+    ) {
+        return null;
+    }
+
+    return {year, month, day, hour, minute, second, millisecond};
+}
+
+function getDatePartsInZone(date: Date, timeZone: string): DateTimeLocalParts {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+        hourCycle: "h23",
+        calendar: "gregory",
+        numberingSystem: "latn",
+    }).formatToParts(date);
+
+    const get = (type: Intl.DateTimeFormatPartTypes): number =>
+        Number(parts.find((p) => p.type === type)?.value ?? "0");
+
+    return {
+        year: get("year"),
+        month: get("month"),
+        day: get("day"),
+        hour: get("hour"),
+        minute: get("minute"),
+        second: get("second"),
+        millisecond: 0,
+    };
+}
+
+function getTimeZoneOffsetMs(date: Date, timeZone: string): number {
+    const zoned = getDatePartsInZone(date, timeZone);
+    const asUtcMs = Date.UTC(
+        zoned.year,
+        zoned.month - 1,
+        zoned.day,
+        zoned.hour,
+        zoned.minute,
+        zoned.second,
+        zoned.millisecond,
+    );
+    return asUtcMs - date.getTime();
+}
+
+function samePartsAtInstant(
+    instantMs: number,
+    target: DateTimeLocalParts,
+    timeZone: string,
+): boolean {
+    const zoned = getDatePartsInZone(new Date(instantMs), timeZone);
+    return (
+        zoned.year === target.year &&
+        zoned.month === target.month &&
+        zoned.day === target.day &&
+        zoned.hour === target.hour &&
+        zoned.minute === target.minute &&
+        zoned.second === target.second
+    );
+}
+
+function findMatchingInstantNearGuess(
+    guessMs: number,
+    target: DateTimeLocalParts,
+    timeZone: string,
+): number | null {
+    const maxMinutes = 180;
+
+    for (let deltaMinutes = 0; deltaMinutes <= maxMinutes; deltaMinutes += 1) {
+        const offsets = deltaMinutes === 0 ? [0] : [-deltaMinutes, deltaMinutes];
+        for (const offset of offsets) {
+            const candidateMs = guessMs + offset * 60_000;
+            if (samePartsAtInstant(candidateMs, target, timeZone)) {
+                return candidateMs;
+            }
+        }
+    }
+
+    return null;
+}
+
+function formatDateTimeLocalFromParts(parts: DateTimeLocalParts): string {
+    return `${parts.year}-${pad2(parts.month)}-${pad2(parts.day)}T${pad2(parts.hour)}:${pad2(parts.minute)}`;
+}
+
+/**
+ * Returns a safe preferred time zone.
+ * Fallback order: provided IANA zone -> browser zone -> UTC.
+ */
+export function resolvePreferredTimeZone(timeZone?: string): string {
+    if (isValidTimeZone(timeZone)) return timeZone;
+
+    const browserZone = getBrowserTimeZone();
+    if (isValidTimeZone(browserZone)) return browserZone;
+
+    return "UTC";
+}
+
+/**
+ * Converts UTC/parseable datetime value to a datetime-local string in the requested time zone.
+ */
+export function convertUtcToDateTimeLocalInZone(
+    value: Date | string | null | undefined,
+    timeZone?: string,
+): string {
+    if (!value) return "";
+    const dateObj = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(dateObj.getTime())) return "";
+
+    const resolvedZone = resolvePreferredTimeZone(timeZone);
+    const parts = getDatePartsInZone(dateObj, resolvedZone);
+    return formatDateTimeLocalFromParts(parts);
+}
+
+/**
+ * Converts a datetime-local value interpreted in the given time zone to a UTC ISO string.
+ */
+export function convertDateTimeLocalInZoneToUtc(
+    value: string | Date | null | undefined,
+    timeZone?: string,
+): string {
+    if (!value) return "";
+
+    if (value instanceof Date) {
+        return Number.isNaN(value.getTime()) ? "" : value.toISOString();
+    }
+
+    const localParts = parseDateTimeLocalValue(value);
+    if (!localParts) {
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime()) ? "" : parsed.toISOString();
+    }
+
+    const resolvedZone = resolvePreferredTimeZone(timeZone);
+    const targetAsUtcMs = Date.UTC(
+        localParts.year,
+        localParts.month - 1,
+        localParts.day,
+        localParts.hour,
+        localParts.minute,
+        localParts.second,
+        localParts.millisecond,
+    );
+
+    let guessMs = targetAsUtcMs;
+
+    // Iterate to account for DST shifts at/around the target instant.
+    for (let i = 0; i < 6; i += 1) {
+        const offsetMs = getTimeZoneOffsetMs(new Date(guessMs), resolvedZone);
+        const nextGuess = targetAsUtcMs - offsetMs;
+        if (nextGuess === guessMs) break;
+        guessMs = nextGuess;
+    }
+
+    const exactMatch = findMatchingInstantNearGuess(guessMs, localParts, resolvedZone);
+    return new Date(exactMatch ?? guessMs).toISOString();
 }

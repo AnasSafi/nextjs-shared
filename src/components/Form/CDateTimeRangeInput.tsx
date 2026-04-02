@@ -3,9 +3,14 @@
 import React, {useEffect, useState, JSX} from "react";
 import type {FieldError, DeepMap} from "react-hook-form";
 import {FormError} from "./Helpers/FormError";
-import {FieldHeader, baseInputClasses, formatDateTimeLocal} from "./Helpers/fieldShared";
+import {FieldHeader, baseInputClasses, patchInputChangeEventValue} from "./Helpers/fieldShared";
 import {RequiredAsterisk} from "./RequiredAsterisk";
 import {TranslateFn} from "../../models/core/localeModels";
+import {
+    convertDateTimeLocalInZoneToUtc,
+    convertUtcToDateTimeLocalInZone,
+    resolvePreferredTimeZone,
+} from "../../utils/dateUtils";
 
 export interface DateTimeRangeInputProps {
     nameStart: string;
@@ -37,6 +42,8 @@ export interface DateTimeRangeInputProps {
 
     initValueStart?: Date | string | null;
     initValueEnd?: Date | string | null;
+    timeZone?: string;
+    emitUTCOnChange?: boolean;
 
     // translation injection (for required tooltip only)
     t: TranslateFn;
@@ -65,20 +72,40 @@ export const CDateTimeRangeInput = React.forwardRef<HTMLDivElement, DateTimeRang
             isRequiredEnd,
             initValueStart,
             initValueEnd,
+            timeZone,
+            emitUTCOnChange = true,
             t,
         }: DateTimeRangeInputProps,
         ref: React.ForwardedRef<HTMLDivElement>
     ): JSX.Element => {
-        const [fromDate, setFromDate] = useState<string>(formatDateTimeLocal(initValueStart ?? null));
-        const [toDate, setToDate] = useState<string>(formatDateTimeLocal(initValueEnd ?? null));
+        const resolvedTimeZone = resolvePreferredTimeZone(timeZone);
+        const [fromDate, setFromDate] = useState<string>(
+            convertUtcToDateTimeLocalInZone(initValueStart ?? null, resolvedTimeZone),
+        );
+        const [toDate, setToDate] = useState<string>(
+            convertUtcToDateTimeLocalInZone(initValueEnd ?? null, resolvedTimeZone),
+        );
 
         const inputClassName = baseInputClasses(className);
 
         useEffect((): void => {
-            if (fromDate && toDate && new Date(toDate) < new Date(fromDate)) {
+            if (fromDate && toDate && toDate < fromDate) {
                 setToDate(fromDate);
             }
         }, [fromDate, toDate]);
+
+        const emitChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+            if (!emitUTCOnChange) {
+                onChange(event);
+                return;
+            }
+
+            const utcValue = convertDateTimeLocalInZoneToUtc(
+                event.target.value,
+                resolvedTimeZone,
+            );
+            onChange(patchInputChangeEventValue(event, utcValue));
+        };
 
         return (
             <div ref={ref}>
@@ -102,7 +129,7 @@ export const CDateTimeRangeInput = React.forwardRef<HTMLDivElement, DateTimeRang
                             value={fromDate}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                 setFromDate(e.target.value);
-                                onChange(e);
+                                emitChange(e);
                             }}
                             disabled={disabledStart}
                         />
@@ -129,7 +156,7 @@ export const CDateTimeRangeInput = React.forwardRef<HTMLDivElement, DateTimeRang
                             value={toDate}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
                                 setToDate(e.target.value);
-                                onChange(e);
+                                emitChange(e);
                             }}
                             disabled={disabledEnd}
                         />

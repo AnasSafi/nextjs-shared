@@ -102,6 +102,39 @@ export function coerceToDateTimeLocalString(input?: Date | string | null): strin
     return formatDateTimeLocal(candidate);
 }
 
+function createValueOverrideProxy(
+    input: HTMLInputElement,
+    nextValue: string,
+): HTMLInputElement {
+    return new Proxy(input, {
+        get(target: HTMLInputElement, prop: PropertyKey): unknown {
+            if (prop === "value") return nextValue;
+            const value = Reflect.get(target, prop, target);
+            return typeof value === "function" ? value.bind(target) : value;
+        },
+    }) as HTMLInputElement;
+}
+
+export function patchInputChangeEventValue(
+    event: React.ChangeEvent<HTMLInputElement>,
+    value: string,
+): React.ChangeEvent<HTMLInputElement> {
+    const patchedEvent: React.ChangeEvent<HTMLInputElement> = Object.create(event);
+    const patchedTarget = createValueOverrideProxy(event.target, value);
+    const patchedCurrentTarget = createValueOverrideProxy(event.currentTarget, value);
+
+    Object.defineProperty(patchedEvent, "target", {
+        value: patchedTarget,
+        enumerable: true,
+    });
+    Object.defineProperty(patchedEvent, "currentTarget", {
+        value: patchedCurrentTarget,
+        enumerable: true,
+    });
+
+    return patchedEvent;
+}
+
 export const formatISO = (d?: Date | string | null) => {
     if (!d) return "";
     const dateObj: Date = d instanceof Date ? d : new Date(d);
