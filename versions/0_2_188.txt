@@ -1,0 +1,91 @@
+CONSUMER TASK – Adopt Timezone-Aware Date/DateTime Rendering in ListPage
+
+Goal:
+- Use new shared timezone-aware rendering in `ListPage` for date/datetime columns.
+- Show timezone hint to users where needed.
+
+What changed in shared:
+- `ListPage` / table now supports table-level timezone:
+  - `timeZone?: string | null`
+- Date/datetime cell config now supports column-level overrides:
+  - `timeZone?: string | null`
+  - `showTimeZoneHint?: boolean`
+  - `timeZoneHintMode?: "tooltip" | "inline" | "none"`
+  - `dateFormatOptions?: Intl.DateTimeFormatOptions`
+
+Timezone priority:
+1) `column.cell.timeZone`
+2) `ListPage.timeZone`
+3) existing legacy behavior (fallback)
+
+1) Pass user timezone at ListPage level
+
+In consumer pages, pass logged-in user timezone to `ListPage`:
+- Example source: `user?.userModel?.userSettingModel?.timezone`
+
+```tsx
+<ListPage
+  apiPath="/api/example/list"
+  timeZone={user?.userModel?.userSettingModel?.timezone ?? null}
+  columns={columns}
+  ...
+/>
+```
+
+2) (Optional) Override per date/datetime column
+
+```tsx
+const columns = [
+  {
+    title: "Created At",
+    field: "createdAt",
+    cell: {kind: "dateTime"}, // uses ListPage timeZone
+  },
+  {
+    title: "NY Time",
+    field: "updatedAt",
+    cell: {
+      kind: "dateTime",
+      timeZone: "America/New_York", // column override
+      showTimeZoneHint: true,
+      timeZoneHintMode: "tooltip",
+    },
+  },
+  {
+    title: "Settlement Date",
+    field: "settlementDate",
+    cell: {
+      kind: "date",
+      showTimeZoneHint: true,
+      timeZoneHintMode: "inline",
+      dateFormatOptions: {year: "numeric", month: "short", day: "2-digit"},
+    },
+  },
+];
+```
+
+3) Add translation key in consumer locales
+
+Add new key:
+- `listPageTimeZoneHint`
+
+Interpolation variable:
+- `{{timeZone}}`
+
+Recommended values:
+- English: `Displayed in: {{timeZone}}`
+- Arabic: `الوقت المعروض حسب المنطقة الزمنية: {{timeZone}}`
+
+4) Verify
+
+- Open a list page containing `date`/`dateTime` columns.
+- Confirm values change according to provided timezone.
+- Confirm hint appears according to config:
+  - default datetime: hint enabled (tooltip)
+  - default date: hint disabled
+- Confirm invalid/empty timezone does not break page (falls back safely).
+
+DONE CRITERIA:
+- Consumer passes timezone to `ListPage` where needed.
+- Translation key `listPageTimeZoneHint` exists in active locales.
+- Date/datetime values render correctly and hints display as configured.
