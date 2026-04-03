@@ -27,6 +27,93 @@ export type MarkdownTextAreaDeps = {
     }) => JSX.Element;
 };
 
+const toStr = (v: unknown): string => (v ?? "").toString();
+
+const buildInitialValuesByLocale = (
+    initValue: unknown,
+    currentLocale: string,
+): Record<string, string> => {
+    if (isLocaleObject(initValue)) {
+        const mapped: Record<string, string> = {};
+        Object.entries(initValue as Record<string, unknown>).forEach(
+            ([loc, val]) => {
+                mapped[loc] = toStr(val);
+            },
+        );
+        return mapped;
+    }
+
+    return {[currentLocale]: toStr(initValue)};
+};
+
+const mergeValuesByLocaleIfChanged = (
+    prev: Record<string, string>,
+    patch: Record<string, string>,
+): Record<string, string> => {
+    let changed = false;
+    const next = {...prev};
+
+    Object.entries(patch).forEach(([loc, val]) => {
+        if (next[loc] !== val) {
+            next[loc] = val;
+            changed = true;
+        }
+    });
+
+    return changed ? next : prev;
+};
+
+const serializeInitValue = (initValue: unknown): string => {
+    if (isLocaleObject(initValue)) {
+        const normalized = Object.entries(initValue as Record<string, unknown>)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([loc, val]) => [loc, toStr(val)]);
+        return JSON.stringify(normalized);
+    }
+    return JSON.stringify(initValue ?? null);
+};
+
+const firstNonSpace = (s: string): string | undefined => {
+    for (const ch of s) {
+        if (!/\s/.test(ch)) return ch;
+    }
+    return undefined;
+};
+
+const computeDir = (
+    value: string,
+    currentLocale: string,
+    alwaysLTR: boolean,
+): "ltr" | "rtl" => {
+    if (alwaysLTR) return "ltr";
+
+    const ch = firstNonSpace(value);
+    if (ch) {
+        if (/[A-Za-z0-9]/.test(ch)) return "ltr";
+        if (/[\u0590-\u05FF\u0600-\u06FF]/.test(ch)) return "rtl";
+    }
+
+    return isLanguageRTL(currentLocale) ? "rtl" : "ltr";
+};
+
+const createSyntheticTextAreaChangeEvent = (
+    name: string,
+    value: string,
+): ChangeEvent<HTMLTextAreaElement> => {
+    return {
+        target: {
+            name,
+            type: "textarea",
+            value,
+        },
+        currentTarget: {
+            name,
+            type: "textarea",
+            value,
+        },
+    } as unknown as ChangeEvent<HTMLTextAreaElement>;
+};
+
 export function createMarkdownTextArea(deps: MarkdownTextAreaDeps) {
     const {useTranslationHook, MarkdownTextView, MarkdownControls} = deps;
 
@@ -52,7 +139,7 @@ export function createMarkdownTextArea(deps: MarkdownTextAreaDeps) {
             markdownGroups,
             rows = 7,
             value: _ignoreValue,
-            onChange: _ignoreOnChange,
+            onChange,
             ...rest
         } = props;
 
@@ -60,96 +147,58 @@ export function createMarkdownTextArea(deps: MarkdownTextAreaDeps) {
         const currentLocale = formLocale ?? "default";
         const inputId = id ?? name;
 
-        const [dir, setDir] = useState<"ltr" | "rtl">(
-            formLocale ? (isLanguageRTL(formLocale) ? "rtl" : "ltr") : "ltr",
+        const [valuesByLocale, setValuesByLocale] = useState<Record<string, string>>(
+            () => buildInitialValuesByLocale(initValue, currentLocale),
         );
-        const [value, setValue] = useState<string>("");
-        const [valuesByLocale, setValuesByLocale] = useState<Record<string, string>>({});
         const textareaRef = useRef<HTMLTextAreaElement>(null);
+        const lastAppliedInitRef = useRef<string>(serializeInitValue(initValue));
 
-        const skipEffectNotifyRef = useRef(false);
-        const prevInitSnapshotRef = useRef<string>("");
+        const value = valuesByLocale[currentLocale] ?? "";
+        const dir = computeDir(value, currentLocale, alwaysLTR);
 
         const textAreaClassName =
             `bg-gray-50 dark:bg-gray-700 placeholder:text-xs border border-gray-300 text-gray-900 sm:text-sm rounded-lg ` +
             `focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 ` +
             `dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-gray-500 ${className ?? ""}`;
 
-        const toStr = (v: unknown): string => (v ?? "").toString();
-
         useEffect(() => {
-            const snapshot = JSON.stringify(initValue ?? null);
-            if (snapshot === prevInitSnapshotRef.current) return;
-            prevInitSnapshotRef.current = snapshot;
+            const snapshot = serializeInitValue(initValue);
+            if (snapshot === lastAppliedInitRef.current) return;
+            lastAppliedInitRef.current = snapshot;
 
-            setValuesByLocale((prev) => {
-                const next = {...prev};
-
-                if (isLocaleObject(initValue)) {
-                    Object.entries(initValue as Record<string, unknown>).forEach(([loc, val]) => {
-                        next[loc] = toStr(val);
-                    });
-                } else if (initValue !== undefined && initValue !== null) {
-                    next[currentLocale] = toStr(initValue);
-                }
-
-                const nextVal = next[currentLocale] ?? "";
-                setValue(nextVal);
-                return next;
-            });
+            const patch = buildInitialValuesByLocale(initValue, currentLocale);
+            setValuesByLocale((prev) => mergeValuesByLocaleIfChanged(prev, patch));
         }, [initValue, currentLocale]);
 
-        useEffect(() => {
-            setValue(valuesByLocale[currentLocale] ?? "");
-            if (alwaysLTR) setDir("ltr");
-            else setDir(isLanguageRTL(currentLocale) ? "rtl" : "ltr");
-            // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, [currentLocale]);
-
-        const firstNonSpace = (s: string): string | undefined => {
-            for (const ch of s) {
-                if (!/\s/.test(ch)) return ch;
-            }
-            return undefined;
-        };
-
-        const handleKeyUp = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-            if (alwaysLTR) {
-                setDir("ltr");
-                return;
-            }
-            const v = event.currentTarget.value;
-            const ch = firstNonSpace(v);
-            if (!ch) return;
-
-            if (/[A-Za-z0-9]/.test(ch)) setDir("ltr");
-            else if (/[\u0590-\u05FF\u0600-\u06FF]/.test(ch)) setDir("rtl");
+        const notifyChange = (event: ChangeEvent<HTMLTextAreaElement>): void => {
+            handleInputChange?.(event);
+            onChange?.(event);
         };
 
         const handleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
             const newValue = event.target.value;
-            skipEffectNotifyRef.current = true;
-            setValue(newValue);
-            setValuesByLocale((prev) => ({...prev, [currentLocale]: newValue}));
-            handleInputChange?.(event);
+            if (newValue === value) return;
+
+            setValuesByLocale((prev) => {
+                const prevValue = prev[currentLocale] ?? "";
+                if (prevValue === newValue) return prev;
+                return {...prev, [currentLocale]: newValue};
+            });
+            notifyChange(event);
         };
 
-        useEffect(() => {
-            if (!handleInputChange) return;
-            if (skipEffectNotifyRef.current) {
-                skipEffectNotifyRef.current = false;
-                return;
-            }
-            const syntheticEvent = {
-                target: {
-                    name,
-                    type: "textarea",
-                    value,
-                },
-            } as unknown as React.ChangeEvent<HTMLTextAreaElement>;
-            handleInputChange(syntheticEvent);
-            // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, [value]);
+        const handleMarkdownControlSetValue = (nextValue: string): void => {
+            if (nextValue === value) return;
+
+            setValuesByLocale((prev) => {
+                const prevValue = prev[currentLocale] ?? "";
+                if (prevValue === nextValue) return prev;
+                return {...prev, [currentLocale]: nextValue};
+            });
+
+            const syntheticEvent = createSyntheticTextAreaChangeEvent(name, nextValue);
+            notifyChange(syntheticEvent);
+        };
 
         return (
             <div className="flex flex-col lg:flex-row gap-4">
@@ -179,14 +228,13 @@ export function createMarkdownTextArea(deps: MarkdownTextAreaDeps) {
                         <MarkdownControls
                             markdownGroups={markdownGroups}
                             textareaRef={textareaRef}
-                            setValue={setValue}
+                            setValue={handleMarkdownControlSetValue}
                             currentLang={currentLocale}
                         />
 
                         <textarea
                             {...rest}
-                            dir={alwaysLTR ? "ltr" : value.length ? dir : undefined}
-                            onKeyUp={handleKeyUp}
+                            dir={dir}
                             name={name}
                             id={inputId}
                             placeholder={placeholder}
