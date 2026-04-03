@@ -6,10 +6,10 @@ import {TranslateFn} from "../../models/core/localeModels";
 import {TimeZoneHintMode} from "../../models/ui/tableModels";
 import {
     formatListPageDateValue,
-    formatNamedMonth,
     resolveListPageDateTimeZone,
 } from "../../utils/dateUtils";
 import {isLanguageRTL} from "../../i18n/languageConfigUtils";
+import {convertToTwoCharLocale} from "../../i18n/localeMaps";
 
 function injectTimeZoneTemplate(template: string, timeZone: string): string {
     return template.replace(/\{\{\s*timeZone\s*\}\}/g, timeZone);
@@ -107,6 +107,28 @@ export function TableDateTimeCell({
         return {datePart, timePart};
     }, [displayValue, format, dateFormatOptions]);
 
+    const hoverTitle: string = useMemo<string>(() => {
+        if (!isValidDate) return String(value);
+
+        try {
+            const intlLocale = convertToTwoCharLocale(locale) ?? "en";
+            const options: Intl.DateTimeFormatOptions = format === "datetime"
+                ? {
+                    dateStyle: "full",
+                    timeStyle: "short",
+                    ...(resolvedTimeZone ? {timeZone: resolvedTimeZone} : {}),
+                }
+                : {
+                    dateStyle: "full",
+                    ...(resolvedTimeZone ? {timeZone: resolvedTimeZone} : {}),
+                };
+
+            return new Intl.DateTimeFormat(intlLocale, options).format(new Date(timeValue));
+        } catch {
+            return displayValue;
+        }
+    }, [isValidDate, value, locale, format, resolvedTimeZone, timeValue, displayValue]);
+
     if (!isValidDate) {
         return <span className={className}>{String(value)}</span>;
     }
@@ -116,7 +138,7 @@ export function TableDateTimeCell({
             <time
                 dir="ltr"
                 dateTime={new Date(timeValue).toISOString()}
-                title={formatNamedMonth(new Date(timeValue), locale)}
+                title={hoverTitle}
                 className={[
                     "inline-flex items-center gap-1 tabular-nums whitespace-nowrap [unicode-bidi:isolate]",
                     className,
