@@ -11,6 +11,10 @@ import {
 } from "../../utils/dateUtils";
 import {isLanguageRTL} from "../../i18n/languageConfigUtils";
 
+function injectTimeZoneTemplate(template: string, timeZone: string): string {
+    return template.replace(/\{\{\s*timeZone\s*\}\}/g, timeZone);
+}
+
 export type TableDateTimeCellProps = {
     value: Date | string;
     locale: string;
@@ -76,33 +80,57 @@ export function TableDateTimeCell({
 
     const hintText: string = useMemo<string>(() => {
         if (!resolvedTimeZone) return "";
-        const fallback = `Displayed in: ${resolvedTimeZone}`;
-        if (!t) return fallback;
+        const fallbackTemplate = format === "datetime"
+            ? "Displayed date and time follow timezone: {{timeZone}}"
+            : "Displayed date follows timezone: {{timeZone}}";
 
-        const translated = t("listPageTimeZoneHint", {
-            timeZone: resolvedTimeZone,
-            interpolation: {escapeValue: false},
-        });
+        if (!t) return injectTimeZoneTemplate(fallbackTemplate, resolvedTimeZone);
 
-        return translated === "listPageTimeZoneHint" ? fallback : translated;
-    }, [resolvedTimeZone, t]);
+        const translatedTemplate = t("listPageTimeZoneHint");
+        const templateToUse = translatedTemplate === "listPageTimeZoneHint"
+            ? fallbackTemplate
+            : translatedTemplate;
+
+        return injectTimeZoneTemplate(templateToUse, resolvedTimeZone);
+    }, [resolvedTimeZone, t, format]);
+
+    const dateTimeParts: {datePart: string; timePart: string} | null = useMemo(() => {
+        if (format !== "datetime" || dateFormatOptions) return null;
+        const separator = " - ";
+        const separatorIndex = displayValue.lastIndexOf(separator);
+        if (separatorIndex <= 0) return null;
+
+        const datePart = displayValue.slice(0, separatorIndex).trim();
+        const timePart = displayValue.slice(separatorIndex + separator.length).trim();
+        if (!datePart || !timePart) return null;
+
+        return {datePart, timePart};
+    }, [displayValue, format, dateFormatOptions]);
 
     if (!isValidDate) {
         return <span className={className}>{String(value)}</span>;
     }
 
     return (
-        <span className="inline-flex items-center gap-1">
+        <span className="inline-flex items-center gap-1 max-w-full align-middle" dir="ltr">
             <time
                 dir="ltr"
                 dateTime={new Date(timeValue).toISOString()}
                 title={formatNamedMonth(new Date(timeValue), locale)}
                 className={[
-                    "inline-block tabular-nums [unicode-bidi:isolate]",
+                    "inline-flex items-center gap-1 tabular-nums whitespace-nowrap [unicode-bidi:isolate]",
                     className,
                 ].join(" ")}
             >
-                {displayValue}
+                {dateTimeParts ? (
+                    <>
+                        <bdi>{dateTimeParts.datePart}</bdi>
+                        <span className="text-gray-400" aria-hidden="true">•</span>
+                        <bdi>{dateTimeParts.timePart}</bdi>
+                    </>
+                ) : (
+                    displayValue
+                )}
             </time>
 
             {shouldShowHint && timeZoneHintMode === "tooltip" && (
@@ -111,7 +139,7 @@ export function TableDateTimeCell({
 
             {shouldShowHint && timeZoneHintMode === "inline" && resolvedTimeZone && (
                 <span className="text-[11px] text-gray-500 dark:text-gray-300" dir="ltr">
-                    ({resolvedTimeZone})
+                    (<bdi>{resolvedTimeZone}</bdi>)
                 </span>
             )}
         </span>
