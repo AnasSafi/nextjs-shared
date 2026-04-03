@@ -60,7 +60,10 @@ export const CDateTimeInput = forwardRef<HTMLInputElement, DateTimeInputProps>(
         );
         const timeZoneHintText: string | null = timeZone
             ? t
-                ? t("dateTimeInputTimeZoneHint", {timeZone: resolvedTimeZone})
+                ? t("dateTimeInputTimeZoneHint", {
+                    timeZone: resolvedTimeZone,
+                    interpolation: {escapeValue: false},
+                })
                 : `Please enter date and time based on the ${resolvedTimeZone} time zone.`
             : null;
 

@@ -86,7 +86,10 @@ export const CDateTimeRangeInput = React.forwardRef<HTMLDivElement, DateTimeRang
             convertUtcToDateTimeLocalInZone(initValueEnd ?? null, resolvedTimeZone),
         );
         const timeZoneHintText: string | null = timeZone
-            ? t("dateTimeInputTimeZoneHint", {timeZone: resolvedTimeZone})
+            ? t("dateTimeInputTimeZoneHint", {
+                timeZone: resolvedTimeZone,
+                interpolation: {escapeValue: false},
+            })
             : null;
 
         const inputClassName = baseInputClasses(className);
