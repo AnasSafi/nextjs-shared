@@ -58,6 +58,11 @@ export const CDateTimeInput = forwardRef<HTMLInputElement, DateTimeInputProps>(
             initValue ?? null,
             resolvedTimeZone,
         );
+        const timeZoneHintText: string | null = timeZone
+            ? t
+                ? t("dateTimeInputTimeZoneHint", {timeZone: resolvedTimeZone})
+                : `Please enter date and time based on the ${resolvedTimeZone} time zone.`
+            : null;
 
         const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
             if (!onChange) return;
@@ -84,6 +89,11 @@ export const CDateTimeInput = forwardRef<HTMLInputElement, DateTimeInputProps>(
                     rightBadgeText={formLocale}
                     onRightBadgeClick={toggleLocale}
                 />
+                {timeZoneHintText && (
+                    <p className="mb-2 text-xs text-gray-600 dark:text-gray-300">
+                        {timeZoneHintText}
+                    </p>
+                )}
 
                 <div className="relative">
                     <input

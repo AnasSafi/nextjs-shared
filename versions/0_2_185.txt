@@ -1,0 +1,48 @@
+CONSUMER TASK – Add i18n key for timezone hint in shared datetime inputs
+
+Goal:
+- Add the new translation key used by shared `CDateTimeInput` and `CDateTimeRangeInput` when `timeZone` is provided.
+- Ensure users see a localized professional hint (not raw key text).
+
+Context:
+- Shared datetime inputs now show a hint message under the label if `timeZone` exists.
+- Key used by shared components:
+  - `dateTimeInputTimeZoneHint`
+- Interpolation variable:
+  - `{{timeZone}}`
+
+1) Update consumer translation dictionaries
+
+Add `dateTimeInputTimeZoneHint` to all active locales in consumer.
+
+If your project uses the multi-lang object style (e.g. `ara/eng/...`), add:
+
+```json
+"dateTimeInputTimeZoneHint": {
+  "ara": "المنطقة الزمنية: ({{timeZone}}).",
+  "eng": "Time Zone: ({{timeZone}}).",
+}
+```
+
+If your project uses per-locale JSON files, add equivalent localized string in each locale file with the same key and placeholder.
+
+2) Verify interpolation works
+
+Render any shared datetime field with:
+- `timeZone="Asia/Amman"` (or any IANA timezone)
+
+Expected:
+- Hint appears under the field label.
+- Hint is localized.
+- `{{timeZone}}` is replaced with actual timezone (e.g. `Asia/Amman`).
+
+3) Verify both components
+
+Check both:
+- `CDateTimeInput`
+- `CDateTimeRangeInput`
+
+DONE CRITERIA:
+- `dateTimeInputTimeZoneHint` exists in all used consumer locales.
+- No raw i18n key appears in UI.
+- Hint message renders localized with correct timezone placeholder value.

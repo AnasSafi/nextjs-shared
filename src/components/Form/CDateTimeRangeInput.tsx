@@ -85,6 +85,9 @@ export const CDateTimeRangeInput = React.forwardRef<HTMLDivElement, DateTimeRang
         const [toDate, setToDate] = useState<string>(
             convertUtcToDateTimeLocalInZone(initValueEnd ?? null, resolvedTimeZone),
         );
+        const timeZoneHintText: string | null = timeZone
+            ? t("dateTimeInputTimeZoneHint", {timeZone: resolvedTimeZone})
+            : null;
 
         const inputClassName = baseInputClasses(className);
 
@@ -110,6 +113,11 @@ export const CDateTimeRangeInput = React.forwardRef<HTMLDivElement, DateTimeRang
         return (
             <div ref={ref}>
                 <FieldHeader label={label} tipText={tipText}/>
+                {timeZoneHintText && (
+                    <p className="mb-2 text-xs text-gray-600 dark:text-gray-300">
+                        {timeZoneHintText}
+                    </p>
+                )}
 
                 <div className="flex flex-col sm:flex-row items-center gap-2" data-rangepicker="true">
                     <div className="flex-grow relative w-full sm:w-1/2">
