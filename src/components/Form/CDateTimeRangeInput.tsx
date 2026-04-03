@@ -11,6 +11,7 @@ import {
     convertUtcToDateTimeLocalInZone,
     resolvePreferredTimeZone,
 } from "../../utils/dateUtils";
+import {useUserTimeZone} from "../../hooks/userHooks/useUserTimeZone";
 
 export interface DateTimeRangeInputProps {
     nameStart: string;
@@ -78,14 +79,19 @@ export const CDateTimeRangeInput = React.forwardRef<HTMLDivElement, DateTimeRang
         }: DateTimeRangeInputProps,
         ref: React.ForwardedRef<HTMLDivElement>
     ): JSX.Element => {
-        const resolvedTimeZone = resolvePreferredTimeZone(timeZone);
+        const userTimeZone = useUserTimeZone();
+        const effectiveTimeZone: string | undefined =
+            typeof timeZone === "string" && timeZone.trim().length > 0
+                ? timeZone.trim()
+                : userTimeZone;
+        const resolvedTimeZone = resolvePreferredTimeZone(effectiveTimeZone);
         const [fromDate, setFromDate] = useState<string>(
             convertUtcToDateTimeLocalInZone(initValueStart ?? null, resolvedTimeZone),
         );
         const [toDate, setToDate] = useState<string>(
             convertUtcToDateTimeLocalInZone(initValueEnd ?? null, resolvedTimeZone),
         );
-        const timeZoneHintText: string | null = timeZone
+        const timeZoneHintText: string | null = effectiveTimeZone
             ? t("dateTimeInputTimeZoneHint", {
                 timeZone: resolvedTimeZone,
                 interpolation: {escapeValue: false},

@@ -1,0 +1,48 @@
+CONSUMER TASK – Remove local DateTime timezone wrappers and use shared components directly
+
+Goal:
+- Stop using local wrappers that inject user timezone for datetime fields.
+- Use shared `CDateTimeInput` / `CDateTimeRangeInput` directly from `@nextjs-shared/shared`.
+
+Context:
+- Shared now auto-resolves timezone from logged-in user when `timeZone` prop is not provided.
+- Auto timezone priority in shared:
+  1) `user.userModel.userSettingModel.timezone`
+  2) legacy fallback `user.timezone`
+  3) fallback handling inside shared `resolvePreferredTimeZone(...)`
+- If `timeZone` prop is explicitly provided and non-empty, it always overrides auto behavior.
+
+1) Remove local wrappers
+
+Delete (or stop importing) consumer wrappers such as:
+- `src/custom_components/Form/CDateTimeInput.tsx`
+- `src/custom_components/Form/CDateTimeRangeInput.tsx`
+
+2) Replace imports with shared components
+
+Use:
+- `import { CDateTimeInput, CDateTimeRangeInput } from "@nextjs-shared/shared";`
+
+3) Keep existing forms unchanged unless explicit override is needed
+
+- If you want automatic user timezone behavior: do not pass `timeZone`.
+- If a specific screen must force timezone: pass `timeZone="..."` explicitly.
+
+4) Keep translation key for timezone hint
+
+Ensure consumer dictionaries include:
+- `dateTimeInputTimeZoneHint`
+
+Interpolation variable:
+- `{{timeZone}}`
+
+5) Verify
+
+- Open any form with datetime inputs while logged in.
+- Confirm displayed datetime follows user timezone from profile settings.
+- Confirm payload still emits UTC ISO values on change (default `emitUTCOnChange=true`).
+- Confirm explicit `timeZone` prop still overrides user timezone.
+
+DONE CRITERIA:
+- Consumer no longer depends on local datetime wrappers.
+- Shared components provide correct timezone behavior out of the box.

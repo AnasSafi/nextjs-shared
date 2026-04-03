@@ -10,6 +10,7 @@ import {
     convertUtcToDateTimeLocalInZone,
     resolvePreferredTimeZone,
 } from "../../utils/dateUtils";
+import {useUserTimeZone} from "../../hooks/userHooks/useUserTimeZone";
 
 export interface DateTimeInputProps extends InputHTMLAttributes<HTMLInputElement> {
     isRequired?: boolean;
@@ -53,12 +54,17 @@ export const CDateTimeInput = forwardRef<HTMLInputElement, DateTimeInputProps>(
         ref: React.ForwardedRef<HTMLInputElement>
     ): JSX.Element => {
         const inputClassName: string = baseInputClasses(className);
-        const resolvedTimeZone = resolvePreferredTimeZone(timeZone);
+        const userTimeZone = useUserTimeZone();
+        const effectiveTimeZone: string | undefined =
+            typeof timeZone === "string" && timeZone.trim().length > 0
+                ? timeZone.trim()
+                : userTimeZone;
+        const resolvedTimeZone = resolvePreferredTimeZone(effectiveTimeZone);
         const formattedInitValue: string = convertUtcToDateTimeLocalInZone(
             initValue ?? null,
             resolvedTimeZone,
         );
-        const timeZoneHintText: string | null = timeZone
+        const timeZoneHintText: string | null = effectiveTimeZone
             ? t
                 ? t("dateTimeInputTimeZoneHint", {
                     timeZone: resolvedTimeZone,
