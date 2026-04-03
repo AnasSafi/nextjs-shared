@@ -45,9 +45,18 @@ interface BaseCellConfig {
     className?: string;
 }
 
+export type TimeZoneHintMode = "tooltip" | "inline" | "none";
+
+type BaseDateTimeCellConfig = BaseCellConfig & {
+    timeZone?: string | null;
+    showTimeZoneHint?: boolean;
+    timeZoneHintMode?: TimeZoneHintMode;
+    dateFormatOptions?: Intl.DateTimeFormatOptions;
+};
+
 export type CellConfig =
-    | ({ kind: "date" } & BaseCellConfig)
-    | ({ kind: "dateTime" } & BaseCellConfig)
+    | ({ kind: "date" } & BaseDateTimeCellConfig)
+    | ({ kind: "dateTime" } & BaseDateTimeCellConfig)
     | ({ kind: "multiLang" } & BaseCellConfig)
     | ({
         kind: "media";
@@ -134,6 +143,7 @@ export interface TableProps<R extends RowMeta<string | number, R>> {
     openFilterModal?: OpenFilterModalFn;
     generalSearchEnabled?: boolean;
     scrollWithWindow?: boolean;
+    timeZone?: string | null;
     autoScrollToTableOnPageChange?: boolean;
     autoScrollToTableOnFirstMount?: boolean;
     quickFilters?: (args: TableQuickFilterArgs) => JSX.Element;
@@ -170,6 +180,7 @@ export interface ListPageProps<R> {
     requiredPerms?: string[];
     generalSearchEnabled?: boolean;
     scrollWithWindow?: boolean;
+    timeZone?: string | null;
     autoScrollToTableOnPageChange?: boolean;
     autoScrollToTableOnFirstMount?: boolean;
     requestBodyData?: Record<string, unknown>;

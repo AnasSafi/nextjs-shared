@@ -42,6 +42,7 @@ function InnerListPage<T>(
         requiredPerms = [],
         generalSearchEnabled,
         scrollWithWindow,
+        timeZone,
         autoScrollToTableOnPageChange,
         autoScrollToTableOnFirstMount,
         requestBodyData,
@@ -88,6 +89,7 @@ function InnerListPage<T>(
             nameOfSumKey={nameOfSumKey}
             openFilterModal={filterModal}
             scrollWithWindow={scrollWithWindow}
+            timeZone={timeZone}
             autoScrollToTableOnPageChange={autoScrollToTableOnPageChange}
             autoScrollToTableOnFirstMount={autoScrollToTableOnFirstMount}
             generalSearchEnabled={generalSearchEnabled}

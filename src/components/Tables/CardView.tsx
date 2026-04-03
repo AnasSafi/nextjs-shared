@@ -23,6 +23,7 @@ export interface CardViewHandle {
 export type CardViewProps<T extends RowMeta<string | number, T>> = {
     data: T[];
     columns: Column<T>[];
+    timeZone?: string | null;
     clientRowActions?: RowAction<T>[];
     showRowsActions?: boolean;
 
@@ -34,6 +35,7 @@ function CardViewInner<T extends RowMeta<string | number, T>>(
     {
         data,
         columns,
+        timeZone,
         clientRowActions,
         showRowsActions = false,
         currentLng,
@@ -94,7 +96,13 @@ function CardViewInner<T extends RowMeta<string | number, T>>(
                                         {col.tooltip && <TooltipIcon tipText={col.tooltip} />}
                                     </div>
                                     <div className="text-gray-900 dark:text-white font-semibold text-xs sm:text-sm break-words">
-                                        {TableCellContent({col, row, currentLng})}
+                                        {TableCellContent({
+                                            col,
+                                            row,
+                                            currentLng,
+                                            tableTimeZone: timeZone,
+                                            t,
+                                        })}
                                     </div>
                                 </div>
                             </div>

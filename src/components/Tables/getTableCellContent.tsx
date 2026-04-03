@@ -1,9 +1,9 @@
 "use client";
 import React, {type JSX} from "react";
 import type {CellConfig, Column} from "../../models/ui/tableModels";
-import FormattedDate from "../Helper/FormattedDate";
+import {TableDateTimeCell} from "./TableDateTimeCell";
 import type {MediaFileViewModel} from "../../models/core/mediaModels";
-import type {MultiLangValue} from "../../models/core/localeModels";
+import type {MultiLangValue, TranslateFn} from "../../models/core/localeModels";
 import {getStringFromAny} from "../../utils/tableFormatUtils";
 import {ZoomableImage} from "./ZoomableImage";
 import {VideoModalTrigger} from "../media/VideoModalTrigger";
@@ -21,10 +21,14 @@ export function TableCellContent<T>(
         col,
         row,
         currentLng,
+        tableTimeZone,
+        t,
     }: {
         col: Column<T>;
         row: T;
         currentLng: string;
+        tableTimeZone?: string | null;
+        t?: TranslateFn;
     }): JSX.Element {
 
     const fieldValue: T[keyof T] = row[col.field];
@@ -178,14 +182,38 @@ export function TableCellContent<T>(
 
             case "date":
                 if (typeof fieldValue === "string" || fieldValue instanceof Date) {
-                    return <FormattedDate date={fieldValue} locale={currentLng} format={"date"}/>;
+                    return (
+                        <TableDateTimeCell
+                            value={fieldValue}
+                            locale={currentLng}
+                            format="date"
+                            tableTimeZone={tableTimeZone}
+                            columnTimeZone={cellCfg.timeZone}
+                            showTimeZoneHint={cellCfg.showTimeZoneHint}
+                            timeZoneHintMode={cellCfg.timeZoneHintMode}
+                            dateFormatOptions={cellCfg.dateFormatOptions}
+                            t={t}
+                        />
+                    );
                 }
                 break;
 
             case "dateTime":
                 if (typeof fieldValue === "string" || fieldValue instanceof Date) {
-                    return <FormattedDate date={fieldValue} locale={currentLng} className="text-sm"
-                                          format={"datetime"}/>;
+                    return (
+                        <TableDateTimeCell
+                            value={fieldValue}
+                            locale={currentLng}
+                            className="text-sm"
+                            format="datetime"
+                            tableTimeZone={tableTimeZone}
+                            columnTimeZone={cellCfg.timeZone}
+                            showTimeZoneHint={cellCfg.showTimeZoneHint}
+                            timeZoneHintMode={cellCfg.timeZoneHintMode}
+                            dateFormatOptions={cellCfg.dateFormatOptions}
+                            t={t}
+                        />
+                    );
                 }
                 break;
 

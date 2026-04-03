@@ -81,6 +81,7 @@ function TablePagesCoreInnerRef<R extends RowMeta<string | number, R>>(
         openFilterModal,
         generalSearchEnabled,
         scrollWithWindow,
+        timeZone,
         autoScrollToTableOnPageChange = true,
         autoScrollToTableOnFirstMount = false,
 
@@ -566,6 +567,7 @@ function TablePagesCoreInnerRef<R extends RowMeta<string | number, R>>(
                     ref={cardViewRef}
                     data={data}
                     columns={columns}
+                    timeZone={timeZone}
                     clientRowActions={clientRowActions}
                     showRowsActions={showRowsActions}
                     currentLng={currentLng}
@@ -575,6 +577,7 @@ function TablePagesCoreInnerRef<R extends RowMeta<string | number, R>>(
                     ref={tableViewRef}
                     data={data}
                     columns={columns}
+                    timeZone={timeZone}
                     clientRowActions={clientRowActions}
                     showRowsActions={showRowsActions}
                     currentLng={currentLng}

@@ -23,6 +23,7 @@ export interface TableViewHandle {
 export type TableViewProps<T extends RowMeta<string | number, T>> = {
     data: T[];
     columns: Column<T>[];
+    timeZone?: string | null;
     clientRowActions?: RowAction<T>[];
     showRowsActions?: boolean;
 
@@ -34,6 +35,7 @@ function TableViewInner<T extends RowMeta<string | number, T>>(
     {
         data,
         columns,
+        timeZone,
         clientRowActions,
         showRowsActions = false,
         currentLng,
@@ -106,7 +108,13 @@ function TableViewInner<T extends RowMeta<string | number, T>>(
                                 key={cI}
                                 className="whitespace-nowrap py-4 px-4 text-sm text-gray-900 dark:text-white"
                             >
-                                {TableCellContent({col, row, currentLng})}
+                                {TableCellContent({
+                                    col,
+                                    row,
+                                    currentLng,
+                                    tableTimeZone: timeZone,
+                                    t,
+                                })}
                             </td>
                         ))}
 

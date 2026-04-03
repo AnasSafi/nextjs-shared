@@ -6,6 +6,8 @@ export type FmtOpts = {
     isRTL?: boolean;      // choose order directly
 };
 
+export type DateDisplayFormat = "date" | "datetime";
+
 function two(s: string) {
     return s.padStart(2, "0");
 }
@@ -85,6 +87,80 @@ export const formatDateTime = (date: Date | string, opts: FmtOpts = {}): string 
 
     return `${dateStr} - ${hour}:${minute}`;
 };
+
+function normalizeTimeZoneInput(timeZone?: string | null): string | undefined {
+    if (typeof timeZone !== "string") return undefined;
+    const trimmed = timeZone.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+}
+
+/**
+ * Resolves the timezone used by list/date cells.
+ * Priority: column timeZone -> table/list timeZone.
+ * Returns `undefined` when absent or invalid so callers can keep legacy rendering.
+ */
+export function resolveListPageDateTimeZone(
+    columnTimeZone?: string | null,
+    tableTimeZone?: string | null,
+): string | undefined {
+    const candidate = normalizeTimeZoneInput(columnTimeZone) ??
+        normalizeTimeZoneInput(tableTimeZone);
+
+    if (!candidate) return undefined;
+    return isValidTimeZone(candidate) ? candidate : undefined;
+}
+
+/**
+ * Shared formatter for list/table date and datetime values with optional timezone/options.
+ * Falls back to legacy formatting behavior on invalid options.
+ */
+export function formatListPageDateValue(args: {
+    value: Date | string;
+    locale: string;
+    format: DateDisplayFormat;
+    isRTL: boolean;
+    timeZone?: string;
+    dateFormatOptions?: Intl.DateTimeFormatOptions;
+}): string {
+    const {
+        value,
+        locale,
+        format,
+        isRTL,
+        timeZone,
+        dateFormatOptions,
+    } = args;
+
+    const d: Date = typeof value === "string" ? new Date(value) : value;
+    if (Number.isNaN(d.getTime())) return String(value);
+
+    const fallbackLegacy = (zone?: string): string => {
+        try {
+            return format === "datetime"
+                ? formatDateTime(d, {locale, timeZone: zone, isRTL})
+                : formatDate(d, {locale, timeZone: zone, isRTL});
+        } catch {
+            return format === "datetime"
+                ? formatDateTime(d, {locale, isRTL})
+                : formatDate(d, {locale, isRTL});
+        }
+    };
+
+    if (!dateFormatOptions) {
+        return fallbackLegacy(timeZone);
+    }
+
+    try {
+        const intlLocale = convertToTwoCharLocale(locale) ?? "en";
+        const options: Intl.DateTimeFormatOptions = {
+            ...dateFormatOptions,
+            ...(timeZone ? {timeZone} : {}),
+        };
+        return new Intl.DateTimeFormat(intlLocale, options).format(d);
+    } catch {
+        return fallbackLegacy(timeZone);
+    }
+}
 
 export const formatNamedDateTime = (date: Date | string, locale: string): string => {
     const dateObj: Date = typeof date === "string" ? new Date(date) : date;
