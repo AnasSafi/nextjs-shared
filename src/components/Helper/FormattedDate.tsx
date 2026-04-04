@@ -1,8 +1,9 @@
 "use client";
 
 import React, {JSX, useMemo} from "react";
-import {formatDate, formatDateTime, formatNamedMonth} from "../../utils/dateUtils";
+import {formatDate, formatDateTime} from "../../utils/dateUtils";
 import {isLanguageRTL} from "../../i18n/languageConfigUtils";
+import {convertToTwoCharLocale} from "../../i18n/localeMaps";
 
 export type SharedFormattedDateProps = {
     date: Date | string;
@@ -38,13 +39,35 @@ export default function FormattedDate(
             : formatDate(d, {locale, timeZone, isRTL});
     }, [isValidDate, date, timeValue, format, locale, timeZone, isRTL]);
 
+    const hoverTitle = useMemo((): string => {
+        if (!isValidDate) return String(date);
+
+        try {
+            const intlLocale = convertToTwoCharLocale(locale) ?? locale ?? "en";
+            const options: Intl.DateTimeFormatOptions = format === "datetime"
+                ? {
+                    dateStyle: "full",
+                    timeStyle: "short",
+                    timeZone,
+                }
+                : {
+                    dateStyle: "full",
+                    timeZone,
+                };
+
+            return new Intl.DateTimeFormat(intlLocale, options).format(new Date(timeValue));
+        } catch {
+            return display;
+        }
+    }, [isValidDate, date, locale, format, timeZone, timeValue, display]);
+
     if (!isValidDate) return <span className={className}>{String(date)}</span>;
 
     return (
         <time
             dir={"ltr"}
             dateTime={new Date(timeValue).toISOString()}
-            title={formatNamedMonth(new Date(timeValue), locale)}
+            title={hoverTitle}
             className={[
                 "inline-block  tabular-nums",
                 "[unicode-bidi:isolate]",
