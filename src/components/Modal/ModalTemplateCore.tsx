@@ -50,6 +50,27 @@ const ICON_STYLES: Record<DialogType, string> = {
     success: "bg-green-100 text-green-600",
 };
 
+const MODAL_HISTORY_TOKEN_KEY = "__shared_modal_token__";
+
+const getModalHistoryToken = (state: unknown): string | null => {
+    if (!state || typeof state !== "object") return null;
+    const token = (state as Record<string, unknown>)[MODAL_HISTORY_TOKEN_KEY];
+    return typeof token === "string" && token.trim().length > 0 ? token : null;
+};
+
+const withModalHistoryToken = (state: unknown, token: string): Record<string, unknown> => {
+    if (state && typeof state === "object") {
+        return {
+            ...(state as Record<string, unknown>),
+            [MODAL_HISTORY_TOKEN_KEY]: token,
+        };
+    }
+
+    return {
+        [MODAL_HISTORY_TOKEN_KEY]: token,
+    };
+};
+
 const shouldIgnoreModalEnter = (target: EventTarget | null): boolean => {
     if (!(target instanceof HTMLElement)) return false;
     if (target instanceof HTMLTextAreaElement) return true;
@@ -80,6 +101,13 @@ export const ModalTemplateCore: FC<ModalTemplateProps> = (
     const closeModal = useModalStore((s: ModalStateModel) => s.closeModal);
     const scrollableRef = useRef<HTMLDivElement | null>(null);
     const modalContentRef = useRef<HTMLDivElement | null>(null);
+    const modalHistoryTokenRef = useRef<string | null>(null);
+    const requestCloseRef = useRef<(
+        args: {mode: "dismiss" | "cancel"; respectPreventCloseOutside?: boolean}
+    ) => void>(() => {
+    });
+    const isModalOpenRef = useRef<boolean>(Boolean(modal?.isOpen));
+    const lastOpenModalIdRef = useRef<string | undefined>(lastOpenModalId);
     const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState<boolean>(false);
     const [pendingCloseMode, setPendingCloseMode] = useState<"dismiss" | "cancel">("dismiss");
 
@@ -183,6 +211,71 @@ export const ModalTemplateCore: FC<ModalTemplateProps> = (
         activeMapRoot.dispatchEvent(new CustomEvent(MAP_CANCEL_INTERACTION_EVENT));
         return true;
     }, []);
+
+    useEffect(() => {
+        requestCloseRef.current = requestClose;
+    }, [requestClose]);
+
+    useEffect(() => {
+        isModalOpenRef.current = Boolean(modal?.isOpen);
+    }, [modal?.isOpen]);
+
+    useEffect(() => {
+        lastOpenModalIdRef.current = lastOpenModalId;
+    }, [lastOpenModalId]);
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        if (!modal?.isOpen) return;
+
+        const pushModalHistoryEntry = (): string | null => {
+            const token = `${id}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+            try {
+                window.history.pushState(
+                    withModalHistoryToken(window.history.state, token),
+                    "",
+                );
+                return token;
+            } catch {
+                return null;
+            }
+        };
+
+        modalHistoryTokenRef.current = pushModalHistoryEntry();
+
+        const handlePopState = (event: PopStateEvent): void => {
+            const activeToken = modalHistoryTokenRef.current;
+            if (!activeToken) return;
+            if (!isModalOpenRef.current) return;
+            if (lastOpenModalIdRef.current !== id) return;
+
+            const nextStateToken = getModalHistoryToken(event.state);
+            if (nextStateToken === activeToken) return;
+
+            modalHistoryTokenRef.current = null;
+            requestCloseRef.current({mode: "dismiss"});
+
+            window.setTimeout(() => {
+                if (!isModalOpenRef.current) return;
+                modalHistoryTokenRef.current = pushModalHistoryEntry();
+            }, 0);
+        };
+
+        window.addEventListener("popstate", handlePopState);
+
+        return () => {
+            window.removeEventListener("popstate", handlePopState);
+
+            const activeToken = modalHistoryTokenRef.current;
+            if (!activeToken) return;
+
+            modalHistoryTokenRef.current = null;
+
+            if (getModalHistoryToken(window.history.state) === activeToken) {
+                window.history.back();
+            }
+        };
+    }, [id, modal?.isOpen]);
 
     useEffect(() => {
         const onKeyDown = (e: KeyboardEvent): void => {
