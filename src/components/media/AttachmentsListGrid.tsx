@@ -13,6 +13,7 @@ import {
 } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 import type {MediaFileViewModel} from "../../models/core/mediaModels";
+import {ZoomableImage} from "../Tables/ZoomableImage";
 
 export type AttachmentsListViewMode = "grid" | "list" | "compact" | "masonry";
 
@@ -30,6 +31,7 @@ export interface AttachmentsListGridProps {
     viewMode?: AttachmentsListViewMode;
     className?: string;
     itemClassName?: string;
+    enableImageZoom?: boolean;
     allowOpenInNewTab?: boolean;
     allowDownload?: boolean;
     onAttachmentClick?: (attachment: MediaFileViewModel) => void;
@@ -255,6 +257,7 @@ const AttachmentCard = (
         layout,
         allowOpenInNewTab,
         allowDownload,
+        enableImageZoom,
         onAttachmentClick,
         renderActions,
         downloadUrlResolver,
@@ -265,6 +268,7 @@ const AttachmentCard = (
         layout: AttachmentsListViewMode;
         allowOpenInNewTab: boolean;
         allowDownload: boolean;
+        enableImageZoom: boolean;
         onAttachmentClick?: (attachment: MediaFileViewModel) => void;
         renderActions?: (attachment: MediaFileViewModel) => ReactNode;
         downloadUrlResolver?: (attachment: MediaFileViewModel) => string;
@@ -289,7 +293,21 @@ const AttachmentCard = (
         />
     );
 
-    const previewElement = onAttachmentClick ? (
+    const previewElement = kind === "image" && enableImageZoom && !onAttachmentClick ? (
+        <ZoomableImage
+            mediaFile={attachment}
+            isRounded={false}
+            width={isCompact ? 56 : isList ? 144 : 400}
+            height={isCompact ? 56 : isList ? 96 : 160}
+            className={clsx(
+                "overflow-hidden rounded-lg border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800",
+                isCompact ? "h-14 w-14 shrink-0" : "h-40 w-full",
+                isList && "h-24 w-36",
+            )}
+            thumbnailFillContainer
+            thumbnailImageClassName="h-full w-full object-cover"
+        />
+    ) : onAttachmentClick ? (
         <button
             type="button"
             onClick={() => onAttachmentClick(attachment)}
@@ -372,6 +390,7 @@ export default function AttachmentsListGrid(
         viewMode = "grid",
         className,
         itemClassName,
+        enableImageZoom = true,
         allowOpenInNewTab = true,
         allowDownload = true,
         onAttachmentClick,
@@ -408,6 +427,7 @@ export default function AttachmentsListGrid(
                             layout={viewMode}
                             allowOpenInNewTab={allowOpenInNewTab}
                             allowDownload={allowDownload}
+                            enableImageZoom={enableImageZoom}
                             onAttachmentClick={onAttachmentClick}
                             renderActions={renderActions}
                             downloadUrlResolver={downloadUrlResolver}
@@ -436,6 +456,7 @@ export default function AttachmentsListGrid(
                     layout={viewMode}
                     allowOpenInNewTab={allowOpenInNewTab}
                     allowDownload={allowDownload}
+                    enableImageZoom={enableImageZoom}
                     onAttachmentClick={onAttachmentClick}
                     renderActions={renderActions}
                     downloadUrlResolver={downloadUrlResolver}

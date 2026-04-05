@@ -19,6 +19,9 @@ type ZoomableImageProps = {
     width?: number;
     height?: number;
     className?: string;
+    thumbnailFillContainer?: boolean;
+    thumbnailWrapperClassName?: string;
+    thumbnailImageClassName?: string;
     labels?: Partial<ZoomableImageLabels>; // Optional i18n (not visible)
 };
 
@@ -116,6 +119,9 @@ export function ZoomableImage(
         width = 150,
         height = 150,
         className,
+        thumbnailFillContainer = false,
+        thumbnailWrapperClassName,
+        thumbnailImageClassName,
         labels,
     }: ZoomableImageProps): JSX.Element {
     const a11y: ZoomableImageLabels = {
@@ -351,7 +357,16 @@ export function ZoomableImage(
                 )}
             >
                 <span className="absolute inset-0 rounded-md ring-1 ring-black/5 group-hover:ring-black/10"/>
-                <CImage width={width} height={height} media={mediaFile} allowModal={false} isRounded={isRounded}/>
+                <CImage
+                    width={thumbnailFillContainer ? undefined : width}
+                    height={thumbnailFillContainer ? undefined : height}
+                    media={mediaFile}
+                    allowModal={false}
+                    isRounded={isRounded}
+                    fillContainer={thumbnailFillContainer}
+                    wrapperClassName={thumbnailFillContainer ? cn("w-full h-full", thumbnailWrapperClassName) : thumbnailWrapperClassName}
+                    className={thumbnailImageClassName}
+                />
 
                 {/* Hover icon */}
                 <span
