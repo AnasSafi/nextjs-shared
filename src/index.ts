@@ -115,6 +115,8 @@ export type {TableDataStatusProps} from "./components/Tables/TableDataStatus";
 export {default as CImage} from "./components/media/CImage";
 export {default as ImageShimmerOverlay} from "./components/media/ImageShimmerOverlay";
 export * from "./components/media/VideoModalTrigger";
+export {default as AttachmentsListGrid} from "./components/media/AttachmentsListGrid";
+export * from "./components/media/AttachmentsListGrid";
 export * from "./components/Tables/RowBackgroundClasses";
 export * from "./components/Tables/ZoomableImage";
 export * from "./components/Auth/Error401";
