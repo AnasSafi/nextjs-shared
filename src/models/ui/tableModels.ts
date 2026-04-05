@@ -1,6 +1,6 @@
 import type React from "react";
 import type {JSX} from "react";
-import type {FilterModel, PaginationRequestModel} from "../core/dbModels";
+import type {FilterModel, PaginationRequestModel, SortModel} from "../core/dbModels";
 
 export interface TableDescriptionModel {
     key: string;
@@ -140,6 +140,7 @@ export interface TableProps<R extends RowMeta<string | number, R>> {
     clientRowActions?: RowAction<R>[];
     nameOfSum?: string;
     requestBodyData?: Record<string, unknown>;
+    initialSorts?: SortModel[];
     openFilterModal?: OpenFilterModalFn;
     generalSearchEnabled?: boolean;
     scrollWithWindow?: boolean;
@@ -184,6 +185,7 @@ export interface ListPageProps<R> {
     autoScrollToTableOnPageChange?: boolean;
     autoScrollToTableOnFirstMount?: boolean;
     requestBodyData?: Record<string, unknown>;
+    initialSorts?: SortModel[];
     toDoInTable?: "refresh" | null;
     nameOfSumKey?: string;
     quickFilters?: (args: TableQuickFilterArgs) => JSX.Element;
