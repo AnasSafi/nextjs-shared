@@ -63,6 +63,7 @@ export default function FileDropzoneCore(
 
     const [files, setFiles] = useState<FileState[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const inputId = id ?? name;
 
     useEffect(() => {
         if (initValue) {
@@ -101,10 +102,11 @@ export default function FileDropzoneCore(
         setFiles(prev => prev.filter(f => f.key !== fileToRemove.key));
     };
 
-    const uploadFile = async (fileState: FileState, index: number) => {
+    const uploadFile = async (fileState: FileState) => {
         if (!fileState.file) return;
 
         const token = await getUserToken();
+        const fileKey = fileState.key;
 
         const formData = new FormData();
         formData.append("file", fileState.file);
@@ -117,11 +119,11 @@ export default function FileDropzoneCore(
         xhr.upload.addEventListener("progress", e => {
             if (e.lengthComputable) {
                 const progress = (e.loaded / e.total) * 100;
-                setFiles(prev => {
-                    const copy = [...prev];
-                    copy[index].uploadProgress = progress;
-                    return copy;
-                });
+                setFiles(prev =>
+                    prev.map(file =>
+                        file.key === fileKey ? {...file, uploadProgress: progress} : file,
+                    ),
+                );
             }
         });
 
@@ -130,19 +132,21 @@ export default function FileDropzoneCore(
 
             const res = JSON.parse(xhr.responseText);
             if (xhr.status === 200) {
-                setFiles(prev => {
-                    const copy = [...prev];
-                    copy[index].uploadSuccess = true;
-                    copy[index].mediaId = res.success.data.mediaId;
-                    return copy;
-                });
+                setFiles(prev =>
+                    prev.map(file =>
+                        file.key === fileKey
+                            ? {...file, uploadSuccess: true, mediaId: res.success.data.mediaId}
+                            : file,
+                    ),
+                );
             } else {
-                setFiles(prev => {
-                    const copy = [...prev];
-                    copy[index].uploadSuccess = false;
-                    copy[index].failedReason = res?.error?.message;
-                    return copy;
-                });
+                setFiles(prev =>
+                    prev.map(file =>
+                        file.key === fileKey
+                            ? {...file, uploadSuccess: false, failedReason: res?.error?.message}
+                            : file,
+                    ),
+                );
             }
         });
 
@@ -170,11 +174,44 @@ export default function FileDropzoneCore(
             }));
             setFiles(prev => [...prev, ...newStates]);
 
-            for (const [i, fs] of newStates.entries()) {
-                await uploadFile(fs, files.length + i);
+            for (const fs of newStates) {
+                await uploadFile(fs);
             }
         }
+
+        e.target.value = "";
     };
+
+    const formatFileSize = (size: number | bigint | undefined): string | null => {
+        if (size === undefined) return null;
+
+        const normalizedSize = typeof size === "bigint" ? Number(size) : size;
+        if (!Number.isFinite(normalizedSize) || normalizedSize < 0) return null;
+
+        if (normalizedSize < 1024) return `${normalizedSize} B`;
+
+        const units = ["KB", "MB", "GB", "TB"];
+        let value = normalizedSize / 1024;
+        let unitIndex = 0;
+
+        while (value >= 1024 && unitIndex < units.length - 1) {
+            value /= 1024;
+            unitIndex += 1;
+        }
+
+        return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unitIndex]}`;
+    };
+
+    const buildAcceptAttr = (): string | undefined => {
+        const mimeTypes = allowedMimeTypes ?? [];
+        const extensions = (allowedExtensions ?? []).map((ext) =>
+            ext.startsWith(".") ? ext : `.${ext}`,
+        );
+        const accept = [...mimeTypes, ...extensions].join(",");
+        return accept.length > 0 ? accept : undefined;
+    };
+
+    const acceptAttr = buildAcceptAttr();
 
     return (
         <>
@@ -188,41 +225,88 @@ export default function FileDropzoneCore(
                 </label>
             )}
 
-            <div className="flex flex-col items-center">
-                <label
-                    htmlFor={id}
-                    className="flex flex-col items-center justify-between w-full h-fit p-4 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700"
-                >
-                    {files.length === 0 && (
-                        <p className="text-lg font-semibold text-gray-500 dark:text-gray-400">
+            <div className="flex flex-col w-full">
+                <div className="w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-700">
+                    <label
+                        htmlFor={inputId}
+                        className="flex cursor-pointer flex-col items-center rounded-lg border border-transparent px-4 py-5 text-center transition-colors hover:bg-white/60 dark:hover:bg-gray-800/40"
+                    >
+                        <p className="text-base font-semibold text-gray-700 dark:text-gray-200">
                             {t("dropFilesHere")}
                         </p>
-                    )}
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
-                        {files.map((fileState, index) => (
-                            <div key={index}>
-                                <FileIconPreview file={fileState}/>
-                                <button
-                                    type="button"
-                                    onClick={() => handleRemoveFile(fileState)}
-                                    className="text-red-500 text-xs mt-1"
-                                >
-                                    {t("remove")}
-                                </button>
-                            </div>
-                        ))}
-                    </div>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            {files.length}/{maxFiles}
+                        </p>
+                    </label>
 
                     <input
-                        id={id}
+                        id={inputId}
                         type="file"
                         multiple
                         ref={fileInputRef}
                         onChange={handleFileInput}
                         className="hidden"
+                        accept={acceptAttr}
                     />
-                </label>
+                </div>
+
+                {files.length > 0 && (
+                    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {files.map((fileState) => {
+                            const fileName = fileState.file?.name ?? fileState.mediaFile?.filename ?? "—";
+                            const fileSize = formatFileSize(fileState.file?.size ?? fileState.mediaFile?.size);
+                            const progress = Math.round(fileState.uploadProgress ?? 0);
+                            const showProgress = progress < 100 && fileState.uploadSuccess !== false;
+
+                            return (
+                                <div
+                                    key={fileState.key}
+                                    className="rounded-lg border border-gray-200 bg-white p-3 shadow-xs transition-colors hover:border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:hover:border-gray-500"
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <div className="shrink-0 rounded-md bg-gray-100 p-1 dark:bg-gray-700">
+                                            <FileIconPreview file={fileState}/>
+                                        </div>
+
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-sm font-semibold text-gray-800 dark:text-gray-100">
+                                                {fileName}
+                                            </p>
+                                            {fileSize && (
+                                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                    {fileSize}
+                                                </p>
+                                            )}
+
+                                            {showProgress && (
+                                                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                                                    <div
+                                                        className="h-full bg-blue-600 transition-all dark:bg-blue-500"
+                                                        style={{width: `${progress}%`}}
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {fileState.failedReason && (
+                                                <p className="mt-2 line-clamp-2 text-xs text-red-600 dark:text-red-400">
+                                                    {fileState.failedReason}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveFile(fileState)}
+                                            className="shrink-0 rounded-md border border-red-200 px-2.5 py-1 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-950/30"
+                                        >
+                                            {t("remove")}
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
 
                 {files.length < minFiles && (
                     <p className="mt-2 text-red-500 text-xs">

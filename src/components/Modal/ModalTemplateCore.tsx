@@ -462,7 +462,7 @@ export const ModalTemplateCore: FC<ModalTemplateProps> = (
                                         text={t(acceptButtonText ?? "submit")}
                                         onClick={handleAccept}
                                         loading={inProgress}
-                                        className="bg-gray-700 dark:bg-gray-900 text-white hover:bg-gray-500"
+                                        className="bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
                                     />
                                 )}
                                 {button1OnClick && (
@@ -483,7 +483,7 @@ export const ModalTemplateCore: FC<ModalTemplateProps> = (
                                     <CButton
                                         text={cancelButtonText ? t(cancelButtonText) : t("close")}
                                         onClick={handleCancel}
-                                        className="bg-gray-200 text-gray-900 hover:bg-gray-300"
+                                        className="bg-gray-200 text-gray-900 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
                                     />
                                 )}
                             </div>
