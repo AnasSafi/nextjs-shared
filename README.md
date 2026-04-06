@@ -239,14 +239,3 @@ You are trying to publish an existing version.
 
 ---
 
-## Table Initial Sorting (Built-in)
-
-`ListPage` and `TablePagesCore` now support native initial sorting via `initialSorts`.
-
-```tsx
-initialSorts={[{ field: "createdAt", operation: "desc" }]}
-```
-
-This replaces the consumer-side `__initialSorts` workaround in `requestBodyData`.
-
----

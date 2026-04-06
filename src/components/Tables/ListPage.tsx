@@ -46,7 +46,6 @@ function InnerListPage<T>(
         autoScrollToTableOnPageChange,
         autoScrollToTableOnFirstMount,
         requestBodyData,
-        initialSorts,
         quickFilters,
         onMetaChange,
         tablePermissions,
@@ -95,7 +94,6 @@ function InnerListPage<T>(
             autoScrollToTableOnFirstMount={autoScrollToTableOnFirstMount}
             generalSearchEnabled={generalSearchEnabled}
             requestBodyData={requestBodyData}
-            initialSorts={initialSorts}
             quickFilters={quickFilters}
             onMetaChange={onMetaChange}
         />

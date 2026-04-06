@@ -6,7 +6,6 @@ import React, {
     useCallback,
     useEffect,
     useImperativeHandle,
-    useMemo,
     useRef,
     useState,
 } from "react";
@@ -39,22 +38,6 @@ import {FilterModel, PaginationRequestModel, SortModel} from "../../models/core/
 import {ServerSuccessModel} from "../../models/core/formModels";
 
 type ButtonClassNames = Record<string, string>;
-
-const normalizeInitialSorts = (sorts?: SortModel[]): SortModel[] => {
-    if (!Array.isArray(sorts)) return [];
-
-    return sorts.reduce<SortModel[]>((acc, sort) => {
-        const field = typeof sort?.field === "string" ? sort.field.trim() : "";
-        if (!field) return acc;
-
-        const operation = sort?.operation === "asc" || sort?.operation === "desc"
-            ? sort.operation
-            : "desc";
-
-        acc.push({field, operation});
-        return acc;
-    }, []);
-};
 
 export type TablePagesCoreInjected<R extends RowMeta<string | number, R>> = {
     t: TranslateFn;
@@ -95,7 +78,6 @@ function TablePagesCoreInnerRef<R extends RowMeta<string | number, R>>(
         tableActions,
         clientRowActions = [],
         requestBodyData = {},
-        initialSorts,
         openFilterModal,
         generalSearchEnabled,
         scrollWithWindow,
@@ -122,11 +104,6 @@ function TablePagesCoreInnerRef<R extends RowMeta<string | number, R>>(
     >([]);
     const [refreshKey, setRefreshKey] = useState(0);
     const [filtersVersion, setFiltersVersion] = useState(0);
-    const initialSortsDep: string = JSON.stringify(initialSorts ?? []);
-    const normalizedInitialSorts = useMemo<SortModel[]>(
-        () => normalizeInitialSorts(initialSorts),
-        [initialSortsDep],
-    );
 
     // NEW: detect unknown totalCount -> switch pagination UI
     const [isTotalCountKnown, setIsTotalCountKnown] = useState<boolean>(true);
@@ -147,17 +124,16 @@ function TablePagesCoreInnerRef<R extends RowMeta<string | number, R>>(
         useRef<CardViewHandle>(null);
     const fetchCtrlRef: React.RefObject<AbortController | null> =
         useRef<AbortController | null>(null);
-    const currentSortsRef = useRef<SortModel[]>(normalizedInitialSorts);
 
-    const [pagination, setPagination] = useState<PaginationRequestModel>(() => ({
+    const [pagination, setPagination] = useState<PaginationRequestModel>({
         getMorePath: apiPath,
         page: 1,
         pageSize: 20,
         totalCount: 0,
-        sorts: normalizedInitialSorts,
+        sorts: [],
         sortableFields: [],
         filters: [],
-    }));
+    });
 
     /* ------------ helpers ------------ */
     const flashRowById: (
@@ -209,22 +185,6 @@ function TablePagesCoreInnerRef<R extends RowMeta<string | number, R>>(
             return {...prev, sorts: updated};
         });
     };
-
-    useEffect((): void => {
-        currentSortsRef.current = pagination.sorts ?? [];
-    }, [pagination.sorts]);
-
-    useEffect((): void => {
-        if (normalizedInitialSorts.length === 0) return;
-        if ((currentSortsRef.current?.length ?? 0) > 0) return;
-        if (isEqual(currentSortsRef.current ?? [], normalizedInitialSorts)) return;
-
-        setSortChanged(true);
-        setPagination((prev: PaginationRequestModel) => ({
-            ...prev,
-            sorts: normalizedInitialSorts,
-        }));
-    }, [initialSortsDep, normalizedInitialSorts]);
 
     useEffect((): void => {
         if (sortChanged) {
