@@ -393,7 +393,7 @@ export const ModalTemplateCore: FC<ModalTemplateProps> = (
                 <div
                     className={clsx(
                         "fixed inset-0 z-50 flex items-center justify-center",
-                        fullHeightScreen ? "p-2 sm:p-4" : "p-4 sm:p-6",
+                        fullHeightScreen ? "px-2 py-4 sm:p-4" : "px-4 py-6 sm:p-6",
                     )}
                     role="dialog"
                     aria-modal="true"
@@ -404,7 +404,7 @@ export const ModalTemplateCore: FC<ModalTemplateProps> = (
                             "relative flex flex-col rounded-lg bg-white dark:bg-gray-900 shadow-xl transition overflow-hidden",
                             fullHeightScreen
                                 ? "w-full max-w-full max-h-full"
-                                : "w-full sm:max-w-5xl max-w-[calc(100vw-2rem)] sm:max-w-[calc(100vw-3rem)] max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-3rem)]",
+                                : "w-full sm:max-w-5xl max-w-[calc(100vw-2rem)] sm:max-w-[calc(100vw-3rem)] max-h-[calc(100vh-3rem)] sm:max-h-[calc(100vh-3rem)]",
                             dialogMaxWidthClass,
                         )}
                     >
