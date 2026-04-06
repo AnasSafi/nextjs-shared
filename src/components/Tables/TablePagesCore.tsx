@@ -39,6 +39,22 @@ import {ServerSuccessModel} from "../../models/core/formModels";
 
 type ButtonClassNames = Record<string, string>;
 
+const normalizeSorts = (sorts?: SortModel[]): SortModel[] => {
+    if (!Array.isArray(sorts)) return [];
+
+    return sorts.reduce<SortModel[]>((acc, sort) => {
+        const field = typeof sort?.field === "string" ? sort.field.trim() : "";
+        if (!field) return acc;
+
+        const operation = sort?.operation === "asc" || sort?.operation === "desc"
+            ? sort.operation
+            : "desc";
+
+        acc.push({field, operation});
+        return acc;
+    }, []);
+};
+
 export type TablePagesCoreInjected<R extends RowMeta<string | number, R>> = {
     t: TranslateFn;
     currentLng: string;
@@ -331,11 +347,15 @@ function TablePagesCoreInnerRef<R extends RowMeta<string | number, R>>(
                 });
 
                 setPagination((prev: PaginationRequestModel) => {
+                    const serverSorts = normalizeSorts(payload.pagination.sorts);
+                    const shouldHydrateSorts = (prev.sorts?.length ?? 0) === 0 && serverSorts.length > 0;
+
                     const next = {
                         ...prev,
                         totalCount: payload.pagination.totalCount,
                         sortableFields: payload.pagination.sortableFields,
                         filters: payload.pagination.filters,
+                        sorts: shouldHydrateSorts ? serverSorts : (prev.sorts ?? []),
                     };
                     return isEqual(prev, next) ? prev : next;
                 });
