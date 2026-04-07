@@ -71,6 +71,8 @@ const withModalHistoryToken = (state: unknown, token: string): Record<string, un
     };
 };
 
+const modalHistoryTokenOwners = new Map<string, string>();
+
 const shouldIgnoreModalEnter = (target: EventTarget | null): boolean => {
     if (!(target instanceof HTMLElement)) return false;
     if (target instanceof HTMLTextAreaElement) return true;
@@ -230,11 +232,25 @@ export const ModalTemplateCore: FC<ModalTemplateProps> = (
 
         const pushModalHistoryEntry = (): string | null => {
             const token = `${id}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+            const currentToken = getModalHistoryToken(window.history.state);
+            const currentTokenOwnerId = currentToken !== null
+                ? modalHistoryTokenOwners.get(currentToken)
+                : undefined;
+            const shouldReplaceCurrentEntry = currentTokenOwnerId
+                ? !Boolean(useModalStore.getState().modals[currentTokenOwnerId]?.isOpen)
+                : false;
+
             try {
-                window.history.pushState(
-                    withModalHistoryToken(window.history.state, token),
-                    "",
-                );
+                const nextState = withModalHistoryToken(window.history.state, token);
+
+                // Reuse stale modal history entries during modal replacement (A -> B) to avoid extra back steps.
+                if (shouldReplaceCurrentEntry) {
+                    window.history.replaceState(nextState, "");
+                } else {
+                    window.history.pushState(nextState, "");
+                }
+
+                modalHistoryTokenOwners.set(token, id);
                 return token;
             } catch {
                 return null;
@@ -253,6 +269,7 @@ export const ModalTemplateCore: FC<ModalTemplateProps> = (
             if (nextStateToken === activeToken) return;
 
             modalHistoryTokenRef.current = null;
+            modalHistoryTokenOwners.delete(activeToken);
             requestCloseRef.current({mode: "dismiss"});
 
             window.setTimeout(() => {
@@ -271,9 +288,21 @@ export const ModalTemplateCore: FC<ModalTemplateProps> = (
 
             modalHistoryTokenRef.current = null;
 
-            if (getModalHistoryToken(window.history.state) === activeToken) {
-                window.history.back();
-            }
+            window.setTimeout(() => {
+                const shouldGoBack =
+                    getModalHistoryToken(window.history.state) === activeToken &&
+                    !useModalStore.getState().modals[id]?.isOpen;
+
+                modalHistoryTokenOwners.delete(activeToken);
+
+                if (!shouldGoBack) return;
+
+                try {
+                    window.history.back();
+                } catch {
+                    // Ignore history edge-case failures (for example, when no back entry is available).
+                }
+            }, 0);
         };
     }, [id, modal?.isOpen]);
 
