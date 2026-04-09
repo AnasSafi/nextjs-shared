@@ -102,26 +102,39 @@ export function coerceToDateTimeLocalString(input?: Date | string | null): strin
     return formatDateTimeLocal(candidate);
 }
 
-function createValueOverrideProxy(
-    input: HTMLInputElement,
+type FormEventElement = HTMLInputElement | HTMLSelectElement;
+
+type EventPatchOptions = {
+    name?: string;
+};
+
+function createValueOverrideProxy<T extends FormEventElement>(
+    input: T,
     nextValue: string,
-): HTMLInputElement {
+    options?: EventPatchOptions,
+): T {
     return new Proxy(input, {
-        get(target: HTMLInputElement, prop: PropertyKey): unknown {
+        get(target: T, prop: PropertyKey): unknown {
             if (prop === "value") return nextValue;
+            if (prop === "name" && typeof options?.name === "string") return options.name;
             const value = Reflect.get(target, prop, target);
             return typeof value === "function" ? value.bind(target) : value;
         },
-    }) as HTMLInputElement;
+    }) as T;
 }
 
-export function patchInputChangeEventValue(
-    event: React.ChangeEvent<HTMLInputElement>,
+export function patchFormElementChangeEventValue(
+    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
     value: string,
+    options?: EventPatchOptions,
 ): React.ChangeEvent<HTMLInputElement> {
     const patchedEvent: React.ChangeEvent<HTMLInputElement> = Object.create(event);
-    const patchedTarget = createValueOverrideProxy(event.target, value);
-    const patchedCurrentTarget = createValueOverrideProxy(event.currentTarget, value);
+    const patchedTarget = createValueOverrideProxy(event.target, value, options) as HTMLInputElement;
+    const patchedCurrentTarget = createValueOverrideProxy(
+        event.currentTarget,
+        value,
+        options,
+    ) as HTMLInputElement;
 
     Object.defineProperty(patchedEvent, "target", {
         value: patchedTarget,
@@ -133,6 +146,60 @@ export function patchInputChangeEventValue(
     });
 
     return patchedEvent;
+}
+
+export function patchInputChangeEventValue(
+    event: React.ChangeEvent<HTMLInputElement>,
+    value: string,
+): React.ChangeEvent<HTMLInputElement> {
+    return patchFormElementChangeEventValue(event, value);
+}
+
+export function patchFormElementFocusEventValue(
+    event: React.FocusEvent<HTMLInputElement | HTMLSelectElement>,
+    value: string,
+    options?: EventPatchOptions,
+): React.FocusEvent<HTMLInputElement> {
+    const patchedEvent: React.FocusEvent<HTMLInputElement> = Object.create(event);
+    const patchedTarget = createValueOverrideProxy(event.target, value, options) as HTMLInputElement;
+    const patchedCurrentTarget = createValueOverrideProxy(
+        event.currentTarget,
+        value,
+        options,
+    ) as HTMLInputElement;
+
+    Object.defineProperty(patchedEvent, "target", {
+        value: patchedTarget,
+        enumerable: true,
+    });
+    Object.defineProperty(patchedEvent, "currentTarget", {
+        value: patchedCurrentTarget,
+        enumerable: true,
+    });
+
+    return patchedEvent;
+}
+
+export function createSyntheticInputChangeEvent(
+    name: string,
+    value: string,
+): React.ChangeEvent<HTMLInputElement> {
+    const target = {name, value} as HTMLInputElement;
+    return {
+        target,
+        currentTarget: target,
+    } as React.ChangeEvent<HTMLInputElement>;
+}
+
+export function createSyntheticInputFocusEvent(
+    name: string,
+    value: string,
+): React.FocusEvent<HTMLInputElement> {
+    const target = {name, value} as HTMLInputElement;
+    return {
+        target,
+        currentTarget: target,
+    } as React.FocusEvent<HTMLInputElement>;
 }
 
 export const formatISO = (d?: Date | string | null) => {

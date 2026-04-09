@@ -1,6 +1,6 @@
 {
   "name": "@nextjs-shared/shared",
-  "version": "0.2.200",
+  "version": "0.2.201",
   "private": false,
   "type": "module",
   "files": [
@@ -26,10 +26,12 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
+    "@internationalized/date": "^3.12.0",
     "bcryptjs": "^3.0.3",
     "i18next": "^25.8.7",
     "i18next-resources-to-backend": "^1.2.1",
     "json-bigint": "^1.0.0",
+    "react-aria-components": "^1.16.0",
     "react-i18next": "^16.5.4",
     "type-fest": "^4"
   },

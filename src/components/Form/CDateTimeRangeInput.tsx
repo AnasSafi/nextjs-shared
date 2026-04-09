@@ -3,7 +3,13 @@
 import React, {useEffect, useState, JSX} from "react";
 import type {FieldError, DeepMap} from "react-hook-form";
 import {FormError} from "./Helpers/FormError";
-import {FieldHeader, baseInputClasses, patchInputChangeEventValue} from "./Helpers/fieldShared";
+import {
+    createSyntheticInputChangeEvent,
+    FieldHeader,
+    baseInputClasses,
+    patchFormElementChangeEventValue,
+    patchInputChangeEventValue,
+} from "./Helpers/fieldShared";
 import {RequiredAsterisk} from "./RequiredAsterisk";
 import {TranslateFn} from "../../models/core/localeModels";
 import {
@@ -12,6 +18,12 @@ import {
     resolvePreferredTimeZone,
 } from "../../utils/dateUtils";
 import {useUserTimeZone} from "../../hooks/userHooks/useUserTimeZone";
+import {
+    type DateInputDisplayMode,
+    type DateTimePart,
+    SegmentedDatePartsInput,
+} from "./Helpers/dateDisplayModeShared";
+import {ReactAriaDateFieldInput} from "./Helpers/dateReactAriaShared";
 
 export interface DateTimeRangeInputProps {
     nameStart: string;
@@ -45,6 +57,9 @@ export interface DateTimeRangeInputProps {
     initValueEnd?: Date | string | null;
     timeZone?: string;
     emitUTCOnChange?: boolean;
+    displayMode?: DateInputDisplayMode;
+    partOrder?: DateTimePart[];
+    yearRange?: {start: number; end: number};
 
     // translation injection (for required tooltip only)
     t: TranslateFn;
@@ -75,6 +90,9 @@ export const CDateTimeRangeInput = React.forwardRef<HTMLDivElement, DateTimeRang
             initValueEnd,
             timeZone,
             emitUTCOnChange = true,
+            displayMode = "native",
+            partOrder,
+            yearRange,
             t,
         }: DateTimeRangeInputProps,
         ref: React.ForwardedRef<HTMLDivElement>
@@ -119,6 +137,31 @@ export const CDateTimeRangeInput = React.forwardRef<HTMLDivElement, DateTimeRang
             onChange(patchInputChangeEventValue(event, utcValue));
         };
 
+        const emitSegmentedChange = (
+            fieldName: string,
+            nextLocalValue: string,
+            event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+        ): void => {
+            if (!emitUTCOnChange) {
+                onChange(
+                    patchFormElementChangeEventValue(event, nextLocalValue, {
+                        name: fieldName,
+                    }),
+                );
+                return;
+            }
+
+            const utcValue = convertDateTimeLocalInZoneToUtc(
+                nextLocalValue,
+                resolvedTimeZone,
+            );
+            onChange(
+                patchFormElementChangeEventValue(event, utcValue, {
+                    name: fieldName,
+                }),
+            );
+        };
+
         return (
             <div ref={ref}>
                 <FieldHeader label={label} tipText={tipText}/>
@@ -137,19 +180,76 @@ export const CDateTimeRangeInput = React.forwardRef<HTMLDivElement, DateTimeRang
                             </span>
                         )}
 
-                        <input
-                            dir="ltr"
-                            name={nameStart}
-                            type="datetime-local"
-                            className={inputClassName}
-                            placeholder={placeholderStart}
-                            value={fromDate}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                setFromDate(e.target.value);
-                                emitChange(e);
-                            }}
-                            disabled={disabledStart}
-                        />
+                        {displayMode === "native" ? (
+                            <input
+                                dir="ltr"
+                                name={nameStart}
+                                type="datetime-local"
+                                className={inputClassName}
+                                placeholder={placeholderStart}
+                                value={fromDate}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                    setFromDate(e.target.value);
+                                    emitChange(e);
+                                }}
+                                disabled={disabledStart}
+                            />
+                        ) : displayMode === "react-aria" ? (
+                            <>
+                                <input
+                                    type="hidden"
+                                    name={nameStart}
+                                    value={fromDate}
+                                    disabled={disabledStart}
+                                    readOnly
+                                />
+                                <ReactAriaDateFieldInput
+                                    kind="datetime"
+                                    value={fromDate}
+                                    onValueChange={(nextValue) => {
+                                        setFromDate(nextValue);
+                                        if (!emitUTCOnChange) {
+                                            onChange(createSyntheticInputChangeEvent(nameStart, nextValue));
+                                            return;
+                                        }
+
+                                        const utcValue = convertDateTimeLocalInZoneToUtc(
+                                            nextValue,
+                                            resolvedTimeZone,
+                                        );
+                                        onChange(createSyntheticInputChangeEvent(nameStart, utcValue));
+                                    }}
+                                    className={className}
+                                    disabled={disabledStart}
+                                    partOrder={partOrder}
+                                    yearRange={yearRange}
+                                />
+                            </>
+                        ) : (
+                            <>
+                                <input
+                                    type="hidden"
+                                    name={nameStart}
+                                    value={fromDate}
+                                    disabled={disabledStart}
+                                    readOnly
+                                />
+                                <SegmentedDatePartsInput
+                                    kind="datetime"
+                                    mode={displayMode}
+                                    name={nameStart}
+                                    value={fromDate}
+                                    onValueChange={(nextValue, event) => {
+                                        setFromDate(nextValue);
+                                        emitSegmentedChange(nameStart, nextValue, event);
+                                    }}
+                                    className={className}
+                                    disabled={disabledStart}
+                                    partOrder={partOrder}
+                                    yearRange={yearRange}
+                                />
+                            </>
+                        )}
                         <FormError error={errorStart}/>
                     </div>
 
@@ -163,20 +263,79 @@ export const CDateTimeRangeInput = React.forwardRef<HTMLDivElement, DateTimeRang
                             </span>
                         )}
 
-                        <input
-                            dir="ltr"
-                            name={nameEnd}
-                            type="datetime-local"
-                            className={inputClassName}
-                            placeholder={placeholderEnd}
-                            min={fromDate || undefined}
-                            value={toDate}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
-                                setToDate(e.target.value);
-                                emitChange(e);
-                            }}
-                            disabled={disabledEnd}
-                        />
+                        {displayMode === "native" ? (
+                            <input
+                                dir="ltr"
+                                name={nameEnd}
+                                type="datetime-local"
+                                className={inputClassName}
+                                placeholder={placeholderEnd}
+                                min={fromDate || undefined}
+                                value={toDate}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
+                                    setToDate(e.target.value);
+                                    emitChange(e);
+                                }}
+                                disabled={disabledEnd}
+                            />
+                        ) : displayMode === "react-aria" ? (
+                            <>
+                                <input
+                                    type="hidden"
+                                    name={nameEnd}
+                                    value={toDate}
+                                    disabled={disabledEnd}
+                                    readOnly
+                                />
+                                <ReactAriaDateFieldInput
+                                    kind="datetime"
+                                    value={toDate}
+                                    onValueChange={(nextValue) => {
+                                        setToDate(nextValue);
+                                        if (!emitUTCOnChange) {
+                                            onChange(createSyntheticInputChangeEvent(nameEnd, nextValue));
+                                            return;
+                                        }
+
+                                        const utcValue = convertDateTimeLocalInZoneToUtc(
+                                            nextValue,
+                                            resolvedTimeZone,
+                                        );
+                                        onChange(createSyntheticInputChangeEvent(nameEnd, utcValue));
+                                    }}
+                                    className={className}
+                                    disabled={disabledEnd}
+                                    partOrder={partOrder}
+                                    yearRange={yearRange}
+                                    minValue={fromDate || undefined}
+                                />
+                            </>
+                        ) : (
+                            <>
+                                <input
+                                    type="hidden"
+                                    name={nameEnd}
+                                    value={toDate}
+                                    disabled={disabledEnd}
+                                    readOnly
+                                />
+                                <SegmentedDatePartsInput
+                                    kind="datetime"
+                                    mode={displayMode}
+                                    name={nameEnd}
+                                    value={toDate}
+                                    onValueChange={(nextValue, event) => {
+                                        setToDate(nextValue);
+                                        emitSegmentedChange(nameEnd, nextValue, event);
+                                    }}
+                                    className={className}
+                                    disabled={disabledEnd}
+                                    partOrder={partOrder}
+                                    yearRange={yearRange}
+                                    minValue={fromDate || undefined}
+                                />
+                            </>
+                        )}
                         <FormError error={errorEnd}/>
                     </div>
                 </div>

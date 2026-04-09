@@ -3,9 +3,21 @@
 import React, {useEffect, useState, JSX} from "react";
 import type {FieldError, DeepMap} from "react-hook-form";
 import {FormError} from "./Helpers/FormError";
-import {FieldHeader, baseInputClasses, formatISO} from "./Helpers/fieldShared";
+import {
+    createSyntheticInputChangeEvent,
+    FieldHeader,
+    baseInputClasses,
+    formatISO,
+    patchFormElementChangeEventValue,
+} from "./Helpers/fieldShared";
 import {RequiredAsterisk} from "./RequiredAsterisk";
 import {TranslateFn} from "../../models/core/localeModels";
+import {
+    type DateInputDisplayMode,
+    type DatePart,
+    SegmentedDatePartsInput,
+} from "./Helpers/dateDisplayModeShared";
+import {ReactAriaDateFieldInput} from "./Helpers/dateReactAriaShared";
 
 export interface DateRangeInputProps {
     nameStart: string;
@@ -37,6 +49,9 @@ export interface DateRangeInputProps {
 
     initValueStart?: Date | string | null;
     initValueEnd?: Date | string | null;
+    displayMode?: DateInputDisplayMode;
+    partOrder?: DatePart[];
+    yearRange?: {start: number; end: number};
 
     // translation injection
     t: TranslateFn;
@@ -65,6 +80,9 @@ export const CDateRangeInput = React.forwardRef<HTMLDivElement, DateRangeInputPr
             isRequiredEnd,
             initValueStart,
             initValueEnd,
+            displayMode = "native",
+            partOrder,
+            yearRange,
             t,
         }: DateRangeInputProps,
         ref: React.ForwardedRef<HTMLDivElement>
@@ -93,19 +111,71 @@ export const CDateRangeInput = React.forwardRef<HTMLDivElement, DateRangeInputPr
                             </span>
                         )}
 
-                        <input
-                            dir="ltr"
-                            name={nameStart}
-                            type="date"
-                            className={inputClassName}
-                            placeholder={placeholderStart}
-                            value={fromDate}
-                            onChange={(e) => {
-                                setFromDate(e.target.value);
-                                onChange(e);
-                            }}
-                            disabled={disabledStart}
-                        />
+                        {displayMode === "native" ? (
+                            <input
+                                dir="ltr"
+                                name={nameStart}
+                                type="date"
+                                className={inputClassName}
+                                placeholder={placeholderStart}
+                                value={fromDate}
+                                onChange={(e) => {
+                                    setFromDate(e.target.value);
+                                    onChange(e);
+                                }}
+                                disabled={disabledStart}
+                            />
+                        ) : displayMode === "react-aria" ? (
+                            <>
+                                <input
+                                    type="hidden"
+                                    name={nameStart}
+                                    value={fromDate}
+                                    disabled={disabledStart}
+                                    readOnly
+                                />
+                                <ReactAriaDateFieldInput
+                                    kind="date"
+                                    value={fromDate}
+                                    onValueChange={(nextValue) => {
+                                        setFromDate(nextValue);
+                                        onChange(createSyntheticInputChangeEvent(nameStart, nextValue));
+                                    }}
+                                    className={className}
+                                    disabled={disabledStart}
+                                    partOrder={partOrder}
+                                    yearRange={yearRange}
+                                />
+                            </>
+                        ) : (
+                            <>
+                                <input
+                                    type="hidden"
+                                    name={nameStart}
+                                    value={fromDate}
+                                    disabled={disabledStart}
+                                    readOnly
+                                />
+                                <SegmentedDatePartsInput
+                                    kind="date"
+                                    mode={displayMode}
+                                    name={nameStart}
+                                    value={fromDate}
+                                    onValueChange={(nextValue, event) => {
+                                        setFromDate(nextValue);
+                                        onChange(
+                                            patchFormElementChangeEventValue(event, nextValue, {
+                                                name: nameStart,
+                                            }),
+                                        );
+                                    }}
+                                    className={className}
+                                    disabled={disabledStart}
+                                    partOrder={partOrder}
+                                    yearRange={yearRange}
+                                />
+                            </>
+                        )}
                         <FormError error={errorStart}/>
                     </div>
 
@@ -119,20 +189,74 @@ export const CDateRangeInput = React.forwardRef<HTMLDivElement, DateRangeInputPr
                             </span>
                         )}
 
-                        <input
-                            dir="ltr"
-                            name={nameEnd}
-                            type="date"
-                            className={inputClassName}
-                            placeholder={placeholderEnd}
-                            min={fromDate || undefined}
-                            value={toDate}
-                            onChange={(e) => {
-                                setToDate(e.target.value);
-                                onChange(e);
-                            }}
-                            disabled={disabledEnd}
-                        />
+                        {displayMode === "native" ? (
+                            <input
+                                dir="ltr"
+                                name={nameEnd}
+                                type="date"
+                                className={inputClassName}
+                                placeholder={placeholderEnd}
+                                min={fromDate || undefined}
+                                value={toDate}
+                                onChange={(e) => {
+                                    setToDate(e.target.value);
+                                    onChange(e);
+                                }}
+                                disabled={disabledEnd}
+                            />
+                        ) : displayMode === "react-aria" ? (
+                            <>
+                                <input
+                                    type="hidden"
+                                    name={nameEnd}
+                                    value={toDate}
+                                    disabled={disabledEnd}
+                                    readOnly
+                                />
+                                <ReactAriaDateFieldInput
+                                    kind="date"
+                                    value={toDate}
+                                    onValueChange={(nextValue) => {
+                                        setToDate(nextValue);
+                                        onChange(createSyntheticInputChangeEvent(nameEnd, nextValue));
+                                    }}
+                                    className={className}
+                                    disabled={disabledEnd}
+                                    partOrder={partOrder}
+                                    yearRange={yearRange}
+                                    minValue={fromDate || undefined}
+                                />
+                            </>
+                        ) : (
+                            <>
+                                <input
+                                    type="hidden"
+                                    name={nameEnd}
+                                    value={toDate}
+                                    disabled={disabledEnd}
+                                    readOnly
+                                />
+                                <SegmentedDatePartsInput
+                                    kind="date"
+                                    mode={displayMode}
+                                    name={nameEnd}
+                                    value={toDate}
+                                    onValueChange={(nextValue, event) => {
+                                        setToDate(nextValue);
+                                        onChange(
+                                            patchFormElementChangeEventValue(event, nextValue, {
+                                                name: nameEnd,
+                                            }),
+                                        );
+                                    }}
+                                    className={className}
+                                    disabled={disabledEnd}
+                                    partOrder={partOrder}
+                                    yearRange={yearRange}
+                                    minValue={fromDate || undefined}
+                                />
+                            </>
+                        )}
                         <FormError error={errorEnd}/>
                     </div>
                 </div>
