@@ -1,0 +1,62 @@
+CONSUMER TASK – Add i18n keys for date-part labels in new date display modes
+
+Goal:
+- Ensure labels under each date/time part are translated in new display modes:
+  - `segmented-select`
+  - `segmented-input`
+  - `react-aria`
+- Prevent English fallback labels from appearing in localized UIs.
+
+Context:
+- Shared date inputs now show a persistent label under each part (even after value is filled):
+  - day / month / year / hour / minute
+- Shared checks these keys first:
+  - `datePartDay`
+  - `datePartMonth`
+  - `datePartYear`
+  - `datePartHour`
+  - `datePartMinute`
+- If missing, shared falls back to:
+  - `day`, `month`, `year`, `hour`, `minute`
+- If still missing, shared falls back to English text.
+
+1) Add missing keys in all active locale dictionaries
+
+Required keys:
+- `datePartDay`
+- `datePartMonth`
+- `datePartYear`
+- `datePartHour`
+- `datePartMinute`
+
+Suggested English values:
+- `datePartDay`: `Day`
+- `datePartMonth`: `Month`
+- `datePartYear`: `Year`
+- `datePartHour`: `Hour`
+- `datePartMinute`: `Minute`
+
+Suggested Arabic values:
+- `datePartDay`: `اليوم`
+- `datePartMonth`: `الشهر`
+- `datePartYear`: `السنة`
+- `datePartHour`: `الساعة`
+- `datePartMinute`: `الدقيقة`
+
+2) Ensure `t` is passed where needed
+
+- For `CDateInput` and `CDateTimeInput`, pass `t` prop when using non-native display modes.
+- `CDateRangeInput` and `CDateTimeRangeInput` already require `t`.
+
+3) Verify
+
+- Open screens using each new mode:
+  - `displayMode="segmented-select"`
+  - `displayMode="segmented-input"`
+  - `displayMode="react-aria"`
+- Confirm labels under parts are visible and translated before and after filling values.
+- Confirm no raw key name is shown in UI.
+
+DONE CRITERIA:
+- Translation keys exist in all active locales.
+- Date-part labels are translated and always visible in all new display modes.
