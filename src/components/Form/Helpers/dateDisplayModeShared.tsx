@@ -2,6 +2,7 @@
 
 import React, {type JSX, useEffect, useMemo, useRef, useState} from "react";
 import {baseInputClasses} from "./fieldShared";
+import type {TranslateFn} from "../../../models/core/localeModels";
 
 export type DateInputDisplayMode = "native" | "segmented-select" | "segmented-input" | "react-aria";
 export type DatePart = "day" | "month" | "year";
@@ -27,6 +28,36 @@ const PART_PLACEHOLDER: Record<DateTimePart, string> = {
     hour: "HH",
     minute: "MM",
 };
+
+const PART_LABEL_DEFAULTS: Record<DateTimePart, string> = {
+    day: "Day",
+    month: "Month",
+    year: "Year",
+    hour: "Hour",
+    minute: "Minute",
+};
+
+const PART_LABEL_CANDIDATE_KEYS: Record<DateTimePart, string[]> = {
+    day: ["datePartDay", "day"],
+    month: ["datePartMonth", "month"],
+    year: ["datePartYear", "year"],
+    hour: ["datePartHour", "hour"],
+    minute: ["datePartMinute", "minute"],
+};
+
+function resolvePartLabel(part: DateTimePart, t?: TranslateFn): string {
+    if (!t) return PART_LABEL_DEFAULTS[part];
+
+    for (const key of PART_LABEL_CANDIDATE_KEYS[part]) {
+        const translated = t(key);
+        if (typeof translated !== "string") continue;
+        if (!translated.trim()) continue;
+        if (translated === key) continue;
+        return translated;
+    }
+
+    return PART_LABEL_DEFAULTS[part];
+}
 
 function pad2(value: number): string {
     return String(value).padStart(2, "0");
@@ -255,6 +286,7 @@ export interface SegmentedDatePartsInputProps {
     yearRange?: {start: number; end: number};
     minValue?: string;
     maxValue?: string;
+    t?: TranslateFn;
 }
 
 export function SegmentedDatePartsInput(
@@ -271,6 +303,7 @@ export function SegmentedDatePartsInput(
         yearRange,
         minValue,
         maxValue,
+        t,
     }: SegmentedDatePartsInputProps,
 ): JSX.Element {
     const orderedParts = useMemo<DateTimePart[]>(
@@ -342,6 +375,20 @@ export function SegmentedDatePartsInput(
         onValueBlur(composeValueByKind(kind, parts), event);
     };
 
+    const renderPartWrapper = (part: DateTimePart, control: JSX.Element): JSX.Element => {
+        const labelText = resolvePartLabel(part, t);
+        const widthClassName = part === "year" ? "min-w-[8rem]" : "min-w-[5.5rem]";
+
+        return (
+            <div key={part} className={`flex flex-col items-center gap-1 ${widthClassName}`}>
+                {control}
+                <span className="text-[11px] leading-none text-gray-500 dark:text-gray-400">
+                    {labelText}
+                </span>
+            </div>
+        );
+    };
+
     const renderSelect = (part: DateTimePart): JSX.Element => {
         const options = (() => {
             switch (part) {
@@ -360,26 +407,28 @@ export function SegmentedDatePartsInput(
             }
         })();
 
-        return (
-            <select
-                key={part}
-                dir="ltr"
-                name={name}
-                className={segmentedInputClassName}
-                value={parts[part]}
-                onChange={(event) => handlePartChange(part, event)}
-                onBlur={handlePartBlur}
-                disabled={disabled}
-                aria-label={part}
-                data-date-part={part}
-            >
-                <option value="">{PART_PLACEHOLDER[part]}</option>
-                {options.map((optionValue) => (
-                    <option key={optionValue} value={optionValue}>
-                        {optionValue}
-                    </option>
-                ))}
-            </select>
+        return renderPartWrapper(
+            part,
+            (
+                <select
+                    dir="ltr"
+                    name={name}
+                    className={segmentedInputClassName}
+                    value={parts[part]}
+                    onChange={(event) => handlePartChange(part, event)}
+                    onBlur={handlePartBlur}
+                    disabled={disabled}
+                    aria-label={part}
+                    data-date-part={part}
+                >
+                    <option value="">{PART_PLACEHOLDER[part]}</option>
+                    {options.map((optionValue) => (
+                        <option key={optionValue} value={optionValue}>
+                            {optionValue}
+                        </option>
+                    ))}
+                </select>
+            ),
         );
     };
 
@@ -387,29 +436,31 @@ export function SegmentedDatePartsInput(
         const maxLength = part === "year" ? 4 : 2;
         const widthClassName = part === "year" ? "max-w-[8rem]" : "max-w-[5.5rem]";
 
-        return (
-            <input
-                key={part}
-                dir="ltr"
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                name={name}
-                className={`${segmentedInputClassName} ${widthClassName}`}
-                maxLength={maxLength}
-                placeholder={PART_PLACEHOLDER[part]}
-                value={parts[part]}
-                onChange={(event) => handlePartChange(part, event)}
-                onBlur={handlePartBlur}
-                disabled={disabled}
-                aria-label={part}
-                data-date-part={part}
-            />
+        return renderPartWrapper(
+            part,
+            (
+                <input
+                    dir="ltr"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    name={name}
+                    className={`${segmentedInputClassName} ${widthClassName}`}
+                    maxLength={maxLength}
+                    placeholder={PART_PLACEHOLDER[part]}
+                    value={parts[part]}
+                    onChange={(event) => handlePartChange(part, event)}
+                    onBlur={handlePartBlur}
+                    disabled={disabled}
+                    aria-label={part}
+                    data-date-part={part}
+                />
+            ),
         );
     };
 
     return (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-start gap-2">
             {orderedParts.map((part) =>
                 mode === "segmented-select" ? renderSelect(part) : renderTextInput(part),
             )}

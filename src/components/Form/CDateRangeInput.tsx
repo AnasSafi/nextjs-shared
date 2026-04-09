@@ -145,6 +145,7 @@ export const CDateRangeInput = React.forwardRef<HTMLDivElement, DateRangeInputPr
                                     disabled={disabledStart}
                                     partOrder={partOrder}
                                     yearRange={yearRange}
+                                    t={t}
                                 />
                             </>
                         ) : (
@@ -173,6 +174,7 @@ export const CDateRangeInput = React.forwardRef<HTMLDivElement, DateRangeInputPr
                                     disabled={disabledStart}
                                     partOrder={partOrder}
                                     yearRange={yearRange}
+                                    t={t}
                                 />
                             </>
                         )}
@@ -225,6 +227,7 @@ export const CDateRangeInput = React.forwardRef<HTMLDivElement, DateRangeInputPr
                                     partOrder={partOrder}
                                     yearRange={yearRange}
                                     minValue={fromDate || undefined}
+                                    t={t}
                                 />
                             </>
                         ) : (
@@ -254,6 +257,7 @@ export const CDateRangeInput = React.forwardRef<HTMLDivElement, DateRangeInputPr
                                     partOrder={partOrder}
                                     yearRange={yearRange}
                                     minValue={fromDate || undefined}
+                                    t={t}
                                 />
                             </>
                         )}

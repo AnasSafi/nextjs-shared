@@ -253,6 +253,7 @@ export const CDateTimeInput = forwardRef<HTMLInputElement, DateTimeInputProps>(
                                 yearRange={yearRange}
                                 minValue={typeof props.min === "string" ? props.min : undefined}
                                 maxValue={typeof props.max === "string" ? props.max : undefined}
+                                t={t}
                             />
                         </>
                     ) : (
@@ -280,6 +281,7 @@ export const CDateTimeInput = forwardRef<HTMLInputElement, DateTimeInputProps>(
                                 yearRange={yearRange}
                                 minValue={typeof props.min === "string" ? props.min : undefined}
                                 maxValue={typeof props.max === "string" ? props.max : undefined}
+                                t={t}
                             />
                         </>
                     )}

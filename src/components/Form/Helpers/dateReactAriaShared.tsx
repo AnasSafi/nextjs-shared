@@ -12,6 +12,7 @@ import {parseDate, parseDateTime} from "@internationalized/date";
 import clsx from "clsx";
 import {baseInputClasses} from "./fieldShared";
 import type {DatePart, DateTimePart} from "./dateDisplayModeShared";
+import type {TranslateFn} from "../../../models/core/localeModels";
 
 type DateInputKind = "date" | "datetime";
 
@@ -26,6 +27,41 @@ export interface ReactAriaDateFieldInputProps {
     yearRange?: {start: number; end: number};
     minValue?: string;
     maxValue?: string;
+    t?: TranslateFn;
+}
+
+const PART_LABEL_DEFAULTS: Record<DateTimePart, string> = {
+    day: "Day",
+    month: "Month",
+    year: "Year",
+    hour: "Hour",
+    minute: "Minute",
+};
+
+const PART_LABEL_CANDIDATE_KEYS: Record<DateTimePart, string[]> = {
+    day: ["datePartDay", "day"],
+    month: ["datePartMonth", "month"],
+    year: ["datePartYear", "year"],
+    hour: ["datePartHour", "hour"],
+    minute: ["datePartMinute", "minute"],
+};
+
+function resolvePartLabel(part: DateTimePart, t?: TranslateFn): string {
+    if (!t) return PART_LABEL_DEFAULTS[part];
+
+    for (const key of PART_LABEL_CANDIDATE_KEYS[part]) {
+        const translated = t(key);
+        if (typeof translated !== "string") continue;
+        if (!translated.trim()) continue;
+        if (translated === key) continue;
+        return translated;
+    }
+
+    return PART_LABEL_DEFAULTS[part];
+}
+
+function isSupportedDateTimePart(type: string): type is DateTimePart {
+    return type === "day" || type === "month" || type === "year" || type === "hour" || type === "minute";
 }
 
 function normalizeDateOrder(partOrder?: DateTimePart[]): DatePart[] {
@@ -140,6 +176,7 @@ export function ReactAriaDateFieldInput(
         yearRange,
         minValue,
         maxValue,
+        t,
     }: ReactAriaDateFieldInputProps,
 ): JSX.Element {
     const latestValueRef = useRef<string>(value ?? "");
@@ -195,22 +232,41 @@ export function ReactAriaDateFieldInput(
             minValue={parsedMinValue}
             maxValue={parsedMaxValue}
         >
-            <DateInput className={clsx(baseInputClasses(className), "flex flex-wrap items-center gap-1")}>
+            <DateInput className={clsx(baseInputClasses(className), "flex flex-wrap items-start gap-1")}>
                 {(segment) => (
-                    <DateSegment
-                        segment={segment}
-                        className={({type, isPlaceholder, isFocused, isInvalid}) =>
-                            clsx(
-                                "rounded px-1.5 py-0.5 text-sm outline-none transition",
-                                type === "literal"
-                                    ? "px-0 text-gray-500 dark:text-gray-400"
-                                    : "text-gray-900 dark:text-white",
-                                type !== "literal" && isPlaceholder && "text-gray-400 dark:text-gray-400",
-                                type !== "literal" && isFocused && "bg-blue-100 dark:bg-gray-600",
-                                type !== "literal" && isInvalid && "text-red-600 dark:text-red-400",
-                            )
-                        }
-                    />
+                    isSupportedDateTimePart(segment.type) ? (
+                        <span
+                            className={clsx(
+                                "flex flex-col items-center gap-1",
+                                segment.type === "year" ? "min-w-[8rem]" : "min-w-[5.5rem]",
+                            )}
+                        >
+                            <DateSegment
+                                segment={segment}
+                                className={({isPlaceholder, isFocused, isInvalid}) =>
+                                    clsx(
+                                        "rounded px-1.5 py-0.5 text-sm outline-none transition text-gray-900 dark:text-white",
+                                        isPlaceholder && "text-gray-400 dark:text-gray-400",
+                                        isFocused && "bg-blue-100 dark:bg-gray-600",
+                                        isInvalid && "text-red-600 dark:text-red-400",
+                                    )
+                                }
+                            />
+                            <span className="text-[11px] leading-none text-gray-500 dark:text-gray-400">
+                                {resolvePartLabel(segment.type, t)}
+                            </span>
+                        </span>
+                    ) : (
+                        <DateSegment
+                            segment={segment}
+                            className={({type}) =>
+                                clsx(
+                                    "rounded px-0 py-0.5 text-sm outline-none transition text-gray-500 dark:text-gray-400",
+                                    type !== "literal" && "text-gray-900 dark:text-white",
+                                )
+                            }
+                        />
+                    )
                 )}
             </DateInput>
         </DateField>
@@ -228,4 +284,3 @@ export function ReactAriaDateFieldInput(
         </div>
     );
 }
-
