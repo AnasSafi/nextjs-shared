@@ -71,9 +71,10 @@ export function TableCellContent<T>(
                     (preferCoverImage && coverImage?.imageUrl) ||
                     (isImage ? url : null);
 
-                const sizeClass: string = fixedSize
-                    ? `w-[${fixedSize.width}px] h-[${fixedSize.height}px]`
-                    : "w-[100px] h-[100px]";
+                const sizeClass: string = fixedSize ? "" : "w-[100px] h-[100px]";
+                const sizeStyle: { width: number; height: number } | undefined = fixedSize
+                    ? {width: fixedSize.width, height: fixedSize.height}
+                    : undefined;
 
                 const roundedClass: string = rounded ? "rounded-full" : "rounded";
 
@@ -81,11 +82,15 @@ export function TableCellContent<T>(
                     return (
                         <div className="flex justify-center">
                             <div
-                                className={`relative ${sizeClass} ${roundedClass} overflow-hidden group cursor-pointer`}>
+                                className={`relative ${sizeClass} ${roundedClass} overflow-hidden group cursor-pointer`}
+                                style={sizeStyle}
+                            >
                                 {isImage && openInModal ? (
                                     <ZoomableImage
                                         mediaFile={media}
                                         isRounded={rounded}
+                                        thumbnailFillContainer={true}
+                                        thumbnailWrapperClassName="w-full h-full"
                                     />
                                 ) : (
                                     <CImage
