@@ -66,6 +66,8 @@ export type CellConfig =
         forceImageCover?: boolean;
         preferCoverImage?: boolean;
         fixedSize?: { width: number; height: number };
+        fallbackImageSrc?: string;
+        fallbackImageSrcs?: string[];
     } & BaseCellConfig)
     | ({ kind: "number" } & BaseCellConfig & { decimals?: number });
 

@@ -2,7 +2,7 @@
 
 import React, {JSX, useCallback, useEffect, useId, useMemo, useRef, useState} from "react";
 import {createPortal} from "react-dom";
-import CImage from "../media/CImage";
+import CImage, {DEFAULT_IMAGE_FALLBACK_SVG} from "../media/CImage";
 import type {MediaFileViewModel} from "../../models/core/mediaModels";
 
 type ZoomableImageLabels = {
@@ -22,6 +22,8 @@ type ZoomableImageProps = {
     thumbnailFillContainer?: boolean;
     thumbnailWrapperClassName?: string;
     thumbnailImageClassName?: string;
+    fallbackSrc?: string;
+    fallbackSrcs?: string[];
     labels?: Partial<ZoomableImageLabels>; // Optional i18n (not visible)
 };
 
@@ -122,6 +124,8 @@ export function ZoomableImage(
         thumbnailFillContainer = false,
         thumbnailWrapperClassName,
         thumbnailImageClassName,
+        fallbackSrc = DEFAULT_IMAGE_FALLBACK_SVG,
+        fallbackSrcs,
         labels,
     }: ZoomableImageProps): JSX.Element {
     const a11y: ZoomableImageLabels = {
@@ -133,7 +137,20 @@ export function ZoomableImage(
     };
 
     const dialogId = useId();
-    const src = useMemo(() => mediaFile.originalUrl ?? mediaFile.url, [mediaFile.originalUrl, mediaFile.url]);
+    const srcChain = useMemo(() => {
+        const list: (string | null | undefined)[] = [
+            mediaFile.originalUrl,
+            mediaFile.url,
+            ...(fallbackSrcs ?? []),
+            fallbackSrc,
+            DEFAULT_IMAGE_FALLBACK_SVG,
+        ];
+
+        return Array.from(new Set(list.filter(Boolean) as string[]));
+    }, [mediaFile.originalUrl, mediaFile.url, fallbackSrc, fallbackSrcs]);
+
+    const [srcIndex, setSrcIndex] = useState(0);
+    const src = srcChain[srcIndex] ?? fallbackSrc;
 
     // Modal states (mount + animate)
     const [mounted, setMounted] = useState(false);
@@ -246,6 +263,14 @@ export function ZoomableImage(
         if (!mounted) return;
         resetZoom();
     }, [mounted, src, resetZoom]);
+
+    useEffect(() => {
+        setSrcIndex(0);
+    }, [mediaFile.id, mediaFile.url, mediaFile.originalUrl, fallbackSrc, fallbackSrcs]);
+
+    const onModalImageError = useCallback(() => {
+        setSrcIndex((idx) => (idx < srcChain.length - 1 ? idx + 1 : idx));
+    }, [srcChain.length]);
 
     const zoomIn = useCallback(() => {
         setScale((s) => clamp(s * 1.15, MIN_SCALE, MAX_SCALE));
@@ -364,6 +389,8 @@ export function ZoomableImage(
                     allowModal={false}
                     isRounded={isRounded}
                     fillContainer={thumbnailFillContainer}
+                    fallbackSrc={fallbackSrc}
+                    fallbackSrcs={fallbackSrcs}
                     wrapperClassName={thumbnailFillContainer ? cn("w-full h-full", thumbnailWrapperClassName) : thumbnailWrapperClassName}
                     className={thumbnailImageClassName}
                 />
@@ -502,6 +529,7 @@ export function ZoomableImage(
                                                     alt={mediaFile.alt ?? ""}
                                                     src={src}
                                                     draggable={false}
+                                                    onError={onModalImageError}
                                                     className="pointer-events-none absolute inset-0 h-full w-full object-contain"
                                                     loading="eager"
                                                 />

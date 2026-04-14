@@ -25,10 +25,13 @@ type CImageProps = {
     bordered?: boolean;
 };
 
+export const DEFAULT_IMAGE_FALLBACK_SVG =
+    "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><rect width='120' height='120' rx='12' fill='%23F3F4F6'/><circle cx='60' cy='44' r='18' fill='%23D1D5DB'/><path d='M20 98c8-18 23-28 40-28s32 10 40 28' fill='%23D1D5DB'/></svg>";
+
 export default function CImage(
     {
         media,
-        fallbackSrc = "/assets/images/core/placeholder/no-image.png",
+        fallbackSrc = DEFAULT_IMAGE_FALLBACK_SVG,
         fallbackSrcs,
         width,
         height,
@@ -46,13 +49,16 @@ export default function CImage(
     const chain = useMemo(() => {
         const list: (string | null | undefined)[] = [
             media?.url,
-            ...(fallbackSrcs?.length ? fallbackSrcs : [fallbackSrc]),
+            media?.originalUrl,
+            ...(fallbackSrcs ?? []),
+            fallbackSrc,
+            DEFAULT_IMAGE_FALLBACK_SVG,
         ];
-        return list.filter(Boolean) as string[];
-    }, [media?.url, fallbackSrc, fallbackSrcs]);
+        return Array.from(new Set(list.filter(Boolean) as string[]));
+    }, [media?.url, media?.originalUrl, fallbackSrc, fallbackSrcs]);
 
     // Important: key by media url to reset internal state without setState-in-effect
-    const mediaKey = media?.url ?? fallbackSrc;
+    const mediaKey = `${media?.url ?? ""}|${media?.originalUrl ?? ""}|${fallbackSrc}|${(fallbackSrcs ?? []).join("|")}`;
 
     const [idx, setIdx] = useState(0);
     const currentSrc = chain[idx] ?? fallbackSrc;

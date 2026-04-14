@@ -1,0 +1,55 @@
+CONSUMER TASK – Table media fallback image (default SVG + per-column override)
+
+Goal:
+- If media image URL fails in table cells, show a placeholder image instead of broken image.
+- Allow overriding placeholder per table column from `cell` config.
+
+What changed in shared:
+- `cell.kind: "media"` now supports:
+  - `fallbackImageSrc?: string`
+  - `fallbackImageSrcs?: string[]`
+- Shared now has a built-in default SVG fallback (no consumer action required).
+- Fallback is used in both:
+  - table thumbnail image
+  - zoom modal image
+
+How to use:
+1) Default behavior (no extra config)
+- Your existing config continues to work and will show default SVG on broken image links:
+```ts
+{ field: "personalPhoto", title: t("personalPhoto"), cell: { kind: "media", rounded: true } }
+```
+
+2) Override fallback image for a specific column
+- Pass a custom path from consumer app (for example from `public/images/...`):
+```ts
+{
+  field: "personalPhoto",
+  title: t("personalPhoto"),
+  cell: {
+    kind: "media",
+    rounded: true,
+    fallbackImageSrc: "/images/placeholders/person.svg",
+  },
+}
+```
+
+3) Optional multi-fallback chain (SVG then PNG)
+```ts
+{
+  field: "personalPhoto",
+  title: t("personalPhoto"),
+  cell: {
+    kind: "media",
+    rounded: true,
+    fallbackImageSrcs: [
+      "/images/placeholders/person.svg",
+      "/images/placeholders/person.png",
+    ],
+  },
+}
+```
+
+Notes:
+- Use root-relative paths (e.g. `/images/.../person.svg`).
+- Ensure files exist in the consumer app `public` folder.

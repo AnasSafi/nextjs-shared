@@ -60,6 +60,8 @@ export function TableCellContent<T>(
                     preferCoverImage = true,
                     forceImageCover = false,
                     fixedSize,
+                    fallbackImageSrc,
+                    fallbackImageSrcs,
                 } = cellCfg;
 
                 const isVideo: boolean =
@@ -91,6 +93,8 @@ export function TableCellContent<T>(
                                         isRounded={rounded}
                                         thumbnailFillContainer={true}
                                         thumbnailWrapperClassName="w-full h-full"
+                                        fallbackSrc={fallbackImageSrc}
+                                        fallbackSrcs={fallbackImageSrcs}
                                     />
                                 ) : (
                                     <CImage
@@ -104,6 +108,8 @@ export function TableCellContent<T>(
                                         isRounded={rounded}
                                         allowModal={false}
                                         fillContainer={true}
+                                        fallbackSrc={fallbackImageSrc}
+                                        fallbackSrcs={fallbackImageSrcs}
                                         wrapperClassName="w-full h-full"
                                         className="transition-transform group-hover:scale-105"
                                     />
