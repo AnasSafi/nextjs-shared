@@ -377,6 +377,7 @@ export function ZoomableImage(
                 aria-label={a11y.open}
                 className={cn(
                     "group relative inline-flex items-center justify-center",
+                    thumbnailFillContainer && "w-full h-full",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35",
                     className,
                 )}
