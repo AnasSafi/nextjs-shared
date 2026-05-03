@@ -1,0 +1,97 @@
+CONSUMER TASK - Adopt enhanced DisplayMultiLang field title + view variants
+
+Goal:
+- Show a field name/title above multilingual values in read-only views.
+- Support multiple professional display shapes from one component via prop.
+
+What changed in shared:
+- `DisplayMultiLang` now supports:
+  - `label?: string`
+  - `name?: string`
+  - `variant?: "list" | "inline" | "badges"`
+- Title priority is:
+  - `label` first, then `name`
+- Default variant is still `list` (backward-compatible).
+- Empty values are now filtered (whitespace-only values are not rendered).
+
+1) Keep current usage (no breaking change)
+
+```tsx
+<DisplayMultiLang
+  multiLangValue={{ar: "Phone AR", en: "Phone"}}
+/>
+```
+
+2) Add field title above values
+
+```tsx
+<DisplayMultiLang
+  label={t("productName")}
+  multiLangValue={{ar: "Phone AR", en: "Phone"}}
+/>
+```
+
+Alternative:
+
+```tsx
+<DisplayMultiLang
+  name="Product Name"
+  multiLangValue={{ar: "Phone AR", en: "Phone"}}
+/>
+```
+
+3) Choose display shape using `variant`
+
+List (default):
+
+```tsx
+<DisplayMultiLang
+  label={t("title")}
+  multiLangValue={row.title}
+  variant="list"
+/>
+```
+
+Inline:
+
+```tsx
+<DisplayMultiLang
+  label={t("title")}
+  multiLangValue={row.title}
+  variant="inline"
+/>
+```
+
+Badges:
+
+```tsx
+<DisplayMultiLang
+  label={t("title")}
+  multiLangValue={row.title}
+  variant="badges"
+/>
+```
+
+4) Optional language label customization
+
+```tsx
+<DisplayMultiLang
+  label={t("title")}
+  multiLangValue={row.title}
+  variant="badges"
+  getLangLabel={(lang) => (lang === "ar" ? "Arabic" : lang.toUpperCase())}
+/>
+```
+
+Important locale-code note (to avoid confusion):
+- `DisplayMultiLang` accepts any string locale keys in `multiLangValue`.
+- Both styles are valid:
+  - `multiLangValue={{ar: "Phone AR", en: "Phone"}}`
+  - `multiLangValue={{ara: "Phone AR", eng: "Phone"}}`
+- Shared does NOT auto-convert locale keys (`ar <-> ara`, `en <-> eng`).
+- Keep one consistent locale-key format in your consumer app, or map labels using `getLangLabel`.
+
+DONE CRITERIA:
+- Consumer screens using `DisplayMultiLang` show title via `label` or `name` where needed.
+- At least one screen adopts non-default variant (`inline` or `badges`) where it improves UX.
+- Existing screens without `variant` continue rendering correctly.

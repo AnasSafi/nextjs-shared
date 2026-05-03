@@ -455,8 +455,8 @@ function TablePagesCoreInnerRef<R extends RowMeta<string | number, R>>(
     return (
         <div ref={tableRef} className={containerCls}>
             {/* HEADER */}
-            <div className="sm:flex sm:items-center">
-                <div className="sm:flex-auto">
+            <div className="flex flex-col gap-4 min-[1900px]:flex-row min-[1900px]:items-start min-[1900px]:justify-between min-[1900px]:gap-6">
+                <div className="min-w-0 min-[1900px]:flex-auto">
                     {(titleKey || title) && (
                         <h1 className="text-base font-semibold leading-6 dark:text-white">
                             {title ?? t(titleKey!)}
@@ -483,23 +483,23 @@ function TablePagesCoreInnerRef<R extends RowMeta<string | number, R>>(
 
                     {/* active filters */}
                     {(pagination.filters?.length ?? 0) > 0 && !isLoading && (
-                        <div className="mt-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
-              <span className="text-base font-semibold dark:text-white shrink-0">
-                {t("filtersApplied")}:
-              </span>
-                            <div className="flex flex-wrap gap-2 text-sm text-gray-700 dark:text-gray-200">
+                        <div className="mt-2 flex flex-col gap-2">
+                            <span className="shrink-0 text-base font-semibold dark:text-white">
+                                {t("filtersApplied")}:
+                            </span>
+                            <div className="flex min-w-0 flex-wrap items-start gap-2 text-sm text-gray-700 dark:text-gray-200">
                                 {pagination.filters?.map((item, idx) => (
                                     <span
                                         key={idx}
-                                        className="inline-flex items-center rounded-full bg-gray-200 px-3 py-1 dark:bg-gray-800 max-w-full"
+                                        className="inline-flex max-w-full items-center gap-1 rounded-full bg-gray-200 px-3 py-1 dark:bg-gray-800"
                                     >
-                    <span className="me-1 text-xs font-medium text-gray-500 dark:text-gray-300">
-                      {t(item.field)}:
-                    </span>
-                    <span className="font-semibold text-green-900 dark:text-green-200 break-all">
-                      {item.readableValue ?? item.value.toString()}
-                    </span>
-                  </span>
+                                        <span className="shrink-0 text-xs font-medium text-gray-500 dark:text-gray-300">
+                                            {t(item.field)}:
+                                        </span>
+                                        <span className="min-w-0 break-words font-semibold text-green-900 dark:text-green-200">
+                                            {item.readableValue ?? item.value.toString()}
+                                        </span>
+                                    </span>
                                 ))}
                             </div>
                         </div>
@@ -524,7 +524,7 @@ function TablePagesCoreInnerRef<R extends RowMeta<string | number, R>>(
                 </div>
 
                 {/* ACTIONS */}
-                <div className="mt-4 flex flex-col gap-2 sm:ms-16 sm:mt-0 sm:flex-none">
+                <div className="flex w-full flex-col gap-2 min-[1900px]:mt-0 min-[1900px]:w-auto min-[1900px]:flex-none min-[1900px]:ps-4">
                     <div className="flex flex-wrap items-center gap-2 pt-1">
                         {(openFilterModal || generalSearchEnabled) && (
                             <TableFiltersComponent
