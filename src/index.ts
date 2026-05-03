@@ -27,6 +27,7 @@ export * from "./utils/FilterFormMapper";
 export * from "./utils/markdownUtils";
 export * from "./utils/comboboxFetchUtils";
 export * from "./utils/markdown/markdownImageHelpers";
+export * from "./utils/markdown/markdownTextRenderers";
 export * from "./utils/formUtils";
 export type {SearchPartVariants} from "./utils/multiLangSearchUtils";
 export {
