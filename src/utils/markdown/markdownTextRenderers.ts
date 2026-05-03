@@ -30,6 +30,8 @@ export type ConvertMarkdownTextToHtmlParams = {
     target?: MarkdownTextToHtmlTarget;
     preferredIso3Lang?: string;
     wrapEmailContainer?: boolean;
+    emailLang?: string;
+    emailDir?: "rtl" | "ltr";
 };
 
 export type MarkdownEmailHtmlConverterDeps = MarkdownTextToHtmlDeps & {
@@ -40,6 +42,12 @@ export type MarkdownEmailHtmlConverterOptions = {
     preferredIso3Lang?: string;
     sanitizeHtml?: (html: string) => string;
     wrapInContainer?: boolean;
+    emailLang?: string;
+    emailDir?: "rtl" | "ltr";
+};
+
+export type SafeMarkdownEmailHtmlConverterDeps = MarkdownTextToHtmlDeps & {
+    sanitizeHtml: (html: string) => string;
 };
 
 type Align =
@@ -170,6 +178,74 @@ const buildImageMarginStyles = (align: Align, rtl: boolean): string[] => {
     }
 };
 
+const URL_PROTOCOL_RE = /^([a-zA-Z][a-zA-Z\d+\-.]*):/;
+
+const getUrlProtocol = (value: string): string | undefined => {
+    const match = value.match(URL_PROTOCOL_RE);
+    if (!match) return undefined;
+    return match[1].toLowerCase();
+};
+
+const isUnsafeProtocol = (protocol: string | undefined): boolean =>
+    protocol === "javascript" || protocol === "data" || protocol === "vbscript";
+
+const isSafeHrefProtocol = (protocol: string | undefined): boolean =>
+    protocol === "http" ||
+    protocol === "https" ||
+    protocol === "mailto" ||
+    protocol === "tel";
+
+const isValidAbsoluteHttpUrl = (value: string): boolean => {
+    try {
+        const url = new URL(value);
+        return (url.protocol === "http:" || url.protocol === "https:") && Boolean(url.host);
+    } catch {
+        return false;
+    }
+};
+
+export function sanitizeMarkdownHref(
+    rawHref: string | undefined,
+    target: MarkdownTextToHtmlTarget,
+): string | null {
+    if (!rawHref) return null;
+
+    const href = rawHref.trim();
+    if (!href) return null;
+
+    const protocol = getUrlProtocol(href);
+    if (isUnsafeProtocol(protocol)) return null;
+
+    if (protocol) {
+        if (!isSafeHrefProtocol(protocol)) return null;
+        if (target === "email" && (protocol === "http" || protocol === "https")) {
+            return isValidAbsoluteHttpUrl(href) ? href : null;
+        }
+        return href;
+    }
+
+    if (target === "email") return null;
+    return href;
+}
+
+export function sanitizeMarkdownImageSrc(
+    rawSrc: string,
+    target: MarkdownTextToHtmlTarget,
+): string | null {
+    const src = rawSrc.trim();
+    if (!src) return null;
+
+    const protocol = getUrlProtocol(src);
+    if (isUnsafeProtocol(protocol)) return null;
+
+    if (target === "email") {
+        if (protocol !== "http" && protocol !== "https") return null;
+        return isValidAbsoluteHttpUrl(src) ? src : null;
+    }
+
+    return src;
+}
+
 export function createConvertMarkdownTextToHtml(deps: MarkdownTextToHtmlDeps) {
     const {
         fallbackLng,
@@ -227,6 +303,10 @@ export function createConvertMarkdownTextToHtml(deps: MarkdownTextToHtmlDeps) {
         const heightNum = heightStr && /^\d+$/.test(heightStr) ? Number(heightStr) : undefined;
 
         const resolvedSrc = resolveMediaSrc(src, attrs);
+        const sanitizedSrc = sanitizeMarkdownImageSrc(resolvedSrc, target);
+        if (!sanitizedSrc) return "";
+
+        const sanitizedHref = sanitizeMarkdownHref(link, target);
         const rtl = isLanguageRTL(preferredIso3);
 
         if (target === "web") {
@@ -274,13 +354,13 @@ export function createConvertMarkdownTextToHtml(deps: MarkdownTextToHtmlDeps) {
                 .join(" ");
 
             const imgTag =
-                `<img src="${escapeAttr(resolvedSrc)}" alt="${escapeAttr(altFinal)}"` +
+                `<img src="${escapeAttr(sanitizedSrc)}" alt="${escapeAttr(altFinal)}"` +
                 `${caption ? ` title="${escapeAttr(caption)}"` : ""}` +
                 ` class="${imgClasses}"${widthAttr}${heightAttr} ${dataAttrs} ` +
                 `loading="lazy" referrerpolicy="no-referrer" />`;
 
-            const wrappedImg = link
-                ? `<a href="${escapeAttr(link)}" target="_blank" rel="noopener noreferrer">${imgTag}</a>`
+            const wrappedImg = sanitizedHref
+                ? `<a href="${escapeAttr(sanitizedHref)}" target="_blank" rel="noopener noreferrer">${imgTag}</a>`
                 : imgTag;
 
             if (!caption) return wrappedImg;
@@ -325,12 +405,12 @@ export function createConvertMarkdownTextToHtml(deps: MarkdownTextToHtmlDeps) {
         const heightAttr = heightNum ? ` height="${heightNum}"` : "";
 
         const imgTag =
-            `<img src="${escapeAttr(resolvedSrc)}" alt="${escapeAttr(altFinal)}"` +
+            `<img src="${escapeAttr(sanitizedSrc)}" alt="${escapeAttr(altFinal)}"` +
             `${caption ? ` title="${escapeAttr(caption)}"` : ""}` +
             ` style="${imgStyle}"${widthAttr}${heightAttr} />`;
 
-        const wrappedImg = link
-            ? `<a href="${escapeAttr(link)}" target="_blank" rel="noopener noreferrer" style="text-decoration:none">${imgTag}</a>`
+        const wrappedImg = sanitizedHref
+            ? `<a href="${escapeAttr(sanitizedHref)}" target="_blank" rel="noopener noreferrer" style="text-decoration:none">${imgTag}</a>`
             : imgTag;
 
         if (!caption) return wrappedImg;
@@ -357,9 +437,25 @@ export function createConvertMarkdownTextToHtml(deps: MarkdownTextToHtmlDeps) {
             target = "web",
             preferredIso3Lang,
             wrapEmailContainer = true,
+            emailLang,
+            emailDir,
         } = params;
 
         if (!text || text.length === 0) return "";
+
+        const normalizedPreferredIso3 =
+            preferredIso3Lang?.trim() || undefined;
+        const resolvedPreferredIso3 =
+            target === "email" || normalizedPreferredIso3
+                ? resolvePreferredIso3Lang(normalizedPreferredIso3)
+                : undefined;
+        const resolvedEmailLang = emailLang?.trim() || resolvedPreferredIso3 || fallbackLng;
+        const resolvedEmailDir: "rtl" | "ltr" =
+            emailDir ?? (isLanguageRTL(resolvedEmailLang) ? "rtl" : "ltr");
+        const emailListPaddingStyle =
+            resolvedEmailDir === "rtl"
+                ? "padding-right:24px;padding-left:0"
+                : "padding-left:24px;padding-right:0";
 
         let convertedText: string = text;
 
@@ -441,7 +537,7 @@ export function createConvertMarkdownTextToHtml(deps: MarkdownTextToHtmlDeps) {
             });
 
             if (target === "email") {
-                return `<ul style="margin:0 0 14px 0;padding-left:24px;list-style-type:disc">${listItems.join("")}</ul>`;
+                return `<ul style="margin:0 0 14px 0;${emailListPaddingStyle};list-style-type:disc">${listItems.join("")}</ul>`;
             }
             return `<ul class="list-disc ps-10">${listItems.join("")}</ul>`;
         });
@@ -455,7 +551,7 @@ export function createConvertMarkdownTextToHtml(deps: MarkdownTextToHtmlDeps) {
             });
 
             if (target === "email") {
-                return `<ol style="margin:0 0 14px 0;padding-left:24px;list-style-type:decimal">${listItems.join("")}</ol>`;
+                return `<ol style="margin:0 0 14px 0;${emailListPaddingStyle};list-style-type:decimal">${listItems.join("")}</ol>`;
             }
             return `<ol class="list-decimal ps-10">${listItems.join("")}</ol>`;
         });
@@ -467,7 +563,7 @@ export function createConvertMarkdownTextToHtml(deps: MarkdownTextToHtmlDeps) {
             (_m: string, alt: string, src: string, title: string, link: string, attrsBlock?: string) => {
                 const attrs = parseAttrBlock(attrsBlock);
                 attrs["link"] = link;
-                return imageHtml({src, alt, title, attrs, target, preferredIso3Lang});
+                return imageHtml({src, alt, title, attrs, target, preferredIso3Lang: resolvedPreferredIso3});
             },
         );
 
@@ -475,12 +571,15 @@ export function createConvertMarkdownTextToHtml(deps: MarkdownTextToHtmlDeps) {
             new RegExp(String.raw`!\[(.*?)\]\((\S+?)(?:\s+"(.*?)")?\)(${ATTR_BLOCK})?`, "g"),
             (_m: string, alt: string, src: string, title: string, attrsBlock?: string) => {
                 const attrs = parseAttrBlock(attrsBlock);
-                return imageHtml({src, alt, title, attrs, target, preferredIso3Lang});
+                return imageHtml({src, alt, title, attrs, target, preferredIso3Lang: resolvedPreferredIso3});
             },
         );
 
         if (target === "email" && wrapEmailContainer) {
-            return `<div style="white-space:pre-line">${convertedText}</div>`;
+            return (
+                `<div lang="${escapeAttr(resolvedEmailLang)}" dir="${resolvedEmailDir}" style="white-space:pre-line">` +
+                `${convertedText}</div>`
+            );
         }
 
         return convertedText;
@@ -493,6 +592,8 @@ export function createMarkdownEmailHtmlConverter(
     const {sanitizeHtml: defaultSanitizeHtml, ...convertDeps} = deps;
     const convertMarkdownTextToHtml = createConvertMarkdownTextToHtml(convertDeps);
 
+    // For production email campaigns, pass sanitizeHtml or use createSafeMarkdownEmailHtmlConverter.
+
     return function convertToEmailHtml(
         text: string,
         options?: MarkdownEmailHtmlConverterOptions,
@@ -504,9 +605,17 @@ export function createMarkdownEmailHtmlConverter(
             target: "email",
             preferredIso3Lang: options?.preferredIso3Lang,
             wrapEmailContainer: options?.wrapInContainer ?? true,
+            emailLang: options?.emailLang,
+            emailDir: options?.emailDir,
         });
 
         const sanitize = options?.sanitizeHtml ?? defaultSanitizeHtml;
         return sanitize ? sanitize(html) : html;
     };
+}
+
+export function createSafeMarkdownEmailHtmlConverter(
+    deps: SafeMarkdownEmailHtmlConverterDeps,
+) {
+    return createMarkdownEmailHtmlConverter(deps);
 }
