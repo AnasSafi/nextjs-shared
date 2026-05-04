@@ -108,6 +108,8 @@ interface TextInputProps extends InputHTMLAttributes<HTMLInputElement> {
     sanitizeAs?: "phone";
     /** Fine-tune phone sanitizing when sanitizeAs="phone" */
     phoneOptions?: SanitizePhoneOptions;
+    /** Submit parent form when Enter is pressed in this input. */
+    submitOnEnter?: boolean;
 }
 
 const CInputInner = forwardRef<HTMLInputElement, TextInputProps>(
@@ -141,6 +143,7 @@ const CInputInner = forwardRef<HTMLInputElement, TextInputProps>(
             // sanitize
             sanitizeAs,
             phoneOptions,
+            submitOnEnter = false,
 
             // pass-through
             ...rest
@@ -208,6 +211,19 @@ const CInputInner = forwardRef<HTMLInputElement, TextInputProps>(
                 [currentLocale]: nextVal,
             }));
             onChange?.(event);
+        };
+
+        const handleEnterSubmit = (
+            event: React.KeyboardEvent<HTMLInputElement>,
+        ): void => {
+            if (!submitOnEnter) return;
+            if (event.defaultPrevented) return;
+            if (event.key !== "Enter") return;
+            if (event.nativeEvent.isComposing) return;
+            const form = event.currentTarget.form;
+            if (!form) return;
+            event.preventDefault();
+            form.requestSubmit();
         };
 
         useEffect(() => {
@@ -316,6 +332,11 @@ const CInputInner = forwardRef<HTMLInputElement, TextInputProps>(
                                 onChange?.(e); // keep handleInputChange path
                             };
 
+                            const onStackedKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+                                rest.onKeyDown?.(event);
+                                handleEnterSubmit(event);
+                            };
+
                             return (
                                 <div key={locRaw}>
                                     <div
@@ -336,6 +357,7 @@ const CInputInner = forwardRef<HTMLInputElement, TextInputProps>(
                                         className={inputClassName}
                                         disabled={disabled}
                                         onChange={onStackedChange}
+                                        onKeyDown={onStackedKeyDown}
                                         // phone UX hints
                                         inputMode={phoneLike ? "tel" : rest.inputMode}
                                         autoComplete={phoneLike ? "tel" : rest.autoComplete}
@@ -353,6 +375,11 @@ const CInputInner = forwardRef<HTMLInputElement, TextInputProps>(
                 </div>
             );
         }
+
+        const onSingleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+            rest.onKeyDown?.(event);
+            handleEnterSubmit(event);
+        };
 
         // single-field (default)
         return (
@@ -393,6 +420,7 @@ const CInputInner = forwardRef<HTMLInputElement, TextInputProps>(
                             className={inputClassName}
                             disabled={disabled}
                             onChange={handleChange}
+                            onKeyDown={onSingleKeyDown}
                             // phone UX hints
                             inputMode={phoneLike ? "tel" : rest.inputMode}
                             autoComplete={phoneLike ? "tel" : rest.autoComplete}
