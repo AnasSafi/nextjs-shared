@@ -32,6 +32,7 @@ export type ConvertMarkdownTextToHtmlParams = {
     wrapEmailContainer?: boolean;
     emailLang?: string;
     emailDir?: "rtl" | "ltr";
+    emailBaseUrl?: string;
 };
 
 export type MarkdownEmailHtmlConverterDeps = MarkdownTextToHtmlDeps & {
@@ -44,6 +45,7 @@ export type MarkdownEmailHtmlConverterOptions = {
     wrapInContainer?: boolean;
     emailLang?: string;
     emailDir?: "rtl" | "ltr";
+    emailBaseUrl?: string;
 };
 
 export type SafeMarkdownEmailHtmlConverterDeps = MarkdownTextToHtmlDeps & {
@@ -246,6 +248,23 @@ export function sanitizeMarkdownImageSrc(
     return src;
 }
 
+const absolutizeEmailSrc = (
+    rawSrc: string,
+    emailBaseUrl: string | undefined,
+): string => {
+    const src = rawSrc.trim();
+    if (!src || !emailBaseUrl) return src;
+    if (getUrlProtocol(src)) return src;
+
+    try {
+        const base = new URL(emailBaseUrl.trim());
+        if (base.protocol !== "http:" && base.protocol !== "https:") return src;
+        return new URL(src, base).toString();
+    } catch {
+        return src;
+    }
+};
+
 export function createConvertMarkdownTextToHtml(deps: MarkdownTextToHtmlDeps) {
     const {
         fallbackLng,
@@ -272,8 +291,9 @@ export function createConvertMarkdownTextToHtml(deps: MarkdownTextToHtmlDeps) {
         attrs?: Record<string, string>;
         target: MarkdownTextToHtmlTarget;
         preferredIso3Lang?: string;
+        emailBaseUrl?: string;
     }): string => {
-        const {src, alt, title, attrs, target, preferredIso3Lang} = params;
+        const {src, alt, title, attrs, target, preferredIso3Lang, emailBaseUrl} = params;
 
         const align = attrs?.["align"] as Align;
         const link = attrs?.["link"];
@@ -303,7 +323,11 @@ export function createConvertMarkdownTextToHtml(deps: MarkdownTextToHtmlDeps) {
         const heightNum = heightStr && /^\d+$/.test(heightStr) ? Number(heightStr) : undefined;
 
         const resolvedSrc = resolveMediaSrc(src, attrs);
-        const sanitizedSrc = sanitizeMarkdownImageSrc(resolvedSrc, target);
+        const emailReadySrc =
+            target === "email"
+                ? absolutizeEmailSrc(resolvedSrc, emailBaseUrl)
+                : resolvedSrc;
+        const sanitizedSrc = sanitizeMarkdownImageSrc(emailReadySrc, target);
         if (!sanitizedSrc) return "";
 
         const sanitizedHref = sanitizeMarkdownHref(link, target);
@@ -439,12 +463,15 @@ export function createConvertMarkdownTextToHtml(deps: MarkdownTextToHtmlDeps) {
             wrapEmailContainer = true,
             emailLang,
             emailDir,
+            emailBaseUrl,
         } = params;
 
         if (!text || text.length === 0) return "";
 
         const normalizedPreferredIso3 =
             preferredIso3Lang?.trim() || undefined;
+        const normalizedEmailBaseUrl =
+            emailBaseUrl?.trim() || undefined;
         const resolvedPreferredIso3 =
             target === "email" || normalizedPreferredIso3
                 ? resolvePreferredIso3Lang(normalizedPreferredIso3)
@@ -563,7 +590,15 @@ export function createConvertMarkdownTextToHtml(deps: MarkdownTextToHtmlDeps) {
             (_m: string, alt: string, src: string, title: string, link: string, attrsBlock?: string) => {
                 const attrs = parseAttrBlock(attrsBlock);
                 attrs["link"] = link;
-                return imageHtml({src, alt, title, attrs, target, preferredIso3Lang: resolvedPreferredIso3});
+                return imageHtml({
+                    src,
+                    alt,
+                    title,
+                    attrs,
+                    target,
+                    preferredIso3Lang: resolvedPreferredIso3,
+                    emailBaseUrl: normalizedEmailBaseUrl,
+                });
             },
         );
 
@@ -571,7 +606,15 @@ export function createConvertMarkdownTextToHtml(deps: MarkdownTextToHtmlDeps) {
             new RegExp(String.raw`!\[(.*?)\]\((\S+?)(?:\s+"(.*?)")?\)(${ATTR_BLOCK})?`, "g"),
             (_m: string, alt: string, src: string, title: string, attrsBlock?: string) => {
                 const attrs = parseAttrBlock(attrsBlock);
-                return imageHtml({src, alt, title, attrs, target, preferredIso3Lang: resolvedPreferredIso3});
+                return imageHtml({
+                    src,
+                    alt,
+                    title,
+                    attrs,
+                    target,
+                    preferredIso3Lang: resolvedPreferredIso3,
+                    emailBaseUrl: normalizedEmailBaseUrl,
+                });
             },
         );
 
@@ -607,6 +650,7 @@ export function createMarkdownEmailHtmlConverter(
             wrapEmailContainer: options?.wrapInContainer ?? true,
             emailLang: options?.emailLang,
             emailDir: options?.emailDir,
+            emailBaseUrl: options?.emailBaseUrl,
         });
 
         const sanitize = options?.sanitizeHtml ?? defaultSanitizeHtml;

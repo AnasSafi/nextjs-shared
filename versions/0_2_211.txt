@@ -1,0 +1,108 @@
+CONSUMER TASK - Adopt full Markdown-to-HTML conversion flow (Web + Email)
+
+Goal:
+- Standardize Markdown-to-HTML conversion for both UI rendering and email rendering.
+- Ensure `media:<id>` images are visible in email output using absolute URLs.
+- Clarify link/image security rules so elements are not unexpectedly dropped.
+
+What changed in shared:
+- `createConvertMarkdownTextToHtml` now supports:
+  - `target: "web" | "email"`
+  - Email options: `wrapEmailContainer`, `emailLang`, `emailDir`, `emailBaseUrl`
+- `createMarkdownEmailHtmlConverter` and `createSafeMarkdownEmailHtmlConverter` now support:
+  - `emailBaseUrl?: string`
+- For `email` target:
+  - Relative image URLs (for example `/api/media/...`) require `emailBaseUrl` to be converted into absolute URLs.
+  - Without `emailBaseUrl`, such images are removed from final HTML (expected secure behavior).
+
+Supported transformations:
+1) Inline formatting tokens
+- `<<B>>text<</B>>` -> `<b>`
+- `<<I>>text<</I>>` -> `<i>`
+- `<<U>>text<</U>>` -> `<u>`
+- `<<S>>text<</S>>` -> `<s>`
+- `<<SUB>>text<</SUB>>` -> `<sub>`
+- `<<SUP>>text<</SUP>>` -> `<sup>`
+
+2) Headings
+- `<<H1>>...<</H1>>` through `<<H6>>...<</H6>>`
+- In `web`: class-based output (Tailwind-style).
+- In `email`: inline style output.
+
+3) Text alignment blocks
+- `<<TEXT_ALIGN_LEFT>>...<</TEXT_ALIGN_LEFT>>`
+- `<<TEXT_ALIGN_CENTER>>...<</TEXT_ALIGN_CENTER>>`
+- `<<TEXT_ALIGN_RIGHT>>...<</TEXT_ALIGN_RIGHT>>`
+- `<<TEXT_ALIGN_JUSTIFY>>...<</TEXT_ALIGN_JUSTIFY>>`
+
+4) Lists
+- `<<UL>>` / `<<OL>>` with `<<LI>>...<</LI>>` items
+- In `email`, list padding is auto-adjusted based on RTL/LTR direction.
+
+5) Images and linked images
+- Plain image:
+  - `![alt](src "title"){attrs...}`
+- Linked image:
+  - `[![alt](src "title")](link){attrs...}`
+- Supported attrs:
+  - `align`, `caption-position`, `caption`, `size`, `width`, `height`, `ratio`, `fit`, `link`
+  - `alt-json`, `caption-json` (multi-language JSON)
+  - `media-id` (optional fallback source instead of `media:<id>`)
+
+6) Media source resolution
+- If `src = media:<id>`, it is resolved (via `resolveMediaSrc`) to a media path such as `/api/media/<id>`.
+- In `web`: relative paths are allowed.
+- In `email`: source must become an absolute URL (`https://...`) via `emailBaseUrl`.
+
+Security rules (important):
+- Unsafe protocols are blocked: `javascript:`, `data:`, `vbscript:`.
+- `href` in `email`:
+  - Allows absolute `http/https`, plus `mailto` and `tel`.
+  - Relative links are rejected.
+- `img src` in `email`:
+  - Allows only absolute `http/https`.
+
+Consumer integration:
+1) Web rendering (existing approach)
+```tsx
+const html = convertMarkdownToHtml({text: markdownText, target: "web"});
+```
+
+2) Email rendering (required for media images)
+```ts
+const html = convertToEmailHtml(markdownText, {
+  preferredIso3Lang: "ara",
+  emailLang: "ara",
+  emailDir: "rtl",
+  wrapInContainer: true,
+  emailBaseUrl: "https://app.example.com",
+});
+```
+
+3) Ensure dependency wiring when creating converters
+- Use official shared deps:
+  - `ATTR_BLOCK_RE_FRAGMENT`, `parseAttrBlock`
+  - `parseMLAttr`, `resolveMediaSrc`
+  - `getPreferredIso3LangFromDom`, `getStringFromMultiLangValueByLang`, `isLanguageRTL`
+
+Recommended `emailBaseUrl`:
+- Production: `https://your-main-domain.com`
+- Staging: `https://staging.your-main-domain.com`
+- Do not use non-`http/https` values.
+
+Verification checklist:
+- `web`: `media:<id>` image is rendered correctly.
+- `email` without `emailBaseUrl`: image is not rendered (expected).
+- `email` with `emailBaseUrl`: image is rendered using absolute URL.
+- `alt-json` and `caption-json` are rendered using the preferred language.
+- Unsafe links are not rendered in output.
+
+DONE CRITERIA:
+- All conversion points above use the shared converter instead of scattered local implementations.
+- Every email HTML flow passes a valid `emailBaseUrl`.
+- At least one tested example includes:
+  - heading
+  - list
+  - media image
+  - multi-language caption
+  - safe link

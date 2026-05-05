@@ -29,7 +29,10 @@ const deps = {
     getPreferredIso3LangFromDom: ({fallbackLng}) => fallbackLng,
     getStringFromMultiLangValueByLang: readMultiLang,
     isLanguageRTL: (iso3) => iso3 === "ara" || iso3 === "heb",
-    resolveMediaSrc: (src) => src,
+    resolveMediaSrc: (src) => {
+        if (!src.startsWith("media:")) return src;
+        return `/api/media/${src.slice("media:".length)}`;
+    },
 };
 
 const convert = createConvertMarkdownTextToHtml(deps);
@@ -68,6 +71,27 @@ const unsafeImageHtml = convert({
     preferredIso3Lang: "eng",
 });
 assert.ok(!unsafeImageHtml.includes("<img"), "Unsafe email image src should be removed.");
+
+const relativeMediaWithoutBaseUrlHtml = convert({
+    text: "![alt](media:123)",
+    target: "email",
+    preferredIso3Lang: "eng",
+});
+assert.ok(
+    !relativeMediaWithoutBaseUrlHtml.includes("<img"),
+    "Relative media URL should be rejected for email when no base URL is provided.",
+);
+
+const relativeMediaWithBaseUrlHtml = convert({
+    text: "![alt](media:123)",
+    target: "email",
+    preferredIso3Lang: "eng",
+    emailBaseUrl: "https://app.example.com",
+});
+assert.ok(
+    relativeMediaWithBaseUrlHtml.includes('src="https://app.example.com/api/media/123"'),
+    "Relative media URL should be absolutized for email when base URL is provided.",
+);
 
 const rtlListHtml = convert({
     text: "<<UL>>\n<<LI>>عنصر<</LI>>\n<</UL>>",
