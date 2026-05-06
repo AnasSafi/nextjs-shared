@@ -20,8 +20,7 @@ export default function TableSort({pagination, updateSorts, t}: TableSortProps) 
     const btnRef: React.RefObject<HTMLButtonElement | null> = useRef<HTMLButtonElement>(null); // trigger button
     const panelRef: React.RefObject<HTMLDivElement | null> = useRef<HTMLDivElement>(null);  // dropdown panel
 
-    // CSS variables for mobile (fixed) positioning
-    const [vars, setVars] = useState<{ left?: number; top?: number }>({});
+    const [panelStyle, setPanelStyle] = useState<React.CSSProperties | undefined>(undefined);
 
     // Close on outside click
     useEffect(() => {
@@ -35,36 +34,78 @@ export default function TableSort({pagination, updateSorts, t}: TableSortProps) 
         return () => window.removeEventListener("mousedown", handler);
     }, [open]);
 
-    // Reposition on open/resize/scroll (mobile only uses these vars; desktop uses absolute)
+    // Viewport-aware positioning with flip/shift behavior (LTR/RTL aware).
     const positionPanel = useCallback(() => {
         const btn = btnRef.current;
         const panel = panelRef.current;
         if (!btn) return;
 
-        const r: DOMRect = btn.getBoundingClientRect();
-        const spacing = 8; // px below the button
-        const vw: number = window.innerWidth;
+        const rect: DOMRect = btn.getBoundingClientRect();
+        const sideOffset = 8;
+        const viewportPadding = 8;
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
 
-        // First pass: center by button center
-        let nextLeft: number = r.left + r.width / 2;
-        const nextTop: number = r.bottom + spacing;
+        const panelWidth =
+            panel?.offsetWidth ??
+            Math.min(320, Math.max(180, viewportWidth - viewportPadding * 2));
+        const panelHeight = panel?.offsetHeight ?? 320;
 
-        // Optional clamping after we know panel width
-        if (panel) {
-            const w: number = panel.offsetWidth || 0;
-            const half: number = w / 2;
-            const margin = 8;
-            if (nextLeft - half < margin) nextLeft = margin + half;
-            if (nextLeft + half > vw - margin) nextLeft = vw - margin - half;
+        const dir = (document.documentElement.dir || getComputedStyle(btn).direction || "ltr")
+            .toLowerCase()
+            .trim();
+        const isRtl = dir === "rtl";
+
+        // Align preference:
+        // LTR => panel right edge aligned to trigger right edge.
+        // RTL => panel left edge aligned to trigger left edge.
+        let nextLeft = isRtl ? rect.left : rect.right - panelWidth;
+
+        // shift: keep inside viewport horizontally
+        const minLeft = viewportPadding;
+        const maxLeft = Math.max(minLeft, viewportWidth - viewportPadding - panelWidth);
+        nextLeft = Math.min(Math.max(nextLeft, minLeft), maxLeft);
+
+        const spaceBelow = viewportHeight - rect.bottom - sideOffset - viewportPadding;
+        const spaceAbove = rect.top - sideOffset - viewportPadding;
+        const preferredHeight = Math.min(panelHeight, 320);
+
+        // flip: prefer below unless above has significantly more room.
+        const shouldOpenAbove = spaceBelow < preferredHeight && spaceAbove > spaceBelow;
+
+        let nextTop: number;
+        let maxHeight: number;
+
+        if (shouldOpenAbove) {
+            maxHeight = Math.max(0, Math.floor(spaceAbove));
+            const usedHeight = Math.min(panelHeight, maxHeight);
+            nextTop = rect.top - sideOffset - usedHeight;
+            if (nextTop < viewportPadding) nextTop = viewportPadding;
+        } else {
+            maxHeight = Math.max(0, Math.floor(spaceBelow));
+            nextTop = rect.bottom + sideOffset;
+            const maxTop = Math.max(viewportPadding, viewportHeight - viewportPadding - 80);
+            if (nextTop > maxTop) nextTop = maxTop;
         }
 
-        setVars({left: nextLeft, top: nextTop});
+        setPanelStyle({
+            position: "fixed",
+            left: Math.round(nextLeft),
+            top: Math.round(nextTop),
+            maxHeight: Math.round(maxHeight),
+            maxWidth: `calc(100vw - ${viewportPadding * 2}px)`,
+            zIndex: 30,
+            visibility: maxHeight > 0 ? "visible" : "hidden",
+        });
     }, []);
 
     useEffect(() => {
-        if (!open) return;
+        if (!open) {
+            setPanelStyle(undefined);
+            return;
+        }
 
-        // Position immediately and on next frame (ensures panelRef has size)
+        // Position immediately and on next frame (ensures panelRef has a measured size).
         positionPanel();
         const raf: number = requestAnimationFrame(positionPanel);
 
@@ -72,13 +113,21 @@ export default function TableSort({pagination, updateSorts, t}: TableSortProps) 
         const onScroll = () => positionPanel();
 
         window.addEventListener("resize", onResize);
-        // capture=true to react to scrolling of any ancestor
+        // capture=true so scrolling of any ancestor can trigger repositioning.
         window.addEventListener("scroll", onScroll, {passive: true, capture: true});
+
+        let resizeObserver: ResizeObserver | null = null;
+        if (typeof ResizeObserver !== "undefined") {
+            resizeObserver = new ResizeObserver(positionPanel);
+            if (btnRef.current) resizeObserver.observe(btnRef.current);
+            if (panelRef.current) resizeObserver.observe(panelRef.current);
+        }
 
         return () => {
             cancelAnimationFrame(raf);
             window.removeEventListener("resize", onResize);
             window.removeEventListener("scroll", onScroll, {capture: true});
+            resizeObserver?.disconnect();
         };
     }, [open, positionPanel]);
 
@@ -119,29 +168,12 @@ export default function TableSort({pagination, updateSorts, t}: TableSortProps) 
 
                     <div
                         ref={panelRef}
-                        // Mobile: fixed + CSS variables (left/top), centered via translate-x-1/2
-                        // Desktop (sm+): absolute under the button (top-full), aligned by side (LTR/RTL)
                         className={clsx(
                             "z-30 origin-top divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black/5",
-                            "max-h-[70vh] overflow-y-auto dark:bg-gray-950 dark:ring-white",
-
-                            // Base (mobile): fixed using CSS vars
-                            "fixed left-(--menu-left,50%) top-(--menu-top,6rem) -translate-x-1/2",
-
-                            // Desktop overrides
-                            "sm:absolute sm:translate-x-0 sm:left-auto sm:top-full sm:mt-2",
-                            "ltr:sm:right-0 rtl:sm:left-0",
-                            // Widths
-                            "w-[min(90vw,16rem)] sm:w-56",
+                            "fixed overflow-auto overscroll-contain dark:bg-gray-950 dark:ring-white",
+                            "w-[min(92vw,20rem)]",
                         )}
-                        // Provide CSS variables for mobile positioning
-                        style={
-                            {
-                                // numbers → px
-                                ["--menu-left"]: vars.left != null ? `${vars.left}px` : undefined,
-                                ["--menu-top"]: vars.top != null ? `${vars.top}px` : undefined,
-                            } as React.CSSProperties
-                        }
+                        style={panelStyle ?? {visibility: "hidden"}}
                     >
                         {pagination.sortableFields.map((sort) => {
                             const current = pagination.sorts?.find((s) => s.field === sort.fieldKey);
