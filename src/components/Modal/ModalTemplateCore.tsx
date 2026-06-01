@@ -20,7 +20,7 @@ import {
 } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 import {CButton} from "../Form/CButton";
-import {useLastOpenModal, useModalStore} from "../../store/modalStore";
+import {getTopmostOpenModalId, useLastOpenModal, useModalStore} from "../../store/modalStore";
 import {DialogType} from "../../models/ui/modalModels";
 import type {
     ModalModel,
@@ -58,6 +58,17 @@ const getModalHistoryToken = (state: unknown): string | null => {
     return typeof token === "string" && token.trim().length > 0 ? token : null;
 };
 
+const withoutModalHistoryToken = (state: unknown): Record<string, unknown> => {
+    if (!state || typeof state !== "object") return {};
+
+    const {
+        [MODAL_HISTORY_TOKEN_KEY]: _modalHistoryToken,
+        ...rest
+    } = state as Record<string, unknown>;
+
+    return rest;
+};
+
 const withModalHistoryToken = (state: unknown, token: string): Record<string, unknown> => {
     if (state && typeof state === "object") {
         return {
@@ -72,6 +83,14 @@ const withModalHistoryToken = (state: unknown, token: string): Record<string, un
 };
 
 const modalHistoryTokenOwners = new Map<string, string>();
+
+const findModalHistoryTokenByOwner = (ownerId: string): string | null => {
+    for (const [token, tokenOwnerId] of modalHistoryTokenOwners.entries()) {
+        if (tokenOwnerId === ownerId) return token;
+    }
+
+    return null;
+};
 
 const shouldIgnoreModalEnter = (target: EventTarget | null): boolean => {
     if (!(target instanceof HTMLElement)) return false;
@@ -100,6 +119,9 @@ export const ModalTemplateCore: FC<ModalTemplateProps> = (
 ): JSX.Element => {
     const lastOpenModalId: string | undefined = useLastOpenModal();
     const modal: ModalModel = useModalStore((s: ModalStateModel): ModalModel => s.modals[id]);
+    const modalStackIndex: number = useModalStore(
+        (s: ModalStateModel): number => (s.modalStack ?? []).indexOf(id),
+    );
     const closeModal = useModalStore((s: ModalStateModel) => s.closeModal);
     const scrollableRef = useRef<HTMLDivElement | null>(null);
     const modalContentRef = useRef<HTMLDivElement | null>(null);
@@ -159,6 +181,7 @@ export const ModalTemplateCore: FC<ModalTemplateProps> = (
         },
     ): void => {
         if (respectPreventCloseOutside && config.preventCloseOutside) return;
+        if (respectPreventCloseOutside && lastOpenModalIdRef.current !== id) return;
 
         if (config.hasUnsavedChanges?.()) {
             setPendingCloseMode(mode);
@@ -263,7 +286,10 @@ export const ModalTemplateCore: FC<ModalTemplateProps> = (
             const activeToken = modalHistoryTokenRef.current;
             if (!activeToken) return;
             if (!isModalOpenRef.current) return;
-            if (lastOpenModalIdRef.current !== id) return;
+            if (getTopmostOpenModalId(
+                useModalStore.getState().modals,
+                useModalStore.getState().modalStack ?? [],
+            ) !== id) return;
 
             const nextStateToken = getModalHistoryToken(event.state);
             if (nextStateToken === activeToken) return;
@@ -297,10 +323,22 @@ export const ModalTemplateCore: FC<ModalTemplateProps> = (
 
                 if (!shouldGoBack) return;
 
+                const topmostOpenModalId = getTopmostOpenModalId(
+                    useModalStore.getState().modals,
+                    useModalStore.getState().modalStack ?? [],
+                );
+                const topmostOpenModalToken = topmostOpenModalId
+                    ? findModalHistoryTokenByOwner(topmostOpenModalId)
+                    : null;
+
                 try {
-                    window.history.back();
+                    const nextState = topmostOpenModalToken
+                        ? withModalHistoryToken(window.history.state, topmostOpenModalToken)
+                        : withoutModalHistoryToken(window.history.state);
+
+                    window.history.replaceState(nextState, "");
                 } catch {
-                    // Ignore history edge-case failures (for example, when no back entry is available).
+                    // Ignore history edge-case failures.
                 }
             }, 0);
         };
@@ -372,7 +410,7 @@ export const ModalTemplateCore: FC<ModalTemplateProps> = (
 
     useLayoutEffect(() => {
         if (modal?.isOpen && scrollableRef.current) {
-            scrollableRef.current.scrollTo({top: 0, behavior: "auto"});
+            scrollableRef.current.scrollTo?.({top: 0, behavior: "auto"});
             scrollableRef.current.focus();
         }
     }, [modal?.isOpen]);
@@ -380,6 +418,7 @@ export const ModalTemplateCore: FC<ModalTemplateProps> = (
     if (!modal?.isOpen) return <></>;
 
     const inProgress: boolean | undefined = modal.inProgressModal;
+    const layerBase = 1000 + Math.max(modalStackIndex, 0) * 20;
 
     const {
         dialogType,
@@ -415,20 +454,29 @@ export const ModalTemplateCore: FC<ModalTemplateProps> = (
     };
 
     return (
-        <div className="fixed inset-0 z-40 flex items-center justify-center">
-            <div className="fixed inset-0 z-40 bg-black/75" onClick={handleClose} />
+        <div className="fixed inset-0 flex items-center justify-center" style={{zIndex: layerBase}}>
+            <div
+                className="fixed inset-0 bg-black/75"
+                style={{zIndex: layerBase}}
+                onClick={handleClose}
+            />
 
-            <div className="fixed inset-0 z-40 flex items-center justify-center">
+            <div
+                className="fixed inset-0 flex items-center justify-center"
+                style={{zIndex: layerBase + 1}}
+            >
                 <div
                     className={clsx(
-                        "fixed inset-0 z-50 flex items-center justify-center",
+                        "fixed inset-0 flex items-center justify-center",
                         fullHeightScreen ? "px-2 py-4 sm:p-4" : "px-4 py-6 sm:p-6",
                     )}
+                    style={{zIndex: layerBase + 10}}
                     role="dialog"
                     aria-modal="true"
                 >
                     <div
                         ref={modalContentRef}
+                        onClick={(event) => event.stopPropagation()}
                         className={clsx(
                             "relative flex flex-col rounded-lg bg-white dark:bg-gray-900 shadow-xl transition overflow-hidden",
                             fullHeightScreen

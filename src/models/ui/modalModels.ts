@@ -58,6 +58,7 @@ export interface ModalModel {
 
 export interface ModalStateModel {
     modals: Record<string, ModalModel>;
+    modalStack?: string[];
     openModal: (id: string, content: ReactNode, config?: OptionalModalTemplateProps) => void;
     closeModal: (id: string) => void;
     setModalInProgress: (id: string, value: boolean) => void;

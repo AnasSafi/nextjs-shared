@@ -3,6 +3,7 @@
 import React, {forwardRef, useRef} from "react";
 import type {FormPropsModel, FormRefModel} from "../../models/core/formModels";
 import {useModalActions, type AllowedUserType} from "./useModalActions";
+import {useModalStore} from "../../store/modalStore";
 
 export type UseReusableModalProps<TIn, TOut = TIn> = {
     t: (key: string) => string;
@@ -38,12 +39,16 @@ export function useReusableModal<TIn, TOut = TIn>(
     }: UseReusableModalProps<TIn, TOut>,
 ) {
     const resolveRef = useRef<((value: TOut) => void) | null>(null);
+    const closeModal = useModalStore((state) => state.closeModal);
 
     const FormComponentWithClosure = forwardRef<FormRefModel, FormPropsModel<TIn, TOut>>(
         (props, ref) => (
             <FormComponent
                 {...props}
-                closeModalWithData={(value: TOut) => resolveRef.current?.(value)}
+                closeModalWithData={(value: TOut) => {
+                    resolveRef.current?.(value);
+                    closeModal(modalId);
+                }}
                 ref={ref}
             />
         ),
