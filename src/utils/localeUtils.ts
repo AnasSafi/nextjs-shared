@@ -2,8 +2,19 @@ import {
     convertToThreeCharLocale,
     convertToTwoCharLocale,
     isAcceptedLocale,
-    type MultiLangValue,
-} from "../index";
+} from "../i18n/localeMaps";
+import type {LanguageConfig} from "../i18n/languageConfigUtils";
+import type {MultiLangValue} from "../models/core/localeModels";
+
+export type MultiLangValueResolutionInput =
+    | MultiLangValue
+    | Partial<Record<string, string | null | undefined>>;
+
+export type MultiLangValueByLanguageOptions = {
+    fallbackLng?: string;
+    defaultLng?: string;
+    languages?: ReadonlyArray<Pick<LanguageConfig, "code">>;
+};
 
 export function changeLocaleInPath(path: string, locale: string): string {
     const parts = path.split("/");
@@ -53,4 +64,47 @@ export function normalizeMultiLangValue(value: unknown, target: "2" | "3"): Mult
     }
 
     return out;
+}
+
+const resolveConfiguredLanguageCode = (
+    code: string | undefined,
+    languages: ReadonlyArray<Pick<LanguageConfig, "code">> | undefined,
+): string | undefined => {
+    const normalizedCode = code?.trim();
+    if (!normalizedCode) return undefined;
+    if (!languages) return normalizedCode;
+
+    return languages.find((language) => language.code === normalizedCode)?.code;
+};
+
+const isResolvableMultiLangString = (
+    value: string | null | undefined,
+): value is string => typeof value === "string" && value !== "";
+
+export function getMultiLangValueByLanguage(
+    value: MultiLangValueResolutionInput | null | undefined,
+    language: string,
+    options: MultiLangValueByLanguageOptions = {},
+): string {
+    if (!value) return "";
+
+    const {fallbackLng, defaultLng, languages} = options;
+    const candidateCodes = [language, fallbackLng, defaultLng]
+        .map((code) => resolveConfiguredLanguageCode(code, languages))
+        .filter((code): code is string => typeof code === "string");
+
+    for (const code of Array.from(new Set(candidateCodes))) {
+        const candidateValue = value[code];
+        if (isResolvableMultiLangString(candidateValue)) return candidateValue;
+    }
+
+    const remainingValues = languages
+        ? languages.map((languageConfig) => value[languageConfig.code])
+        : Object.values(value);
+
+    for (const candidateValue of remainingValues) {
+        if (isResolvableMultiLangString(candidateValue)) return candidateValue;
+    }
+
+    return "";
 }
