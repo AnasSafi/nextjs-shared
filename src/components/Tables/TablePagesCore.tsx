@@ -450,27 +450,31 @@ function TablePagesCoreInnerRef<R extends RowMeta<string | number, R>>(
 
     /* ------------ JSX ------------ */
     const containerCls: string =
-        "px-4 sm:px-6 lg:px-8" + (scrollWithWindow ? " overflow-x-auto" : "");
+        "w-full min-w-0 max-w-full @container/table-page px-4 sm:px-6 lg:px-8";
 
     return (
-        <div ref={tableRef} className={containerCls}>
+        <div
+            ref={tableRef}
+            className={containerCls}
+            data-scroll-with-window={scrollWithWindow ? "contained-table-scroll" : undefined}
+        >
             {/* HEADER */}
-            <div className="flex flex-col gap-4 min-[1900px]:flex-row min-[1900px]:items-start min-[1900px]:justify-between min-[1900px]:gap-6">
-                <div className="min-w-0 min-[1900px]:flex-auto">
+            <div className="flex min-w-0 max-w-full flex-col gap-4 @min-[80rem]/table-page:flex-row @min-[80rem]/table-page:items-start @min-[80rem]/table-page:justify-between @min-[80rem]/table-page:gap-6">
+                <div className="min-w-0 @min-[80rem]/table-page:flex-auto">
                     {(titleKey || title) && (
-                        <h1 className="text-base font-semibold leading-6 dark:text-white">
+                        <h1 className="min-w-0 break-words text-base font-semibold leading-6 dark:text-white [overflow-wrap:anywhere]">
                             {title ?? t(titleKey!)}
                         </h1>
                     )}
 
                     {(descriptionKey || description) && (
-                        <p className="mt-2 text-sm text-gray-700 dark:text-gray-50">
+                        <p className="mt-2 min-w-0 break-words text-sm text-gray-700 dark:text-gray-50 [overflow-wrap:anywhere]">
                             {description ?? t(descriptionKey!)}
                         </p>
                     )}
 
                     {!isLoading && (
-                        <div className="mt-2 text-sm text-gray-500 dark:text-gray-200">
+                        <div className="mt-2 min-w-0 break-words text-sm text-gray-500 dark:text-gray-200 [overflow-wrap:anywhere]">
                             {t("totalOfDescription", {
                                 countNumber:
                                     isTotalCountKnown && isNumber(pagination.totalCount)
@@ -483,7 +487,7 @@ function TablePagesCoreInnerRef<R extends RowMeta<string | number, R>>(
 
                     {/* active filters */}
                     {(pagination.filters?.length ?? 0) > 0 && !isLoading && (
-                        <div className="mt-2 flex flex-col gap-2">
+                        <div className="mt-2 flex min-w-0 flex-col gap-2">
                             <span className="shrink-0 text-base font-semibold dark:text-white">
                                 {t("filtersApplied")}:
                             </span>
@@ -496,7 +500,7 @@ function TablePagesCoreInnerRef<R extends RowMeta<string | number, R>>(
                                         <span className="shrink-0 text-xs font-medium text-gray-500 dark:text-gray-300">
                                             {t(item.field)}:
                                         </span>
-                                        <span className="min-w-0 break-words font-semibold text-green-900 dark:text-green-200">
+                                        <span className="min-w-0 break-words font-semibold text-green-900 dark:text-green-200 [overflow-wrap:anywhere]">
                                             {item.readableValue ?? item.value.toString()}
                                         </span>
                                     </span>
@@ -507,13 +511,13 @@ function TablePagesCoreInnerRef<R extends RowMeta<string | number, R>>(
 
                     {/* extra description */}
                     {tableDescription.length > 0 && (
-                        <div className="mt-2 flex flex-col gap-2 text-sm text-gray-500 dark:text-gray-200">
+                        <div className="mt-2 flex min-w-0 flex-col gap-2 text-sm text-gray-500 dark:text-gray-200">
                             {tableDescription.map(
                                 (item, idx) =>
                                     !item.isHiddenData && (
-                                        <div key={idx}>
+                                        <div key={idx} className="min-w-0 break-words [overflow-wrap:anywhere]">
                                             {item.label}:{" "}
-                                            <span className="bg-gray-200 dark:bg-gray-800 py-1 px-2.5 rounded-md">
+                                            <span className="inline-block max-w-full break-words rounded-md bg-gray-200 py-1 px-2.5 dark:bg-gray-800 [overflow-wrap:anywhere]">
                         {item.value}
                       </span>
                                         </div>
@@ -524,8 +528,8 @@ function TablePagesCoreInnerRef<R extends RowMeta<string | number, R>>(
                 </div>
 
                 {/* ACTIONS */}
-                <div className="flex w-full flex-col gap-2 min-[1900px]:mt-0 min-[1900px]:w-auto min-[1900px]:flex-none min-[1900px]:ps-4">
-                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                <div className="flex w-full min-w-0 max-w-full flex-col gap-2 @min-[80rem]/table-page:mt-0 @min-[80rem]/table-page:w-auto @min-[80rem]/table-page:flex-none @min-[80rem]/table-page:ps-4">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2 pt-1">
                         {(openFilterModal || generalSearchEnabled) && (
                             <TableFiltersComponent
                                 openFilterModalAction={openFilterModal}
@@ -543,7 +547,7 @@ function TablePagesCoreInnerRef<R extends RowMeta<string | number, R>>(
                                 type="button"
                                 onClick={a.onClick}
                                 style={a.style}
-                                className={`rounded-md px-3 py-2 text-sm font-semibold shadow-xs ${
+                                className={`max-w-full whitespace-normal break-words rounded-md px-3 py-2 text-sm font-semibold shadow-xs [overflow-wrap:anywhere] ${
                                     buttonClassNames[a.variant ?? "primary"]
                                 }`}
                             >
@@ -554,11 +558,11 @@ function TablePagesCoreInnerRef<R extends RowMeta<string | number, R>>(
 
                     {/* optional quick filters row */}
                     {props.quickFilters && (
-                        <div className="flex flex-col flex-wrap gap-1 bg-gray-100 dark:bg-gray-800 p-2 rounded-md">
-                            <div className="text-xs text-gray-500 dark:text-gray-200">
+                        <div className="flex min-w-0 max-w-full flex-col flex-wrap gap-1 rounded-md bg-gray-100 p-2 dark:bg-gray-800">
+                            <div className="min-w-0 break-words text-xs text-gray-500 dark:text-gray-200 [overflow-wrap:anywhere]">
                                 {t("quickFilters")}:
                             </div>
-                            <div>
+                            <div className="min-w-0 max-w-full">
                                 {props.quickFilters({
                                     pagination,
                                     submitFilters,
@@ -582,7 +586,7 @@ function TablePagesCoreInnerRef<R extends RowMeta<string | number, R>>(
             />
 
             {/* TABLE / CARD VIEW */}
-            <div className="relative">
+            <div className="relative min-w-0 max-w-full">
                 <CardView
                     ref={cardViewRef}
                     data={data}
@@ -602,6 +606,7 @@ function TablePagesCoreInnerRef<R extends RowMeta<string | number, R>>(
                     showRowsActions={showRowsActions}
                     currentLng={currentLng}
                     t={t}
+                    tableLabel={title ?? (titleKey ? t(titleKey) : t("table"))}
                 />
 
                 <div className="m-6">

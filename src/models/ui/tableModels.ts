@@ -72,12 +72,24 @@ export type CellConfig =
     | ({ kind: "number" } & BaseCellConfig & { decimals?: number });
 
 /* ---------- column ---------- */
+export type TableColumnWrapMode = "wrap" | "nowrap" | "truncate";
+
+export type TableColumnLayout = {
+    width?: number | string;
+    minWidth?: number | string;
+    maxWidth?: number | string;
+    wrap?: TableColumnWrapMode;
+};
+
 export interface Column<T> {
     title: string;
     field: keyof T;
     tooltip?: string;
     alwaysLTR?: boolean;
     cell?: CellConfig;
+    layout?: TableColumnLayout;
+    headerClassName?: string;
+    cellClassName?: string;
 }
 
 /* ---------- row-level actions ---------- */

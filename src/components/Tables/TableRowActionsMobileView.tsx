@@ -5,38 +5,35 @@ import React, {
     type JSX,
     type ReactElement,
     type ReactNode,
+    type KeyboardEvent,
+    type MouseEvent,
+    useCallback,
     useEffect,
     useRef,
     useState,
 } from "react";
-import {createPortal} from "react-dom";
-import {useClickAway} from "react-use";
 import clsx from "clsx";
 import {ChevronDownIcon} from "@heroicons/react/24/solid";
+import {
+    FloatingFocusManager,
+    FloatingPortal,
+    useTableFloatingMenu,
+} from "./TableFloatingMenu";
 
-type WithClassName = { className?: string };
+type ActionElementProps = {
+    className?: string;
+    disabled?: boolean;
+    role?: string;
+    tabIndex?: number;
+    onClick?: (event: MouseEvent<HTMLElement>) => void | Promise<void>;
+    "aria-disabled"?: boolean | "true" | "false";
+};
 
 export type TableRowActionsMobileViewProps = {
     actions: ReactNode[];
     label: ReactNode;
     portalRootId?: string;
 };
-
-function usePortalRoot(id: string): HTMLElement | null {
-    const [root, setRoot] = useState<HTMLElement | null>(null);
-
-    useEffect((): void => {
-        let el: HTMLElement | null = document.getElementById(id);
-        if (!el) {
-            el = document.createElement("div");
-            el.id = id;
-            document.body.appendChild(el);
-        }
-        setRoot(el);
-    }, [id]);
-
-    return root;
-}
 
 export default function TableRowActionsMobileView(
     {
@@ -47,53 +44,127 @@ export default function TableRowActionsMobileView(
 ): JSX.Element {
 
     const [open, setOpen] = useState(false);
-
-    const btnRef: React.RefObject<HTMLButtonElement | null> = useRef<HTMLButtonElement>(null);
     const menuRef: React.RefObject<HTMLDivElement | null> = useRef<HTMLDivElement>(null);
+    const pendingInitialFocusRef = useRef<"first" | "last" | null>(null);
 
-    const portalRoot: HTMLElement | null = usePortalRoot(portalRootId);
+    const {
+        refs,
+        context,
+        floatingStyles,
+        getReferenceProps,
+        getFloatingProps,
+        isPositioned,
+        triggerId,
+        menuId,
+        direction,
+        close,
+    } = useTableFloatingMenu({
+        open,
+        onOpenChange: setOpen,
+    });
 
-    useClickAway(menuRef, (): void => setOpen(false));
+    const getMenuItems = useCallback((): HTMLElement[] => {
+        const menu = menuRef.current;
+        if (!menu) return [];
 
-    useEffect((): () => void => {
-        const esc = (e: KeyboardEvent): false | void => e.key === "Escape" && setOpen(false);
-        document.addEventListener("keydown", esc);
-        return (): void => document.removeEventListener("keydown", esc);
+        return Array.from(
+            menu.querySelectorAll<HTMLElement>(
+                '[role="menuitem"]:not([aria-disabled="true"]):not(:disabled)',
+            ),
+        ).filter((element) => element.tabIndex >= 0);
     }, []);
 
-    useEffect((): undefined | (() => void) => {
-        if (!open) return;
+    const focusMenuItem = useCallback((position: "first" | "last" | number): void => {
+        const items = getMenuItems();
+        if (items.length === 0) return;
 
-        const close: () => void = () => setOpen(false);
-        window.addEventListener("scroll", close, {passive: true});
-        window.addEventListener("resize", close);
-
-        return (): void => {
-            window.removeEventListener("scroll", close);
-            window.removeEventListener("resize", close);
-        };
-    }, [open]);
-
-    const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
-
-    useEffect((): void => {
-        if (open && btnRef.current) {
-            const r: DOMRect = btnRef.current.getBoundingClientRect();
-            setCoords({
-                top: r.bottom + 4,
-                left: document.dir === "rtl" ? r.right - 180 : r.left,
-            });
+        if (position === "first") {
+            items[0].focus();
+            return;
         }
-    }, [open]);
+
+        if (position === "last") {
+            items[items.length - 1].focus();
+            return;
+        }
+
+        items[Math.min(Math.max(position, 0), items.length - 1)].focus();
+    }, [getMenuItems]);
+
+    const openAndFocus = useCallback((position: "first" | "last"): void => {
+        pendingInitialFocusRef.current = position;
+        setOpen(true);
+    }, []);
+
+    useEffect(() => {
+        if (!open || !pendingInitialFocusRef.current) return;
+
+        const position = pendingInitialFocusRef.current;
+        let timer: ReturnType<typeof setTimeout> | null = null;
+        const frame = requestAnimationFrame((): void => {
+            timer = setTimeout((): void => {
+                focusMenuItem(position);
+                pendingInitialFocusRef.current = null;
+            }, 0);
+        });
+
+        return () => {
+            cancelAnimationFrame(frame);
+            if (timer) clearTimeout(timer);
+        };
+    }, [focusMenuItem, open]);
+
+    const handleTriggerKeyDown = (event: KeyboardEvent<HTMLButtonElement>): void => {
+        if (event.key === "ArrowDown") {
+            event.preventDefault();
+            openAndFocus("first");
+        }
+
+        if (event.key === "ArrowUp") {
+            event.preventDefault();
+            openAndFocus("last");
+        }
+    };
+
+    const handleMenuKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
+        const items = getMenuItems();
+        if (items.length === 0) return;
+
+        const currentIndex = items.findIndex((item) => item === document.activeElement);
+
+        if (event.key === "ArrowDown") {
+            event.preventDefault();
+            focusMenuItem(currentIndex < 0 ? 0 : (currentIndex + 1) % items.length);
+        }
+
+        if (event.key === "ArrowUp") {
+            event.preventDefault();
+            focusMenuItem(currentIndex < 0 ? items.length - 1 : (currentIndex - 1 + items.length) % items.length);
+        }
+
+        if (event.key === "Home") {
+            event.preventDefault();
+            focusMenuItem("first");
+        }
+
+        if (event.key === "End") {
+            event.preventDefault();
+            focusMenuItem("last");
+        }
+    };
 
     return (
         <>
             <button
-                ref={btnRef}
+                ref={refs.setReference}
                 type="button"
-                aria-haspopup="menu"
-                aria-expanded={open}
-                onClick={(): void => setOpen((v: boolean): boolean => !v)}
+                id={triggerId}
+                aria-controls={open ? menuId : undefined}
+                {...getReferenceProps({
+                    "aria-haspopup": "menu",
+                    "aria-expanded": open,
+                    onKeyDown: handleTriggerKeyDown,
+                })}
                 className={clsx(
                     "inline-flex items-center gap-2 rounded-md",
                     "px-4 py-2 text-sm font-medium shadow focus:outline-none",
@@ -111,36 +182,75 @@ export default function TableRowActionsMobileView(
                 <ChevronDownIcon className="h-5 w-5"/>
             </button>
 
-            {open && portalRoot &&
-                createPortal(
-                    <div
-                        ref={menuRef}
-                        role="menu"
-                        style={{top: coords?.top, left: coords?.left}}
-                        onClick={() => setTimeout((): void => setOpen(false), 0)}
-                        className={clsx(
-                            "fixed z-[1000] min-w-[11rem] max-w-[calc(100vw-2rem)] max-h-60",
-                            "origin-top-right overflow-y-auto rounded-md p-0.5 space-y-1",
-                            "bg-white dark:bg-gray-900 shadow-xl shadow-black/10 dark:shadow-black/40",
-                            "animate-fade-in",
-                        )}
+            {open && (
+                <FloatingPortal id={portalRootId}>
+                    <FloatingFocusManager
+                        context={context}
+                        modal={false}
+                        initialFocus={-1}
+                        returnFocus={true}
                     >
-                        {actions.map((action: ReactNode, i: number): JSX.Element => (
-                            <Fragment key={i}>
-                                {React.isValidElement(action)
-                                    ? React.cloneElement(action as ReactElement<WithClassName>, {
-                                        className: clsx(
-                                            (action.props as WithClassName).className,
-                                            "block w-full text-start px-4 py-2 rounded-md",
-                                            "active:scale-[.97] transition duration-75",
-                                        ),
-                                    } as WithClassName)
-                                    : action}
-                            </Fragment>
-                        ))}
-                    </div>,
-                    portalRoot,
-                )}
+                        <div
+                            ref={refs.setFloating}
+                            style={{
+                                ...floatingStyles,
+                                visibility: isPositioned ? "visible" : "hidden",
+                            }}
+                            dir={direction}
+                            data-positioned={isPositioned ? "true" : "false"}
+                            className="z-[1000] min-w-[11rem] w-max max-w-[calc(100vw-1rem)]"
+                        >
+                            <div
+                                ref={menuRef}
+                                id={menuId}
+                                {...getFloatingProps({
+                                    role: "menu",
+                                    "aria-labelledby": triggerId,
+                                    onKeyDown: handleMenuKeyDown,
+                                })}
+                                onClick={() => setTimeout(close, 0)}
+                                style={{maxWidth: "inherit", maxHeight: "inherit"}}
+                                className={clsx(
+                                    "max-w-full min-w-[11rem] overflow-y-auto overscroll-contain rounded-md p-0.5 space-y-1",
+                                    "bg-white dark:bg-gray-900 shadow-xl shadow-black/10 dark:shadow-black/40",
+                                    "ring-1 ring-black/5 dark:ring-white/10",
+                                    "animate-fade-in",
+                                )}
+                            >
+                                {actions.map((action: ReactNode, i: number): JSX.Element => {
+                                    if (!React.isValidElement(action)) {
+                                        return <Fragment key={i}>{action}</Fragment>;
+                                    }
+
+                                    const element = action as ReactElement<ActionElementProps>;
+                                    const props = element.props;
+                                    const disabled = props.disabled || props["aria-disabled"] === true || props["aria-disabled"] === "true";
+
+                                    return (
+                                        <Fragment key={i}>
+                                            {React.cloneElement(element, {
+                                                role: props.role ?? "menuitem",
+                                                tabIndex: disabled ? -1 : 0,
+                                                "aria-disabled": disabled ? true : props["aria-disabled"],
+                                                onClick: async (event: MouseEvent<HTMLElement>): Promise<void> => {
+                                                    await props.onClick?.(event);
+                                                    close();
+                                                },
+                                                className: clsx(
+                                                    props.className,
+                                                    "flex w-full max-w-full items-center justify-start px-4 py-2 text-start",
+                                                    "rounded-md text-sm whitespace-normal break-words [overflow-wrap:anywhere]",
+                                                    "active:scale-[.97] transition duration-75",
+                                                ),
+                                            })}
+                                        </Fragment>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </FloatingFocusManager>
+                </FloatingPortal>
+            )}
         </>
     );
 }

@@ -74,17 +74,17 @@ export function TableCellContent<T>(
                     (isImage ? url : null);
 
                 const sizeClass: string = fixedSize ? "" : "w-[100px] h-[100px]";
-                const sizeStyle: { width: number; height: number } | undefined = fixedSize
-                    ? {width: fixedSize.width, height: fixedSize.height}
+                const sizeStyle: React.CSSProperties | undefined = fixedSize
+                    ? {width: fixedSize.width, height: fixedSize.height, maxWidth: "100%"}
                     : undefined;
 
                 const roundedClass: string = rounded ? "rounded-full" : "rounded";
 
                 if (coverUrl) {
                     return (
-                        <div className="flex justify-center">
+                        <div className="flex max-w-full justify-center">
                             <div
-                                className={`relative ${sizeClass} ${roundedClass} overflow-hidden group cursor-pointer`}
+                                className={`relative max-w-full ${sizeClass} ${roundedClass} overflow-hidden group cursor-pointer`}
                                 style={sizeStyle}
                             >
                                 {isImage && openInModal ? (

@@ -77,8 +77,8 @@ export function PaginationControls(
         );
 
         return (
-            <nav className="flex justify-center mt-6" aria-label="Pagination">
-                <ul className="inline-flex items-center gap-1 px-2 py-1 rounded-md border dark:border-gray-600 bg-white dark:bg-gray-900 shadow-sm">
+            <nav className="mt-6 flex max-w-full min-w-0 justify-center" aria-label="Pagination">
+                <ul className="inline-flex max-w-full min-w-0 flex-wrap items-center justify-center gap-1 rounded-md border bg-white px-2 py-1 shadow-sm dark:border-gray-600 dark:bg-gray-900">
                     {start > 1 && (
                         <>
                             {renderPage(1)}
@@ -123,8 +123,8 @@ export function PaginationControls(
         "bg-gray-200 text-gray-400 dark:bg-gray-800 dark:text-gray-500 cursor-not-allowed";
 
     return (
-        <nav className="flex justify-center mt-6" aria-label="Pagination">
-            <ul className="inline-flex items-center gap-2 px-2 py-1 rounded-md border dark:border-gray-600 bg-white dark:bg-gray-900 shadow-sm">
+        <nav className="mt-6 flex max-w-full min-w-0 justify-center" aria-label="Pagination">
+            <ul className="inline-flex max-w-full min-w-0 flex-wrap items-center justify-center gap-2 rounded-md border bg-white px-2 py-1 shadow-sm dark:border-gray-600 dark:bg-gray-900">
                 <li>
                     <button
                         type="button"

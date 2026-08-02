@@ -124,9 +124,9 @@ export default function TableFilters(
     };
 
     return (
-        <div className="flex flex-wrap items-center gap-2 w-full">
+        <div className="flex w-full min-w-0 max-w-full flex-wrap items-center gap-2">
             {generalSearchEnabled && (
-                <div className="w-full sm:w-auto">
+                <div className="w-full min-w-0 max-w-full sm:w-auto">
                     <SearchInput
                         initValue={generalSearch}
                         type="generalSearch"
@@ -140,11 +140,11 @@ export default function TableFilters(
             )}
 
             {openFilterModalAction && (
-                <div className="w-full sm:w-auto">
+                <div className="w-full min-w-0 max-w-full sm:w-auto">
                     <button
                         onClick={handleFilter}
                         type="button"
-                        className={`inline-flex w-full sm:w-auto justify-center gap-x-1.5 rounded-md ${
+                        className={`inline-flex w-full max-w-full justify-center gap-x-1.5 rounded-md sm:w-auto ${
                             (pagination.filters?.length ?? 0) > 0
                                 ? "bg-amber-500 dark:bg-amber-600 text-white hover:bg-amber-700"
                                 : "bg-white dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -164,11 +164,11 @@ export default function TableFilters(
             )}
 
             {(pagination.filters?.length ?? 0) > 0 && (
-                <div className="w-full sm:w-auto">
+                <div className="w-full min-w-0 max-w-full sm:w-auto">
                     <button
                         onClick={handleResetFilters}
                         type="button"
-                        className="inline-flex w-full sm:w-auto items-center justify-center gap-x-1.5 rounded-md bg-red-500 dark:bg-red-600 text-white hover:bg-red-700 px-3 py-2 text-sm font-semibold shadow-xs ring-1 ring-inset ring-gray-300 dark:ring-gray-50"
+                        className="inline-flex w-full max-w-full items-center justify-center gap-x-1.5 rounded-md bg-red-500 px-3 py-2 text-sm font-semibold text-white shadow-xs ring-1 ring-inset ring-gray-300 hover:bg-red-700 dark:bg-red-600 dark:ring-gray-50 sm:w-auto"
                     >
                         {translations.resetFilters}
                         <XCircleIcon className="h-5 w-5" aria-hidden="true"/>

@@ -1,33 +1,26 @@
 "use client";
 
-import React, {
-    type JSX,
-    type RefObject,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-} from "react";
-import type {RowAction} from "../../models/ui/tableModels";
-import type {RowVariant} from "../../models/ui/tableModels";
-import type {ButtonVariant} from "../../models/ui/tableModels";
-import TableRowActionsMobileView from "./TableRowActionsMobileView";
+import React, {type JSX, useMemo} from "react";
 import Link from "next/link";
-import {TranslateFn} from "../../models/core/localeModels";
+import type {ButtonVariant, RowAction, RowVariant} from "../../models/ui/tableModels";
+import type {TranslateFn} from "../../models/core/localeModels";
+import TableRowActionsMobileView from "./TableRowActionsMobileView";
+
+export type TableRowActionsDisplayMode = "auto" | "table" | "card";
 
 export type TableRowActionsProps<R> = {
-    /** Row object received from <TableView>/<CardView> */
+    /** Row object received from <TableView>/<CardView>. */
     row: R & { actions?: RowAction<R>[]; variant?: RowVariant | null };
-    /** UI-only actions (type = clientButton | clientLink) */
+    /** UI-only actions (type = clientButton | clientLink). */
     clientRowActions?: RowAction<R>[];
-    /** A lookup table used when a serverButton specifies clientHandler */
+    /** Lookup table used when a serverButton specifies clientHandler. */
     handlerMap?: Record<string, (row: R) => void | Promise<void>>;
-    /** Optional translation function (consumer provides it) */
+    /** Optional translation function provided by the consumer. */
     t: TranslateFn;
+    displayMode?: TableRowActionsDisplayMode;
 };
 
-/* Maps ButtonVariant → Tailwind utility classes */
-const variantClass = (v: ButtonVariant | undefined): string =>
+const variantClass = (variant: ButtonVariant | undefined): string =>
     ({
         primary: "bg-blue-600 text-white hover:bg-blue-700",
         secondary: "bg-gray-600 text-white hover:bg-gray-700",
@@ -38,136 +31,110 @@ const variantClass = (v: ButtonVariant | undefined): string =>
         light: "bg-gray-100 text-black hover:bg-gray-200",
         dark: "bg-gray-900 text-white hover:bg-gray-800",
         link: "text-blue-600 underline hover:text-blue-800",
-    }[v ?? "primary"]);
+    }[variant ?? "primary"]);
 
-export default function TableRowActions<R>(props: TableRowActionsProps<R>): JSX.Element {
-    const {row, clientRowActions = [], handlerMap = {}, t} = props;
+export default function TableRowActions<R>(props: TableRowActionsProps<R>): JSX.Element | null {
+    const {
+        row,
+        clientRowActions = [],
+        handlerMap = {},
+        t,
+        displayMode = "auto",
+    } = props;
 
-    const [open, setOpen] = useState(false);
-    const dropRef: RefObject<HTMLDivElement | null> = useRef(null);
-
-    /* ------------------------------------------------------------------
-     * Merge backend actions with UI actions
-     * – Only actions coming from the backend are rendered.
-     * – If a UI action (same key) exists, its props override the server’s.
-     * – Resulting actions are always clientButton / clientLink.
-     * -----------------------------------------------------------------*/
     const mergedActions: RowAction<R>[] = useMemo(() => {
         if (!row.actions) return [];
 
-        // Map UI actions by key (clientButton / clientLink only)
         const clientMap = new Map(
             clientRowActions
                 .filter(
-                    (c): c is Extract<
+                    (clientAction): clientAction is Extract<
                         RowAction<R>,
                         { type: "clientButton" | "clientLink" }
-                    > => c.type === "clientButton" || c.type === "clientLink",
+                    > => clientAction.type === "clientButton" || clientAction.type === "clientLink",
                 )
-                .map((c) => [c.key, c]),
+                .map((clientAction) => [clientAction.key, clientAction]),
         );
 
-        return row.actions.map<RowAction<R>>((srv) => {
-            const client = clientMap.get(srv.key);
+        return row.actions.map<RowAction<R>>((serverAction) => {
+            const clientAction = clientMap.get(serverAction.key);
+            const click = clientAction && "onClick" in clientAction ? clientAction.onClick : undefined;
 
-            // onClick helper (may be undefined)
-            const click =
-                client && "onClick" in client ? client.onClick : undefined;
-
-            /* serverLink → clientLink */
-            if (srv.type === "serverLink") {
+            if (serverAction.type === "serverLink") {
                 return {
                     type: "clientLink",
-                    key: srv.key,
-                    href: srv.href,
+                    key: serverAction.key,
+                    href: serverAction.href,
                     onClick: click,
-                    label: client?.label ?? srv.label,
-                    variant: client?.variant ?? srv.variant,
-                    style: client?.style ?? srv.style,
+                    label: clientAction?.label ?? serverAction.label,
+                    variant: clientAction?.variant ?? serverAction.variant,
+                    style: clientAction?.style ?? serverAction.style,
                 };
             }
 
-            /* serverButton → clientButton */
-            if (srv.type === "serverButton") {
+            if (serverAction.type === "serverButton") {
                 return {
                     type: "clientButton",
-                    key: srv.key,
-                    label: client?.label ?? srv.label,
+                    key: serverAction.key,
+                    label: clientAction?.label ?? serverAction.label,
                     onClick:
                         click ??
-                        ((row: R) => {
-                            if (srv.clientHandler && handlerMap[srv.clientHandler]) {
-                                return handlerMap[srv.clientHandler](row);
+                        ((rowArg: R) => {
+                            if (serverAction.clientHandler && handlerMap[serverAction.clientHandler]) {
+                                return handlerMap[serverAction.clientHandler](rowArg);
                             }
                         }),
-                    variant: client?.variant ?? srv.variant,
-                    style: client?.style ?? srv.style,
+                    variant: clientAction?.variant ?? serverAction.variant,
+                    style: clientAction?.style ?? serverAction.style,
                 };
             }
 
-            /* If the server already sent a *client action* just return it */
-            return srv;
+            return serverAction;
         });
-    }, [row.actions, clientRowActions, handlerMap]);
+    }, [clientRowActions, handlerMap, row.actions]);
 
-    /* ------------------------------------------------------------------
-     * Close dropdown when user clicks outside
-     * -----------------------------------------------------------------*/
-    useEffect(() => {
-        if (!open) return;
-        const close = (e: MouseEvent) => {
-            if (!dropRef.current || dropRef.current.contains(e.target as Node))
-                return;
-            setOpen(false);
-        };
-        window.addEventListener("mousedown", close);
-        return () => window.removeEventListener("mousedown", close);
-    }, [open]);
+    if (mergedActions.length === 0) return null;
 
-    /* ------------------------------------------------------------------
-     * Render a single action (link / button)
-     * -----------------------------------------------------------------*/
-    const renderAction = (action: RowAction<R>, idx: number) => {
-        const cls =
-            "rounded-md px-3 py-2 mt-1 mb-1 text-sm font-semibold shadow-xs " +
-            variantClass(action.variant);
+    const renderAction = (action: RowAction<R>, idx: number): JSX.Element => {
+        const spacingClass = displayMode === "auto" ? "mt-1 mb-1" : "";
+        const className = [
+            "rounded-md px-3 py-2 text-sm font-semibold shadow-xs whitespace-nowrap",
+            spacingClass,
+            variantClass(action.variant),
+        ].join(" ");
 
-        /* ---------- Links ---------- */
         if (action.type === "clientLink" || action.type === "serverLink") {
             return (
                 <Link
                     key={idx}
                     href={action.href}
                     style={action.style}
-                    onClick={async (e) => {
+                    onClick={async (event) => {
                         if (action.type === "clientLink" && action.onClick) {
-                            e.preventDefault(); // run handler first
+                            event.preventDefault();
                             await action.onClick(props.row);
                         }
-                        setOpen(false);
                     }}
-                    className={cls}
+                    className={className}
                 >
                     {action.label}
                 </Link>
             );
         }
 
-        /* ---------- Buttons ---------- */
-        const clickHandler = async () => {
-            // 1) prefer onClick if present
+        const clickHandler = async (): Promise<void> => {
             if ("onClick" in action && typeof action.onClick === "function") {
                 await action.onClick(props.row);
+                return;
+            }
 
-                // 2) fallback to clientHandler (server-originated button)
-            } else if (
+            if (
                 "clientHandler" in action &&
                 action.clientHandler &&
                 handlerMap[action.clientHandler]
             ) {
                 await handlerMap[action.clientHandler](props.row);
             }
-            setOpen(false);
         };
 
         return (
@@ -176,19 +143,19 @@ export default function TableRowActions<R>(props: TableRowActionsProps<R>): JSX.
                 type="button"
                 onClick={clickHandler}
                 style={action.style}
-                className={cls}
+                className={className}
             >
                 {action.label}
             </button>
         );
     };
 
-    /* ------------------------------------------------------------------ */
-    /* JSX                                                                */
-    /* ------------------------------------------------------------------ */
+    const shouldUseDropdown =
+        displayMode === "table"
+            ? mergedActions.length > 1
+            : mergedActions.length > 2;
 
-    /* > 2 actions → show dropdown */
-    if (mergedActions.length > 2) {
+    if (shouldUseDropdown) {
         return (
             <TableRowActionsMobileView
                 actions={mergedActions.map(renderAction)}
@@ -197,9 +164,15 @@ export default function TableRowActions<R>(props: TableRowActionsProps<R>): JSX.
         );
     }
 
-    /* ≤ 2 actions → inline buttons / links */
+    const inlineClassName =
+        displayMode === "table"
+            ? "flex flex-row-reverse flex-nowrap justify-center gap-2"
+            : displayMode === "card"
+                ? "flex flex-row-reverse flex-wrap justify-center gap-2"
+                : "mt-4 flex flex-row-reverse flex-wrap justify-center gap-2";
+
     return (
-        <div className="mt-4 flex flex-row-reverse flex-wrap justify-center gap-2">
+        <div className={inlineClassName}>
             {mergedActions.map(renderAction)}
         </div>
     );

@@ -9,6 +9,7 @@ import React, {
     useCallback,
     useEffect,
 } from "react";
+import clsx from "clsx";
 import {rowBackgroundClasses} from "./RowBackgroundClasses";
 import type {Column, RowAction, RowMeta} from "../../models/ui/tableModels";
 import {TooltipIcon} from "../Form/TooltipIcon";
@@ -75,13 +76,13 @@ function CardViewInner<T extends RowMeta<string | number, T>>(
     useEffect((): () => void => clearBlink, [clearBlink]);
 
     return (
-        <div className="flex flex-col mt-8 md:hidden gap-y-4">
+        <div className="mt-8 flex w-full min-w-0 max-w-full flex-col gap-y-4 min-[1024px]:hidden">
             {data.map((row: T, rI: number): JSX.Element => (
                 <div
                     key={rI}
                     className={`
                     ${rowBackgroundClasses(row.variant)}
-                    rounded-xl p-4 shadow
+                    min-w-0 rounded-xl p-4 shadow
                     ring-1 ring-inset ring-gray-200/70 dark:ring-white/10
                     transition-colors
                     ${highlightedIndex === rI ? "bg-green-300/40 dark:bg-green-700/20" : ""}
@@ -89,13 +90,19 @@ function CardViewInner<T extends RowMeta<string | number, T>>(
                 >
                     <div className="space-y-3">
                         {columns.map((col: Column<T>, cI: number): JSX.Element => (
-                            <div key={cI}>
-                                <div className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
-                                    <div className="text-gray-400 dark:text-gray-500 text-xs flex items-center gap-1">
+                            <div key={cI} className="min-w-0">
+                                <div className="min-w-0 space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                                    <div className="flex min-w-0 items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
                                         {col.title}
                                         {col.tooltip && <TooltipIcon tipText={col.tooltip} />}
                                     </div>
-                                    <div className="text-gray-900 dark:text-white font-semibold text-xs sm:text-sm break-words">
+                                    <div
+                                        className={clsx(
+                                            "min-w-0 text-xs font-semibold text-gray-900 break-words [overflow-wrap:anywhere] dark:text-white sm:text-sm",
+                                            col.cell?.className,
+                                            col.cellClassName,
+                                        )}
+                                    >
                                         {TableCellContent({
                                             col,
                                             row,
@@ -115,6 +122,7 @@ function CardViewInner<T extends RowMeta<string | number, T>>(
                                 row={row}
                                 clientRowActions={clientRowActions}
                                 t={t}
+                                displayMode="card"
                             />
                         </div>
                     )}

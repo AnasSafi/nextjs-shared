@@ -1,6 +1,6 @@
 {
   "name": "@nextjs-shared/shared",
-  "version": "0.2.214",
+  "version": "0.2.216",
   "private": false,
   "type": "module",
   "files": [
@@ -27,6 +27,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
+    "@floating-ui/react": "^0.27.20",
     "@internationalized/date": "^3.12.0",
     "bcryptjs": "^3.0.3",
     "i18next": "^25.8.7",
