@@ -85,6 +85,10 @@ export interface BaseComboBoxProps<TFormValues extends FieldValues = FieldValues
     initValueSingle?: SelectOptionModel | null;
     /** For multi-select (pass undefined if you don't want to force-init). */
     initValueMultiple?: SelectOptionModel[];
+    /** Authoritative selection for controlled multi-select usage. */
+    value?: SelectOptionModel[];
+    /** Receives the complete multi-select option snapshot after a user mutation. */
+    onSelectionChange?: (selected: SelectOptionModel[]) => void;
     name: string;
     type?: string;
     id?: string;
@@ -146,11 +150,38 @@ function sameOption(
     return String(ai) === String(bi);
 }
 
-function sameByIds(a: SelectOptionModel[] = [], b: SelectOptionModel[] = []): boolean {
+function optionId(option: SelectOptionModel): string {
+    return String(option.id);
+}
+
+function dedupeOptionsById(options: SelectOptionModel[] = []): SelectOptionModel[] {
+    const indexById = new Map<string, number>();
+    const result: SelectOptionModel[] = [];
+
+    for (const option of options) {
+        const key = optionId(option);
+        const existingIndex = indexById.get(key);
+
+        if (typeof existingIndex === "number") {
+            result[existingIndex] = option;
+            continue;
+        }
+
+        indexById.set(key, result.length);
+        result.push(option);
+    }
+
+    return result;
+}
+
+function sameSelectionSnapshot(a: SelectOptionModel[] = [], b: SelectOptionModel[] = []): boolean {
     if (a.length !== b.length) return false;
-    if (a.length === 0) return true;
-    const sa: Set<string> = new Set(a.map((x) => String(x.id)));
-    for (const it of b) if (!sa.has(String(it.id))) return false;
+
+    for (let index = 0; index < a.length; index += 1) {
+        if (optionId(a[index]) !== optionId(b[index])) return false;
+        if (a[index] !== b[index]) return false;
+    }
+
     return true;
 }
 
@@ -179,6 +210,8 @@ function BaseComboBoxCoreInner<TFormValues extends FieldValues = FieldValues>(
         disabled = false,
         initValueSingle,
         initValueMultiple,
+        value,
+        onSelectionChange,
         description,
         tipText,
         type = "text",
@@ -215,7 +248,11 @@ function BaseComboBoxCoreInner<TFormValues extends FieldValues = FieldValues>(
     );
 
     const [selectedSingle, setSelectedSingle] = useState<SelectOptionModel | null>(null);
-    const [selectedMulti, setSelectedMulti] = useState<SelectOptionModel[]>([]);
+    const [selectedMulti, setSelectedMulti] = useState<SelectOptionModel[]>(() =>
+        dedupeOptionsById(value ?? initValueMultiple ?? []),
+    );
+    const selectedMultiRef = useRef<SelectOptionModel[]>(selectedMulti);
+    const isMultiControlled = variant === "multiple" && typeof value !== "undefined";
 
     const {
         inputRef,
@@ -272,10 +309,20 @@ function BaseComboBoxCoreInner<TFormValues extends FieldValues = FieldValues>(
 
     useEffect(() => {
         if (typeof initValueMultiple === "undefined") return;
+        if (isMultiControlled) return;
         if (userPickedRef.current) return;
-        const next: SelectOptionModel[] = initValueMultiple ?? [];
-        setSelectedMulti((prev) => (sameByIds(prev, next) ? prev : next));
-    }, [initValueMultiple]);
+        const next = dedupeOptionsById(initValueMultiple);
+        selectedMultiRef.current = next;
+        setSelectedMulti((prev) => (sameSelectionSnapshot(prev, next) ? prev : next));
+    }, [initValueMultiple, isMultiControlled, name]);
+
+    useEffect(() => {
+        if (!isMultiControlled) return;
+
+        const next = dedupeOptionsById(value);
+        selectedMultiRef.current = next;
+        setSelectedMulti((prev) => (sameSelectionSnapshot(prev, next) ? prev : next));
+    }, [isMultiControlled, value]);
 
     const emitMultiIdsChange = (ids: string[]): void => {
         if (!onChange) return;
@@ -284,6 +331,29 @@ function BaseComboBoxCoreInner<TFormValues extends FieldValues = FieldValues>(
             target: {name, type: "text", value: JSON.stringify(ids), checked: false},
         };
         onChange(synthetic);
+    };
+
+    const commitMultiSelection = (
+        update: (current: SelectOptionModel[]) => SelectOptionModel[],
+    ): SelectOptionModel[] => {
+        const next = dedupeOptionsById(update(selectedMultiRef.current));
+
+        selectedMultiRef.current = next;
+        setSelectedMulti((prev) => (sameSelectionSnapshot(prev, next) ? prev : next));
+        emitMultiIdsChange(next.map(optionId));
+        onSelectionChange?.([...next]);
+
+        return next;
+    };
+
+    const keepMultiOpenAndFocusInput = (): void => {
+        open();
+        requestAnimationFrame(() => {
+            inputRef.current?.focus({preventScroll: true});
+        });
+        window.setTimeout(() => {
+            interactingWithListRef.current = false;
+        }, 0);
     };
 
     const emitSingleIdChange = (valueId: string): void => {
@@ -297,17 +367,15 @@ function BaseComboBoxCoreInner<TFormValues extends FieldValues = FieldValues>(
 
     const onPickMulti = (opt: SelectOptionModel): void => {
         userPickedRef.current = true;
+        const pickedId = optionId(opt);
 
-        const exists = selectedMulti.some((o) => o.id === opt.id);
-        const next = exists ? selectedMulti.filter((o) => o.id !== opt.id) : [...selectedMulti, opt];
-
-        setSelectedMulti(next);
-        emitMultiIdsChange(next.map((o) => o.id));
-
-        open();
-        requestAnimationFrame(() => {
-            inputRef.current?.focus();
+        commitMultiSelection((current) => {
+            const exists = current.some((option) => optionId(option) === pickedId);
+            return exists
+                ? current.filter((option) => optionId(option) !== pickedId)
+                : [...current, opt];
         });
+        keepMultiOpenAndFocusInput();
 
         if (refreshCompoList && id) refreshCompoList(id, opt.id);
     };
@@ -324,12 +392,11 @@ function BaseComboBoxCoreInner<TFormValues extends FieldValues = FieldValues>(
     const clearMulti = (): void => {
         if (disabled) return;
         userPickedRef.current = true;
-        setSelectedMulti([]);
+        commitMultiSelection(() => []);
         setInputValue("");
-        emitMultiIdsChange([]);
         resetDatasource("");
         if (refreshCompoList && id) refreshCompoList(id, "");
-        open();
+        keepMultiOpenAndFocusInput();
     };
 
     const clearSingle = (): void => {
@@ -395,11 +462,10 @@ function BaseComboBoxCoreInner<TFormValues extends FieldValues = FieldValues>(
                     const match = findExactMatch(typed);
                     if (match) {
                         userPickedRef.current = true;
-                        const exists = selectedMulti.some((o) => o.id === match.id);
+                        const matchId = optionId(match);
+                        const exists = selectedMultiRef.current.some((option) => optionId(option) === matchId);
                         if (!exists) {
-                            const nextSel = [...selectedMulti, match];
-                            setSelectedMulti(nextSel);
-                            emitMultiIdsChange(nextSel.map((o) => o.id));
+                            commitMultiSelection((current) => [...current, match]);
                             if (refreshCompoList && id) refreshCompoList(id, match.id);
                         }
                     }
@@ -436,9 +502,12 @@ function BaseComboBoxCoreInner<TFormValues extends FieldValues = FieldValues>(
             replaceOption(normalized);
 
             if (variant === "multiple") {
-                const next = selectedMulti.map((s) => (s.id === normalized.id ? normalized : s));
-                setSelectedMulti(next);
-                emitMultiIdsChange(next.map((o) => o.id));
+                const normalizedId = optionId(normalized);
+                if (selectedMultiRef.current.some((selected) => optionId(selected) === normalizedId)) {
+                    commitMultiSelection((current) =>
+                        current.map((selected) => optionId(selected) === normalizedId ? normalized : selected),
+                    );
+                }
             } else if (variant === "single") {
                 if (selectedSingle?.id === normalized.id) {
                     setSelectedSingle(normalized);
@@ -473,9 +542,12 @@ function BaseComboBoxCoreInner<TFormValues extends FieldValues = FieldValues>(
             removeOptionById(opt.id);
 
             if (variant === "multiple") {
-                const next = selectedMulti.filter((s) => s.id !== opt.id);
-                setSelectedMulti(next);
-                emitMultiIdsChange(next.map((o) => o.id));
+                const deletedId = optionId(opt);
+                if (selectedMultiRef.current.some((selected) => optionId(selected) === deletedId)) {
+                    commitMultiSelection((current) =>
+                        current.filter((selected) => optionId(selected) !== deletedId),
+                    );
+                }
             } else if (variant === "single") {
                 if (selectedSingle?.id === opt.id) {
                     setSelectedSingle(null);
@@ -490,7 +562,7 @@ function BaseComboBoxCoreInner<TFormValues extends FieldValues = FieldValues>(
 
     const selectedIds: Set<string> = useMemo(() => {
         return variant === "multiple"
-            ? new Set(selectedMulti.map((s) => String(s.id)))
+            ? new Set(selectedMulti.map(optionId))
             : new Set(selectedSingle ? [String(selectedSingle.id)] : []);
     }, [variant, selectedMulti, selectedSingle]);
 
@@ -551,7 +623,7 @@ function BaseComboBoxCoreInner<TFormValues extends FieldValues = FieldValues>(
     const allVisibleSelected = useMemo((): boolean => {
         if (!hasVisibleOptions) return false;
         for (const o of options) {
-            if (!selectedIds.has(o.id)) return false;
+            if (!selectedIds.has(optionId(o))) return false;
         }
         return true;
     }, [hasVisibleOptions, options, selectedIds]);
@@ -719,9 +791,11 @@ function BaseComboBoxCoreInner<TFormValues extends FieldValues = FieldValues>(
                                 type="button"
                                 onClick={() => {
                                     userPickedRef.current = true;
-                                    const next = selectedMulti.filter((o) => o.id !== opt.id);
-                                    setSelectedMulti(next);
-                                    emitMultiIdsChange(next.map((o) => o.id));
+                                    const removedId = optionId(opt);
+                                    commitMultiSelection((current) =>
+                                        current.filter((selected) => optionId(selected) !== removedId),
+                                    );
+                                    keepMultiOpenAndFocusInput();
                                 }}
                                 className="ml-2 text-blue-500 focus:outline-hidden dark:text-amber-700"
                                 aria-label="Remove"

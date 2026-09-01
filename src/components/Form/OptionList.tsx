@@ -130,7 +130,10 @@ export function OptionList(
             aria-live="polite"
             aria-busy={inProgress}
             onScroll={onScroll}
-            onMouseDown={onMouseDownInside}
+            onMouseDown={(event) => {
+                onMouseDownInside?.();
+                if (variant === "multiple") event.preventDefault();
+            }}
             onPointerDown={onMouseDownInside}
             className={clsx(baseMenuClasses, className)}
         >

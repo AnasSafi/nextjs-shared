@@ -17,7 +17,12 @@ export interface MultiSelectComboBoxCoreProps<
 > {
     setParentInProgress?: React.Dispatch<React.SetStateAction<boolean>>;
     isRequired?: boolean;
+    /** Initial selection for backward-compatible uncontrolled usage. */
     initValue?: SelectOptionModel[];
+    /** Authoritative selection when the component is used in controlled mode. */
+    value?: SelectOptionModel[];
+    /** Receives the complete selected option list after a user mutation. */
+    onSelectionChange?: (selected: SelectOptionModel[]) => void;
     name: string;
     type?: string;
     id?: string;
