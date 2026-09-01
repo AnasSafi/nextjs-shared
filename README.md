@@ -198,7 +198,7 @@ The CI publishes only on tags.
 git tag v0.2.4
 git push origin v0.2.4
 or
-git push --tags  
+git push {{name_of_git_remote}} v0.2.221  
 ```
 
 ---
