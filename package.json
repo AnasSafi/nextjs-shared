@@ -1,6 +1,6 @@
 {
   "name": "@nextjs-shared/shared",
-  "version": "0.2.221",
+  "version": "0.2.222",
   "private": false,
   "type": "module",
   "files": [
@@ -22,6 +22,7 @@
   },
   "scripts": {
     "test": "vitest run --environment jsdom",
+    "test:tailwind": "npm run build && node --test tests/components/paginationTailwind.verify.mjs",
     "build:ts": "tsc -p tsconfig.json",
     "build": "npm run build:ts",
     "prepublishOnly": "npm run build"
@@ -55,6 +56,7 @@
     "zustand": ">=5"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "4.2.2",
     "@testing-library/react": "^16.3.2",
     "@types/json-bigint": "^1.0.4",
     "@types/lodash": "^4.17.23",
@@ -68,6 +70,7 @@
     "jsdom": "^29.1.1",
     "libphonenumber-js": "^1.12.36",
     "next": "^16.1.6",
+    "postcss": "8.5.23",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-hook-form": "^7.71.1",
