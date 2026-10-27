@@ -2,7 +2,38 @@ import React, {type JSX} from "react";
 
 type PaginationMode = "pages" | "nextPrev";
 
+// Keep complete utility names in the emitted package for Tailwind source detection.
+const themeClasses = {
+    slate: "bg-slate-600 dark:bg-slate-700",
+    gray: "bg-gray-600 dark:bg-gray-700",
+    zinc: "bg-zinc-600 dark:bg-zinc-700",
+    neutral: "bg-neutral-600 dark:bg-neutral-700",
+    stone: "bg-stone-600 dark:bg-stone-700",
+    mauve: "bg-mauve-600 dark:bg-mauve-700",
+    olive: "bg-olive-600 dark:bg-olive-700",
+    mist: "bg-mist-600 dark:bg-mist-700",
+    taupe: "bg-taupe-600 dark:bg-taupe-700",
+    red: "bg-red-600 dark:bg-red-700",
+    orange: "bg-orange-600 dark:bg-orange-700",
+    amber: "bg-amber-600 dark:bg-amber-700",
+    yellow: "bg-yellow-600 dark:bg-yellow-700",
+    lime: "bg-lime-600 dark:bg-lime-700",
+    green: "bg-green-600 dark:bg-green-700",
+    emerald: "bg-emerald-600 dark:bg-emerald-700",
+    teal: "bg-teal-600 dark:bg-teal-700",
+    cyan: "bg-cyan-600 dark:bg-cyan-700",
+    sky: "bg-sky-600 dark:bg-sky-700",
+    blue: "bg-blue-600 dark:bg-blue-700",
+    indigo: "bg-indigo-600 dark:bg-indigo-700",
+    violet: "bg-violet-600 dark:bg-violet-700",
+    purple: "bg-purple-600 dark:bg-purple-700",
+    fuchsia: "bg-fuchsia-600 dark:bg-fuchsia-700",
+    pink: "bg-pink-600 dark:bg-pink-700",
+    rose: "bg-rose-600 dark:bg-rose-700",
+} as const;
+
 export type PaginationControlsProps = {
+    // Standard Tailwind color family; unknown names fall back to purple.
     themeColor: string;
 
     current: number;
@@ -37,6 +68,11 @@ export function PaginationControls(
         hasNext = false,
         labels,
     }: PaginationControlsProps): JSX.Element {
+    const activeThemeClasses = Object.hasOwn(themeClasses, themeColor)
+        ? themeClasses[themeColor as keyof typeof themeClasses]
+        : themeClasses.purple;
+    const activeButtonClasses = `${activeThemeClasses} text-white`;
+
     /* -----------------------------
      * Mode 1: Numeric pages (old behavior)
      * ----------------------------- */
@@ -65,7 +101,7 @@ export function PaginationControls(
                     className={`px-4 py-2 text-sm font-medium rounded-sm
             ${
                         page === current
-                            ? `bg-${themeColor}-600 text-white dark:bg-${themeColor}-700`
+                            ? activeButtonClasses
                             : "text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700"
                     }
             ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
@@ -118,7 +154,7 @@ export function PaginationControls(
     const nextLabel: string = labels?.next ?? "التالي";
 
     const baseBtn = "px-4 py-2 text-sm font-medium rounded-sm transition-colors";
-    const enabledBtn = `bg-${themeColor}-600 text-white dark:bg-${themeColor}-700 hover:opacity-90`;
+    const enabledBtn = `${activeButtonClasses} hover:opacity-90`;
     const disabledBtn =
         "bg-gray-200 text-gray-400 dark:bg-gray-800 dark:text-gray-500 cursor-not-allowed";
 

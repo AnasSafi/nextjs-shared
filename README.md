@@ -109,6 +109,28 @@ add the following line:
 ```
 @import "@nextjs-shared/shared/tailwind.css";
 ```
+
+The exported stylesheet registers `./dist` relative to the installed package. Keep
+this import in the consumer's Tailwind v4 entry; do not add package paths to a
+legacy Tailwind v3 `content` array or safelist individual pagination utilities.
+
+`PaginationControls` uses complete, statically detectable class names for all 26
+standard Tailwind v4.2 color families. `themeColor` selects the 600 background in light
+mode and the 700 background in dark mode for the current page and enabled
+previous/next controls. Unknown color names fall back to purple. Add any approved
+custom family to the component's static map instead of interpolating utility names.
+The consumer remains responsible for its dark variant (for example, `[data-theme=dark]`).
+
+For release validation, run `npm test` and `npm run test:tailwind`. The latter
+builds and packs this package, extracts it into an isolated consumer, and checks
+both normal and optimized CSS using only the exported stylesheet's source scan.
+This catches missing package files, broken source paths, and dynamic utility names.
+
+Consumers receive source fixes only after a new package version is published.
+For the pagination fix, publish `0.2.222` through the normal GitLab tag pipeline,
+then update both the dependency and lockfile in Tickets with
+`npm install @nextjs-shared/shared@0.2.222`, and rebuild/restart the app. Tickets'
+existing `0.2.214` lock entry will keep installing the old component with `npm ci`.
 ---
 
 ## Use the Package in Development Mode

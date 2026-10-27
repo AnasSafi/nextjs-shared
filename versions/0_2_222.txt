@@ -1,0 +1,6 @@
+Fix pagination theme backgrounds in Tailwind CSS v4 consumers.
+
+- Replace runtime color interpolation with complete class names for all standard Tailwind color families.
+- Share the theme selection across numbered pages and previous/next controls, with a safe purple fallback.
+- Verify the packed dist output through the exported tailwind.css source scan in normal and optimized builds.
+- Add pagination behavior tests and run the regression checks before package publication.
